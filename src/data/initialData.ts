@@ -1,0 +1,46 @@
+import { SEMSData } from '../types';
+
+export const initialData: SEMSData = {
+  settings: {
+    id: "rw04_sems_config",
+    rtList: ["RT 01", "RT 02", "RT 03", "RT 04"],
+    seksiList: [
+      "Sekretaris",
+      "Bendahara",
+      "Humas",
+      "Acara",
+      "Seksi Lomba",
+      "Seksi Pentas Seni",
+      "Perlengkapan",
+      "Konsumsi",
+      "Keamanan dan Kebersihan",
+      "Seksi Dokumentasi dan Publikasi",
+      "Seksi Dana Usaha",
+      "Seksi Hadiah Dan Doorprize"
+    ],
+    targetIuranPerRT: 1500000,
+    paguAnggaranSeksi: {
+      "Sekretaris": 1000000,
+      "Bendahara": 1000000,
+      "Humas": 1000000,
+      "Acara": 3000000,
+      "Seksi Lomba": 2000000,
+      "Seksi Pentas Seni": 3000000,
+      "Perlengkapan": 4000000,
+      "Konsumsi": 5000000,
+      "Keamanan dan Kebersihan": 1000000,
+      "Seksi Dokumentasi dan Publikasi": 1000000,
+      "Seksi Dana Usaha": 1000000,
+      "Seksi Hadiah Dan Doorprize": 2000000
+    },
+    sheetId: "1SEMS_RW04_NGABEAN_SPREADSHEET_ID_XYZ123",
+    sheetApiKey: "AIzaSyFakeKey_SEMS_GoogleSheetsAPI_2026",
+    themeColor: "red"
+  },
+  panitia: [],
+  kegiatan: [],
+  rkba: [],
+  natura: [],
+  keuangan: [],
+  tasks: []
+};

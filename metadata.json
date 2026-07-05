@@ -1,0 +1,6 @@
+{
+  "name": "Event Management System",
+  "description": "Sistem Informasi Manajemen Event Digital Panitia HUT RI ke-81 RW 04 Ngabean, Gunungpati, Semarang. Digitalisasi RKBA, Natura, Keuangan, dan Monitoring.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
