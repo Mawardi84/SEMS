@@ -22,7 +22,8 @@ import {
   BarChart3,
   PieChart as LucidePieChart,
   LineChart as LucideLineChart,
-  Activity
+  Activity,
+  Download
 } from "lucide-react";
 import {
   BarChart,
@@ -40,6 +41,7 @@ import {
   Cell
 } from "recharts";
 import { SEMSData } from "../types";
+import { exportToPDF } from "../utils/pdfExport";
 
 interface DashboardViewProps {
   data: SEMSData;
@@ -53,6 +55,19 @@ export default function DashboardView({ data }: DashboardViewProps) {
   const [analyticalTab, setAnalyticalTab] = useState<"cashflow" | "seksi" | "rt">("cashflow");
   const [searchQuery, setSearchQuery] = useState("");
   const [activeChart, setActiveChart] = useState<"bar" | "area" | "pie">("bar");
+  const [isExportingPDF, setIsExportingPDF] = useState(false);
+
+  const handleExportPDF = async () => {
+    setIsExportingPDF(true);
+    let filename = `Laporan-Dashboard-${dashboardLayout}`;
+    if (dashboardLayout === "analytical") {
+      filename += `-${analyticalTab}`;
+    }
+    filename += `-${new Date().toISOString().split('T')[0]}.pdf`;
+    
+    await exportToPDF("printable-dashboard-area", filename);
+    setIsExportingPDF(false);
+  };
 
   // 1. Core Financial Calculations
   const totalIncome = keuangan
@@ -71,7 +86,7 @@ export default function DashboardView({ data }: DashboardViewProps) {
   // 2. Budget RKBA Calculations
   const rkbaTotalProposed = rkba.reduce((sum, r) => sum + r.total, 0);
   const rkbaTotalApproved = rkba
-    .filter((r) => r.status === "Disetujui")
+    .filter((r) => r.status === "Disetujui" || r.status === "Belanja")
     .reduce((sum, r) => sum + r.total, 0);
 
   // 3. RT Collection Tracker
@@ -108,7 +123,7 @@ export default function DashboardView({ data }: DashboardViewProps) {
     
     // Sum of approved RKBA for this seksi
     const approved = rkba
-      .filter((r) => r.seksi === seksi && r.status === "Disetujui")
+      .filter((r) => r.seksi === seksi && (r.status === "Disetujui" || r.status === "Belanja"))
       .reduce((sum, r) => sum + r.total, 0);
 
     // Sum of actual expenses (real money spent) recorded for approved RKBA of this seksi
@@ -226,8 +241,18 @@ export default function DashboardView({ data }: DashboardViewProps) {
           </p>
         </div>
 
-        {/* Beautiful Segmented Layout Switcher */}
-        <div className="flex bg-slate-100 p-0.5 rounded border border-slate-200 self-stretch xl:self-auto shrink-0 justify-between items-center gap-0.5">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 self-stretch xl:self-auto">
+          <button
+            onClick={handleExportPDF}
+            disabled={isExportingPDF}
+            className="flex items-center justify-center gap-1.5 px-3 py-1.5 rounded text-[11px] font-bold bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 shadow-xs transition-all duration-150 uppercase tracking-wide disabled:opacity-50 cursor-pointer no-print"
+          >
+            <Download className="w-3.5 h-3.5 text-slate-500" />
+            <span>{isExportingPDF ? "Mengekspor..." : "Ekspor Laporan PDF"}</span>
+          </button>
+
+          {/* Beautiful Segmented Layout Switcher */}
+          <div className="flex bg-slate-100 p-0.5 rounded border border-slate-200 self-stretch xl:self-auto shrink-0 justify-between items-center gap-0.5 no-print">
           <button
             id="layout-toggle-bento"
             onClick={() => setDashboardLayout("bento")}
@@ -267,7 +292,11 @@ export default function DashboardView({ data }: DashboardViewProps) {
             <span>Layar Rapat Proyektor</span>
           </button>
         </div>
+        </div>
       </div>
+
+      {/* Printable Wrapper for High-Fidelity PDF Export */}
+      <div id="printable-dashboard-area" className="space-y-5">
 
       {/* ==================== VIEW 1: BENTO EXECUTIVE GRID (DEFAULT) ==================== */}
       {dashboardLayout === "bento" && (
@@ -1255,6 +1284,7 @@ export default function DashboardView({ data }: DashboardViewProps) {
 
         </div>
       )}
+      </div>
 
     </div>
   );

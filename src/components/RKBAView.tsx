@@ -13,9 +13,11 @@ import {
   Info,
   DollarSign,
   HelpCircle,
-  TrendingDown
+  TrendingDown,
+  Download
 } from "lucide-react";
 import { RKBAItem, SystemSetting, KeuanganTransaction } from "../types";
+import { exportToPDF } from "../utils/pdfExport";
 
 interface RKBAViewProps {
   rkba: RKBAItem[];
@@ -55,6 +57,13 @@ export default function RKBAView({
 
   // Expanded AI Feedback states (id to boolean map)
   const [expandedAI, setExpandedAI] = useState<Record<string, boolean>>({});
+  const [isExportingPDF, setIsExportingPDF] = useState(false);
+
+  const handleExportPDF = async () => {
+    setIsExportingPDF(true);
+    await exportToPDF("printable-rkba-area", `Laporan-RKBA-${new Date().toISOString().split('T')[0]}.pdf`);
+    setIsExportingPDF(false);
+  };
 
   const toggleExpandAI = (id: string) => {
     setExpandedAI(prev => ({
@@ -65,7 +74,7 @@ export default function RKBAView({
 
   // Calculations
   const proposedTotal = rkba.reduce((acc, r) => acc + r.total, 0);
-  const approvedTotal = rkba.filter(r => r.status === 'Disetujui').reduce((acc, r) => acc + r.total, 0);
+  const approvedTotal = rkba.filter(r => r.status === 'Disetujui' || r.status === 'Belanja').reduce((acc, r) => acc + r.total, 0);
   
   // Filter items
   const filteredRKBA = rkba.filter(item => {
@@ -150,17 +159,50 @@ export default function RKBAView({
             Pengajuan kebutuhan, penganggaran seksi, audit kelayakan anggaran, serta persetujuan bendahara & ketua panitia.
           </p>
         </div>
-        <button
-          id="btn-add-rkba"
-          onClick={handleOpenAdd}
-          className="flex items-center gap-1 bg-red-700 hover:bg-red-800 text-white text-[11px] font-bold px-3 py-1.5 rounded shadow-xs transition-all duration-150 self-start md:self-auto uppercase tracking-wide"
-        >
-          <Plus className="w-3.5 h-3.5" />
-          Ajukan Kebutuhan Anggaran
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={handleExportPDF}
+            disabled={isExportingPDF}
+            className="flex items-center gap-1 bg-white hover:bg-slate-50 text-slate-700 text-[11px] font-bold px-3 py-1.5 rounded border border-slate-200 shadow-xs transition-all duration-150 uppercase tracking-wide cursor-pointer disabled:opacity-50"
+          >
+            <Download className="w-3.5 h-3.5 text-slate-500" />
+            {isExportingPDF ? "Mengekspor..." : "Ekspor PDF"}
+          </button>
+          <button
+            id="btn-add-rkba"
+            onClick={handleOpenAdd}
+            className="flex items-center gap-1 bg-red-700 hover:bg-red-800 text-white text-[11px] font-bold px-3 py-1.5 rounded shadow-xs transition-all duration-150 self-start md:self-auto uppercase tracking-wide cursor-pointer"
+          >
+            <Plus className="w-3.5 h-3.5" />
+            Ajukan Kebutuhan Anggaran
+          </button>
+        </div>
       </div>
 
-      {/* 2. Mini Budget Summary Widgets */}
+      {/* Printable Wrapper for High-Fidelity PDF Export */}
+      <div id="printable-rkba-area" className="space-y-4 bg-white p-6 rounded-lg border border-slate-200">
+        
+        {/* Printable Document Title Header */}
+        <div className="border-b-[3px] border-double border-slate-950 pb-3 mb-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+          <div>
+            <h1 className="text-xs font-black font-serif tracking-wide uppercase text-slate-950">
+              LAPORAN RENCANA KEBUTUHAN BARANG & ANGGARAN (RKBA)
+            </h1>
+            <p className="text-[9px] text-slate-500 font-serif">
+              Sistem Manajemen Event Kemasyarakatan (SEMS) RW 04 Ngabean • HUT RI Ke-81
+            </p>
+          </div>
+          <div className="text-left sm:text-right">
+            <span className="text-[9px] font-mono text-slate-500 bg-slate-50 px-2 py-0.5 rounded border border-slate-100 block">
+              Tanggal Cetak: {new Date().toLocaleDateString("id-ID")}
+            </span>
+            <span className="text-[8px] text-slate-400 block mt-1">
+              Seksi: {filterSeksi} • Status: {filterStatus} • Sumber: {filterSource}
+            </span>
+          </div>
+        </div>
+
+        {/* 2. Mini Budget Summary Widgets */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div className="bg-white p-3 rounded-lg border border-slate-200 flex items-center gap-3 shadow-xs">
           <div className="p-2 bg-slate-50 border border-slate-100 rounded">
@@ -200,7 +242,7 @@ export default function RKBAView({
       </div>
 
       {/* 3. Filtering Toolbar */}
-      <div className="bg-white p-3 rounded-lg border border-slate-200 flex flex-wrap items-center gap-3 shadow-xs">
+      <div className="bg-white p-3 rounded-lg border border-slate-200 flex flex-wrap items-center gap-3 shadow-xs no-print">
         <div className="flex items-center gap-1.5 text-[11px] font-bold text-slate-600">
           <Filter className="w-3.5 h-3.5 text-slate-400" />
           <span>Saring:</span>
@@ -232,6 +274,7 @@ export default function RKBAView({
             <option value="Semua">Semua Status</option>
             <option value="Draft">Draft</option>
             <option value="Disetujui">Disetujui</option>
+            <option value="Belanja">Belanja</option>
             <option value="Ditolak">Ditolak</option>
           </select>
         </div>
@@ -278,16 +321,17 @@ export default function RKBAView({
               <th className="px-4 py-2 font-bold text-slate-600">Total Kebutuhan</th>
               <th className="px-4 py-2 font-bold text-slate-600">Sumber Dana</th>
               <th className="px-4 py-2 font-bold text-slate-600">Status</th>
-              <th className="px-4 py-2 font-bold text-slate-600 text-right">Menu / Tindakan</th>
+              <th className="px-4 py-2 font-bold text-slate-600 text-right no-print">Menu / Tindakan</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100 text-xs text-slate-700">
             {filteredRKBA.map((item) => {
-              const hasBeenSpent = keuangan.some(t => t.refId === item.id);
+              const hasBeenSpent = item.status === 'Belanja' || keuangan.some(t => t.refId === item.id);
               const statusMap = {
                 "Draft": "bg-slate-100 text-slate-600 border-slate-200",
                 "Disetujui": "bg-red-100 text-red-700 border-red-200",
-                "Ditolak": "bg-rose-50 text-rose-600 border-rose-100"
+                "Ditolak": "bg-rose-50 text-rose-600 border-rose-100",
+                "Belanja": "bg-emerald-100 text-emerald-700 border-emerald-200"
               };
 
 
@@ -324,7 +368,7 @@ export default function RKBAView({
                     </td>
 
                      {/* MENU & ACTIONS */}
-                     <td className="px-4 py-2 text-right">
+                     <td className="px-4 py-2 text-right no-print">
                        <div className="flex justify-end items-center gap-1">
                          
                          {/* Approval workflow buttons for leadership */}
@@ -406,7 +450,9 @@ export default function RKBAView({
          </table>
        </div>
 
-       {/* 5. ADD/EDIT ITEM MODAL */}
+       </div>
+
+        {/* 5. ADD/EDIT ITEM MODAL */}
        {showModal && (
          <div className="fixed inset-0 bg-slate-900/60 flex items-center justify-center z-50 p-4 backdrop-blur-xs">
            <div className="bg-white rounded-lg w-full max-w-md shadow-2xl overflow-hidden border border-slate-200 animate-in fade-in zoom-in-95 duration-200">

@@ -7,6 +7,8 @@ import KeuanganView from "./components/KeuanganView";
 import MonitoringView from "./components/MonitoringView";
 import MasterDataView from "./components/MasterDataView";
 import SettingView from "./components/SettingView";
+import GoogleSheetsView from "./components/GoogleSheetsView";
+import GuideBookView from "./components/GuideBookView";
 import { SEMSData, SystemSetting, Panitia, Kegiatan, RKBAItem, NaturaItem, KeuanganTransaction } from "./types";
 import { Award, AlertTriangle, RefreshCw, Menu } from "lucide-react";
 
@@ -393,6 +395,22 @@ export default function App() {
               onSavePanitia={handleSavePanitia}
               onSaveKegiatan={handleSaveKegiatan}
             />
+          )}
+
+          {currentView === "sheets" && (
+            <GoogleSheetsView 
+              settings={semsData.settings} 
+              semsData={semsData}
+              onSaveSettings={handleSaveSettings}
+              onRefreshData={fetchSemsData}
+              onImportSuccess={async (importedData) => {
+                setSemsData(importedData);
+              }}
+            />
+          )}
+
+          {currentView === "panduan" && (
+            <GuideBookView />
           )}
 
           {currentView === "setting" && (

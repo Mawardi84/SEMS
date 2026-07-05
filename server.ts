@@ -94,6 +94,16 @@ async function startServer() {
     res.json({ success: true, settings: db.settings });
   });
 
+  // API - Sync/Import full SEMS data from Google Sheets
+  app.post("/api/sems/sync-import", (req, res) => {
+    const data = req.body as SEMSData;
+    if (!data || !data.settings) {
+      return res.status(400).json({ success: false, error: "Format data tidak valid." });
+    }
+    writeDB(data);
+    res.json({ success: true, message: "Database berhasil disinkronisasi dari Google Sheets!" });
+  });
+
   // API - CRUD Panitia
   app.post("/api/sems/panitia", (req, res) => {
     const db = readDB();
@@ -174,7 +184,12 @@ async function startServer() {
   // API - Record Approved RKBA directly to Keuangan Ledger (Satu-klik Belanja)
   app.post("/api/sems/rkba/belanja", (req, res) => {
     const db = readDB();
-    const { rkbaId } = req.body as { rkbaId: string };
+    const rkbaId = req.body.id || req.body.rkbaId;
+    
+    if (!rkbaId) {
+      return res.status(400).json({ success: false, error: "ID RKBA diperlukan." });
+    }
+    
     const rkbaItem = db.rkba.find(r => r.id === rkbaId);
     
     if (!rkbaItem) {
@@ -202,10 +217,18 @@ async function startServer() {
       refId: rkbaId
     };
 
+    // Update RKBA status to "Belanja"
+    db.rkba = db.rkba.map(r => r.id === rkbaId ? { ...r, status: 'Belanja' as any } : r);
+
     db.keuangan.push(tx);
     writeDB(db);
 
-    res.json({ success: true, keuangan: db.keuangan, message: "Belanja RKBA berhasil dibukukan ke Keuangan!" });
+    res.json({ 
+      success: true, 
+      rkba: db.rkba, 
+      keuangan: db.keuangan, 
+      message: "Belanja RKBA berhasil dibukukan ke Keuangan!" 
+    });
   });
 
   // API - CRUD Natura (In-Kind Contribution)

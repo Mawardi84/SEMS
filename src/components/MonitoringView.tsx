@@ -24,6 +24,7 @@ import {
   ShieldCheck
 } from "lucide-react";
 import { SeksiTask, SystemSetting, KeuanganTransaction, NaturaItem } from "../types";
+import { exportToPDF } from "../utils/pdfExport";
 
 interface MonitoringViewProps {
   tasks: SeksiTask[];
@@ -45,6 +46,7 @@ export default function MonitoringView({
   const [consoleLog, setConsoleLog] = useState<string[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
   const [copiedLPJ, setCopiedLPJ] = useState(false);
+  const [isExportingPDF, setIsExportingPDF] = useState(false);
 
   // Custom LPJ Template settings & inputs
   const [selectedTemplate, setSelectedTemplate] = useState<"formal" | "ringkas" | "natura">("formal");
@@ -364,6 +366,12 @@ Semarang, ${tanggalLPJ}
     navigator.clipboard.writeText(lpjMarkdown);
     setCopiedLPJ(true);
     setTimeout(() => setCopiedLPJ(false), 2000);
+  };
+
+  const handleExportPDF = async () => {
+    setIsExportingPDF(true);
+    await exportToPDF("printable-lpj-paper", `LPJ-${namaKegiatan.replace(/\s+/g, "-")}.pdf`);
+    setIsExportingPDF(false);
   };
 
   return (
@@ -970,6 +978,19 @@ Semarang, ${tanggalLPJ}
                         >
                           <Printer className="w-3.5 h-3.5 text-slate-950" />
                           Cetak Dokumen
+                        </button>
+                        
+                        <button
+                          onClick={handleExportPDF}
+                          disabled={isExportingPDF}
+                          className="flex items-center gap-1.5 bg-red-600 hover:bg-red-500 text-white px-3 py-1 rounded text-[10px] font-black uppercase transition-all shadow-md disabled:opacity-50 cursor-pointer"
+                        >
+                          {isExportingPDF ? (
+                            <RefreshCw className="w-3.5 h-3.5 text-white animate-spin" />
+                          ) : (
+                            <Download className="w-3.5 h-3.5 text-white" />
+                          )}
+                          {isExportingPDF ? "Mengekspor..." : "Ekspor PDF"}
                         </button>
                       </div>
                     </div>

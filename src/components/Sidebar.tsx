@@ -9,7 +9,8 @@ import {
   TrendingUp, 
   RefreshCw,
   Award,
-  X
+  X,
+  BookOpen
 } from "lucide-react";
 
 interface SidebarProps {
@@ -29,6 +30,8 @@ export default function Sidebar({ currentView, onViewChange, onResetData, isRese
     { id: "keuangan", label: "Arus Kas Keuangan", icon: Wallet },
     { id: "monitoring", label: "Monitoring & LPJ", icon: TrendingUp },
     { id: "master", label: "Data Master", icon: Users },
+    { id: "sheets", label: "Google Sheets Sync", icon: FileSpreadsheet },
+    { id: "panduan", label: "Buku Panduan", icon: BookOpen },
     { id: "setting", label: "Pengaturan Sistem", icon: Settings },
   ];
 

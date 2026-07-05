@@ -10,9 +10,11 @@ import {
   User, 
   Tag, 
   Layers, 
-  Info 
+  Info,
+  Download
 } from "lucide-react";
 import { NaturaItem, SystemSetting } from "../types";
+import { exportToPDF } from "../utils/pdfExport";
 
 interface NaturaViewProps {
   natura: NaturaItem[];
@@ -27,6 +29,13 @@ export default function NaturaView({
 }: NaturaViewProps) {
   const [showModal, setShowModal] = useState(false);
   const [editingItem, setEditingItem] = useState<NaturaItem | null>(null);
+  const [isExportingPDF, setIsExportingPDF] = useState(false);
+
+  const handleExportPDF = async () => {
+    setIsExportingPDF(true);
+    await exportToPDF("printable-natura-area", `Laporan-Swadaya-Natura-${new Date().toISOString().split('T')[0]}.pdf`);
+    setIsExportingPDF(false);
+  };
   
   const [form, setForm] = useState<Omit<NaturaItem, 'id'>>({
     donorName: "",
@@ -110,15 +119,45 @@ export default function NaturaView({
             Catat sumbangan warga berupa barang operasional, makanan, ataupun minuman demi menghemat kas tunai panitia.
           </p>
         </div>
-        <button
-          id="btn-add-natura"
-          onClick={handleOpenAdd}
-          className="flex items-center gap-1 bg-red-700 hover:bg-red-800 text-white text-[11px] font-bold px-3 py-1.5 rounded shadow-xs transition-all duration-150 self-start md:self-auto uppercase tracking-wide"
-        >
-          <Plus className="w-3.5 h-3.5" />
-          Catat Sumbangan Natura
-        </button>
+        <div className="flex items-center gap-2 self-start md:self-auto">
+          <button
+            onClick={handleExportPDF}
+            disabled={isExportingPDF}
+            className="flex items-center gap-1 bg-white hover:bg-slate-50 text-slate-700 text-[11px] font-bold px-3 py-1.5 rounded border border-slate-200 shadow-xs transition-all duration-150 uppercase tracking-wide cursor-pointer disabled:opacity-50"
+          >
+            <Download className="w-3.5 h-3.5 text-slate-500" />
+            {isExportingPDF ? "Mengekspor..." : "Ekspor PDF"}
+          </button>
+          <button
+            id="btn-add-natura"
+            onClick={handleOpenAdd}
+            className="flex items-center gap-1 bg-red-700 hover:bg-red-800 text-white text-[11px] font-bold px-3 py-1.5 rounded shadow-xs transition-all duration-150 uppercase tracking-wide cursor-pointer"
+          >
+            <Plus className="w-3.5 h-3.5" />
+            Catat Sumbangan Natura
+          </button>
+        </div>
       </div>
+
+      {/* Printable Wrapper for High-Fidelity PDF Export */}
+      <div id="printable-natura-area" className="space-y-4 bg-white p-6 rounded-lg border border-slate-200">
+        
+        {/* Printable Document Title Header */}
+        <div className="border-b-[3px] border-double border-slate-900 pb-3 mb-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+          <div>
+            <h1 className="text-xs font-black font-serif tracking-wide uppercase text-slate-950">
+              LAPORAN KONTRIBUSI IN-KIND (NATURA) WARGA
+            </h1>
+            <p className="text-[9px] text-slate-500 font-serif">
+              Sistem Manajemen Event Kemasyarakatan (SEMS) RW 04 Ngabean • HUT RI Ke-81
+            </p>
+          </div>
+          <div className="text-left sm:text-right">
+            <span className="text-[9px] font-mono text-slate-500 bg-slate-50 px-2 py-0.5 rounded border border-slate-100 block">
+              Tanggal Cetak: {new Date().toLocaleDateString("id-ID")}
+            </span>
+          </div>
+        </div>
 
       {/* 2. Mini KPI summary widgets */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -155,7 +194,7 @@ export default function NaturaView({
 
       </div>
 
-      <div className="bg-amber-50/55 p-3 rounded-lg border border-amber-100 flex gap-2.5 text-xs text-amber-800 leading-normal">
+      <div className="bg-amber-50/55 p-3 rounded-lg border border-amber-100 flex gap-2.5 text-xs text-amber-800 leading-normal no-print">
         <Info className="w-4 h-4 text-amber-700 shrink-0 mt-0.5" />
         <p>
           <strong className="font-bold">Info Penghematan Kas:</strong> Setiap sumbangan Natura memiliki <strong className="font-bold">Estimasi Nilai Rp</strong>. Angka ini mewakili biaya yang berhasil dihemat oleh panitia karena tidak perlu membeli barang tersebut dari Kas Utama. Transparansi ini akan dilampirkan otomatis pada modul LPJ AI.
@@ -174,7 +213,7 @@ export default function NaturaView({
               <th className="px-4 py-2 font-bold text-slate-600">Alokasi Manfaat</th>
               <th className="px-4 py-2 font-bold text-slate-600">Tanggal Masuk</th>
               <th className="px-4 py-2 font-bold text-slate-600">Keterangan</th>
-              <th className="px-4 py-2 font-bold text-slate-600 text-right">Aksi</th>
+              <th className="px-4 py-2 font-bold text-slate-600 text-right no-print">Aksi</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100 text-xs text-slate-700">
@@ -206,7 +245,7 @@ export default function NaturaView({
                 <td className="px-4 py-2 text-slate-500 italic max-w-xs truncate" title={n.notes}>
                   {n.notes || "-"}
                 </td>
-                <td className="px-4 py-2 text-right">
+                <td className="px-4 py-2 text-right no-print">
                   <div className="flex justify-end gap-1">
                     <button
                       id={`edit-natura-${n.id}`}
@@ -236,6 +275,8 @@ export default function NaturaView({
           </tbody>
         </table>
       </div>
+
+</div>
 
       {/* 4. MODAL ADD / EDIT NATURA */}
       {showModal && (

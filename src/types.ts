@@ -37,7 +37,7 @@ export interface RKBAItem {
   price: number;
   total: number;
   fundingSource: 'Kas Utama' | 'Donasi Warga' | 'Iuran RT' | 'Sponsorship';
-  status: 'Draft' | 'Disetujui' | 'Ditolak';
+  status: 'Draft' | 'Disetujui' | 'Ditolak' | 'Belanja';
   notes: string;
   dateAdded: string;
 }

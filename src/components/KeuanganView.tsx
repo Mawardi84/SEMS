@@ -12,9 +12,11 @@ import {
   Tag,
   ArrowUpRight,
   ArrowDownLeft,
-  FileText
+  FileText,
+  Download
 } from "lucide-react";
 import { KeuanganTransaction, SystemSetting } from "../types";
+import { exportToPDF } from "../utils/pdfExport";
 
 interface KeuanganViewProps {
   keuangan: KeuanganTransaction[];
@@ -29,6 +31,13 @@ export default function KeuanganView({
 }: KeuanganViewProps) {
   const [filterType, setFilterType] = useState<string>("Semua");
   const [filterCategory, setFilterCategory] = useState<string>("Semua");
+  const [isExportingPDF, setIsExportingPDF] = useState(false);
+
+  const handleExportPDF = async () => {
+    setIsExportingPDF(true);
+    await exportToPDF("printable-keuangan-area", `Buku-Kas-${new Date().toISOString().split('T')[0]}.pdf`);
+    setIsExportingPDF(false);
+  };
   
   // Modal states
   const [showModal, setShowModal] = useState(false);
@@ -119,15 +128,48 @@ export default function KeuanganView({
             Buku besar digital perbendaharaan RW 04 Ngabean. Catat seluruh pemasukan kas riil dan pengeluaran belanja panitia.
           </p>
         </div>
-        <button
-          id="btn-add-keuangan"
-          onClick={handleOpenAdd}
-          className="flex items-center gap-1 bg-red-700 hover:bg-red-800 text-white text-[11px] font-bold px-3 py-1.5 rounded shadow-xs transition-all duration-150 self-start md:self-auto uppercase tracking-wide"
-        >
-          <Plus className="w-3.5 h-3.5" />
-          Pencatatan Transaksi Manual
-        </button>
+        <div className="flex items-center gap-2 self-start md:self-auto">
+          <button
+            onClick={handleExportPDF}
+            disabled={isExportingPDF}
+            className="flex items-center gap-1 bg-white hover:bg-slate-50 text-slate-700 text-[11px] font-bold px-3 py-1.5 rounded border border-slate-200 shadow-xs transition-all duration-150 uppercase tracking-wide cursor-pointer disabled:opacity-50"
+          >
+            <Download className="w-3.5 h-3.5 text-slate-500" />
+            {isExportingPDF ? "Mengekspor..." : "Ekspor PDF"}
+          </button>
+          <button
+            id="btn-add-keuangan"
+            onClick={handleOpenAdd}
+            className="flex items-center gap-1 bg-red-700 hover:bg-red-800 text-white text-[11px] font-bold px-3 py-1.5 rounded shadow-xs transition-all duration-150 uppercase tracking-wide cursor-pointer"
+          >
+            <Plus className="w-3.5 h-3.5" />
+            Pencatatan Transaksi Manual
+          </button>
+        </div>
       </div>
+
+      {/* Printable Wrapper for High-Fidelity PDF Export */}
+      <div id="printable-keuangan-area" className="space-y-4 bg-white p-6 rounded-lg border border-slate-200">
+        
+        {/* Printable Document Title Header */}
+        <div className="border-b-[3px] border-double border-slate-900 pb-3 mb-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+          <div>
+            <h1 className="text-xs font-black font-serif tracking-wide uppercase text-slate-950">
+              LAPORAN ARUS KAS & BUKU KAS UMUM (TUNAI)
+            </h1>
+            <p className="text-[9px] text-slate-500 font-serif">
+              Sistem Manajemen Event Kemasyarakatan (SEMS) RW 04 Ngabean • HUT RI Ke-81
+            </p>
+          </div>
+          <div className="text-left sm:text-right">
+            <span className="text-[9px] font-mono text-slate-500 bg-slate-50 px-2 py-0.5 rounded border border-slate-100 block">
+              Tanggal Cetak: {new Date().toLocaleDateString("id-ID")}
+            </span>
+            <span className="text-[8px] text-slate-400 block mt-1">
+              Filter: Tipe ({filterType}) • Kategori ({filterCategory})
+            </span>
+          </div>
+        </div>
 
       {/* 2. Visual Balance cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -177,7 +219,7 @@ export default function KeuanganView({
       </div>
 
       {/* 3. Filter Toolbar */}
-      <div className="bg-white p-3 rounded-lg border border-slate-200 flex flex-wrap items-center gap-3 shadow-xs">
+      <div className="bg-white p-3 rounded-lg border border-slate-200 flex flex-wrap items-center gap-3 shadow-xs no-print">
         <div className="flex items-center gap-1.5 text-[11px] font-bold text-slate-600">
           <Filter className="w-3.5 h-3.5 text-slate-400" />
           <span>Saring Arus Kas:</span>
@@ -233,7 +275,7 @@ export default function KeuanganView({
               <th className="px-4 py-2 font-bold text-slate-600">Keterangan / Deskripsi</th>
               <th className="px-4 py-2 font-bold text-slate-600">Ref RKBA</th>
               <th className="px-4 py-2 font-bold text-slate-600 text-right">Nominal (Rp)</th>
-              <th className="px-4 py-2 font-bold text-slate-600 text-right">Aksi</th>
+              <th className="px-4 py-2 font-bold text-slate-600 text-right no-print">Aksi</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100 text-xs text-slate-700">
@@ -270,7 +312,7 @@ export default function KeuanganView({
                   }`}>
                     {isIncome ? "+" : "-"} {formatRp(t.amount)}
                   </td>
-                  <td className="px-4 py-2 text-right">
+                  <td className="px-4 py-2 text-right no-print">
                     {t.category === 'RKBA Belanja' && t.refId ? (
                       <span className="text-[9px] text-slate-400 italic" title="Terhubung dengan RKBA, hapus dari RKBA">Auto</span>
                     ) : (
@@ -296,6 +338,8 @@ export default function KeuanganView({
           </tbody>
         </table>
       </div>
+
+</div>
 
       {/* 5. MANUAL TRANSACTION MODAL */}
       {showModal && (
