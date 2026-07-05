@@ -11,8 +11,22 @@ import { SEMSData, SystemSetting, Panitia, Kegiatan, RKBAItem, NaturaItem, Keuan
 import { Award, AlertTriangle, RefreshCw, Menu } from "lucide-react";
 
 export default function App() {
-  const [currentView, setCurrentView] = useState<string>("dashboard");
+  const [currentView, setCurrentView] = useState<string>(() => {
+    try {
+      return localStorage.getItem("sems_current_view") || "dashboard";
+    } catch (e) {
+      return "dashboard";
+    }
+  });
   const [semsData, setSemsData] = useState<SEMSData | null>(null);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem("sems_current_view", currentView);
+    } catch (e) {
+      // Ignore errors if localStorage is not accessible
+    }
+  }, [currentView]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [isResetting, setIsResetting] = useState<boolean>(false);
   const [errorMessage, setErrorMessage] = useState<string>("");
