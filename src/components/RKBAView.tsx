@@ -14,13 +14,18 @@ import {
   DollarSign,
   HelpCircle,
   TrendingDown,
-  Download
+  Download,
+  Eye
 } from "lucide-react";
-import { RKBAItem, SystemSetting, KeuanganTransaction } from "../types";
+import { RKBAItem, SystemSetting, KeuanganTransaction, Kegiatan } from "../types";
 import { exportToPDF } from "../utils/pdfExport";
+import { exportToWord } from "../utils/wordExport";
+import { PDFPreviewModal } from "./PDFPreviewModal";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 
 interface RKBAViewProps {
   rkba: RKBAItem[];
+  kegiatan: Kegiatan[];
   settings: SystemSetting;
   keuangan: KeuanganTransaction[];
   onSaveRKBA: (action: 'add' | 'edit' | 'delete' | 'approve' | 'reject', data: RKBAItem) => Promise<void>;
@@ -30,23 +35,29 @@ interface RKBAViewProps {
 
 export default function RKBAView({
   rkba,
+  kegiatan,
   settings,
   keuangan,
   onSaveRKBA,
   onBelanjaItem,
   isRecordingBelanjaId
 }: RKBAViewProps) {
+  // Safety checks
+  const safeSettings = {
+    seksiList: settings?.seksiList || []
+  };
+
   // Filter States
   const [filterSeksi, setFilterSeksi] = useState<string>("Semua");
   const [filterStatus, setFilterStatus] = useState<string>("Semua");
   const [filterSource, setFilterSource] = useState<string>("Semua");
-
+  
   // Form / Modal states
   const [showModal, setShowModal] = useState(false);
   const [editingItem, setEditingItem] = useState<RKBAItem | null>(null);
   const [form, setForm] = useState<Omit<RKBAItem, 'id' | 'total' | 'dateAdded'>>({
     name: "",
-    seksi: settings.seksiList[0] || "Acara",
+    seksi: safeSettings.seksiList[0] || "Acara",
     qty: 1,
     unit: "Pcs",
     price: 10000,
@@ -58,12 +69,341 @@ export default function RKBAView({
   // Expanded AI Feedback states (id to boolean map)
   const [expandedAI, setExpandedAI] = useState<Record<string, boolean>>({});
   const [isExportingPDF, setIsExportingPDF] = useState(false);
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+  const [isAIModalOpen, setIsAIModalOpen] = useState(false);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [aiAnalysisResult, setAiAnalysisResult] = useState<string>("");
+  
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
+
+  const handleExportWord = async () => {
+    await exportToWord("printable-rkba-area", `Laporan-RKBA-${new Date().toISOString().split('T')[0]}`);
+    setIsPreviewOpen(false);
+  };
 
   const handleExportPDF = async () => {
     setIsExportingPDF(true);
     await exportToPDF("printable-rkba-area", `Laporan-RKBA-${new Date().toISOString().split('T')[0]}.pdf`);
     setIsExportingPDF(false);
+    setIsPreviewOpen(false);
   };
+
+  const renderPrintableContent = (isModal: boolean) => (
+    <div className="space-y-6 bg-white p-10 rounded-none border-none text-slate-900 print:bg-white print:text-black">
+        
+        {/* Printable Document Title Header */}
+        <div className="border-b-2 border-slate-900 pb-4 mb-6 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-2 print:border-b-2">
+          <div>
+            <h1 className="text-xl font-bold font-serif uppercase tracking-tight text-slate-950">
+              LAPORAN RKBA
+            </h1>
+            <p className="text-xs text-slate-600 font-serif mt-0.5">
+              Rencana Kebutuhan Barang & Anggaran - HUT RI Ke-81
+            </p>
+          </div>
+          <div className="text-left sm:text-right">
+            <span className="text-[10px] font-mono text-slate-500 block">
+              Tanggal Cetak: {new Date().toLocaleDateString("id-ID")}
+            </span>
+            <span className="text-[9px] text-slate-500 block mt-0.5">
+              Seksi: {filterSeksi} | Status: {filterStatus}
+            </span>
+          </div>
+        </div>
+
+        {/* 2. Mini Budget Summary Widgets */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="bg-white p-3 rounded-lg border border-slate-200 flex items-center gap-3 shadow-xs">
+          <div className="p-2 bg-slate-50 border border-slate-100 rounded">
+            <HelpCircle className="w-4 h-4 text-slate-500" />
+          </div>
+          <div>
+            <span className="text-[9px] text-slate-400 font-bold uppercase tracking-wider block">TOTAL USULAN (PROPOSED)</span>
+            <span className="text-sm font-mono font-bold text-slate-700">{formatRp(proposedTotal)}</span>
+          </div>
+        </div>
+
+        <div className="bg-white p-3 rounded-lg border border-slate-200 flex items-center gap-3 shadow-xs">
+          <div className="p-2 bg-red-50 border border-red-100 rounded">
+            <CheckCircle className="w-4 h-4 text-red-600" />
+          </div>
+          <div>
+            <span className="text-[9px] text-slate-400 font-bold uppercase tracking-wider block">DISETUJUI (APPROVED REALISASI)</span>
+            <span className="text-sm font-mono font-bold text-slate-800">{formatRp(approvedTotal)}</span>
+          </div>
+        </div>
+
+        <div className="bg-white p-3 rounded-lg border border-slate-200 flex items-center gap-3 shadow-xs">
+          <div className="p-2 bg-emerald-50 border border-emerald-100 rounded">
+            <ShoppingBag className="w-4 h-4 text-emerald-600" />
+          </div>
+          <div>
+            <span className="text-[9px] text-slate-400 font-bold uppercase tracking-wider block">Buku Belanja Terbayar</span>
+            <span className="text-sm font-mono font-bold text-emerald-700">
+              {formatRp(
+                keuangan
+                  .filter(t => t.type === 'Keluar' && t.category === 'RKBA Belanja')
+                  .reduce((sum, t) => sum + t.amount, 0)
+              )}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {/* 3. Visualisasi RKBA */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="bg-white border border-slate-200 rounded-lg p-4 shadow-sm break-inside-avoid">
+          <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider mb-4 border-b border-slate-100 pb-2">
+            Anggaran per Seksi
+          </h3>
+          <div className="h-64 w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart
+                data={rkbaChartData}
+                margin={{ top: 10, right: 10, left: 0, bottom: 20 }}
+              >
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                <XAxis 
+                  dataKey="seksi" 
+                  tick={{ fontSize: 10, fill: '#64748b' }} 
+                  axisLine={false} 
+                  tickLine={false}
+                  angle={-45}
+                  textAnchor="end"
+                  height={50}
+                />
+                <YAxis 
+                  tickFormatter={(value) => `Rp ${(value / 1000000).toFixed(1)}Jt`} 
+                  tick={{ fontSize: 10, fill: '#64748b' }}
+                  axisLine={false}
+                  tickLine={false}
+                />
+                <Tooltip 
+                  formatter={(value: number) => formatRp(value)}
+                  contentStyle={{ borderRadius: '8px', fontSize: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)' }}
+                />
+                <Legend wrapperStyle={{ fontSize: '11px', paddingTop: '10px' }} />
+                <Bar dataKey="usulan" name="Total Usulan" fill="#94a3b8" radius={[4, 4, 0, 0]} maxBarSize={40} />
+                <Bar dataKey="realisasi" name="Disetujui/Belanja" fill="#0f172a" radius={[4, 4, 0, 0]} maxBarSize={40} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        <div className="bg-white border border-slate-200 rounded-lg p-4 shadow-sm break-inside-avoid">
+          <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider mb-4 border-b border-slate-100 pb-2">
+            Proporsi Sumber Dana (Disetujui)
+          </h3>
+          <div className="h-64 w-full">
+            {rkbaSourceData.length > 0 ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={rkbaSourceData}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={60}
+                    outerRadius={80}
+                    paddingAngle={2}
+                    dataKey="value"
+                  >
+                    {rkbaSourceData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip 
+                    formatter={(value: number) => formatRp(value)}
+                    contentStyle={{ borderRadius: '8px', fontSize: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)' }}
+                  />
+                  <Legend wrapperStyle={{ fontSize: '11px' }} />
+                </PieChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="flex items-center justify-center h-full text-slate-400 text-xs font-medium">
+                Belum ada data disetujui.
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* 4. RKBA Items Table list */}
+      {isModal ? (
+        <div className="space-y-8 mt-8">
+          {safeSettings.seksiList.map(seksi => {
+            const seksiItems = filteredRKBA.filter(item => item.seksi === seksi);
+            if (seksiItems.length === 0) return null;
+            const subTotal = seksiItems.reduce((sum, item) => sum + item.total, 0);
+            return (
+              <div key={seksi} className="break-inside-avoid">
+                <h3 className="text-xs font-bold bg-slate-100 p-2 border border-slate-300 uppercase tracking-wide">
+                  SEKSI: {seksi}
+                </h3>
+                <table className="w-full text-left border-collapse border border-slate-300 mt-2">
+                  <thead>
+                    <tr className="bg-slate-50 text-[10px] font-bold uppercase tracking-wider border-b-2 border-slate-300">
+                      <th className="px-3 py-2 border-r border-slate-300 w-10 text-center">No</th>
+                      <th className="px-3 py-2 border-r border-slate-300">Kebutuhan / Uraian</th>
+                      <th className="px-3 py-2 border-r border-slate-300 w-24 text-center">Vol</th>
+                      <th className="px-3 py-2 border-r border-slate-300 w-32 text-right">Harga Satuan (Rp)</th>
+                      <th className="px-3 py-2 border-r border-slate-300 w-32 text-right">Jumlah (Rp)</th>
+                      <th className="px-3 py-2 w-28 text-center">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody className="text-xs">
+                    {seksiItems.map((item, idx) => (
+                      <tr key={item.id} className="border-b border-slate-200">
+                        <td className="px-3 py-2 border-r border-slate-300 text-center">{idx + 1}</td>
+                        <td className="px-3 py-2 border-r border-slate-300">{item.name}</td>
+                        <td className="px-3 py-2 border-r border-slate-300 text-center">{item.qty} {item.unit}</td>
+                        <td className="px-3 py-2 border-r border-slate-300 text-right">{formatRp(item.price).replace("Rp ", "")}</td>
+                        <td className="px-3 py-2 border-r border-slate-300 text-right font-semibold">{formatRp(item.total).replace("Rp ", "")}</td>
+                        <td className="px-3 py-2 text-center text-[10px]">{item.status}</td>
+                      </tr>
+                    ))}
+                    <tr className="bg-slate-50 font-bold border-t-2 border-slate-300">
+                      <td colSpan={4} className="px-3 py-2 border-r border-slate-300 text-right uppercase tracking-wider text-[11px]">Subtotal {seksi}</td>
+                      <td className="px-3 py-2 border-r border-slate-300 text-right">{formatRp(subTotal)}</td>
+                      <td></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            );
+          })}
+          
+          <div className="mt-8 border-4 border-slate-900 p-4 bg-slate-50 flex justify-between items-center break-inside-avoid">
+            <span className="text-sm font-black uppercase tracking-widest">TOTAL KESELURUHAN RAB</span>
+            <span className="text-lg font-black font-mono">{formatRp(filteredRKBA.reduce((sum, i) => sum + i.total, 0))}</span>
+          </div>
+          
+          <div className="mt-16 grid grid-cols-2 gap-8 text-center text-sm font-serif break-inside-avoid pb-8">
+            <div>
+              <p className="mb-16">Mengetahui,<br/>Ketua Panitia</p>
+              <p className="font-bold underline">_________________</p>
+            </div>
+            <div>
+              <p className="mb-16">Disetujui Oleh,<br/>Ketua RW 04 Ngabean</p>
+              <p className="font-bold underline">_________________</p>
+            </div>
+          </div>
+        </div>
+      ) : (
+        <div className="bg-white border border-slate-200 rounded-lg overflow-hidden shadow-sm">
+          <table className="w-full text-left border-collapse">
+            <thead>
+              <tr className="bg-slate-50 text-slate-900 font-sans text-[10px] uppercase tracking-wider border-b-2 border-slate-900 font-bold print:bg-white print:border-b-2 print:border-black">
+                <th className="px-4 py-3 text-left">Kebutuhan</th>
+                <th className="px-4 py-3 text-left">Volume</th>
+                <th className="px-4 py-3 text-left text-right">Harga Satuan</th>
+                <th className="px-4 py-3 text-left text-right">Total</th>
+                <th className="px-4 py-3 text-left">Sumber</th>
+                <th className="px-4 py-3 text-left">Status</th>
+                {!isModal && <th className="px-4 py-3 text-left print:hidden">Aksi</th>}
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-200 text-xs text-slate-900">
+              {(isModal ? filteredRKBA : currentItems).map((item, idx) => (
+                <tr key={item.id} className={`hover:bg-slate-50 transition-colors ${idx % 2 === 0 ? 'bg-white' : 'bg-slate-50/30'}`}>
+                  <td className="px-4 py-3 border-r border-slate-100">
+                    <div className="font-semibold text-slate-950">{item.name}</div>
+                    <div className="text-[9px] text-slate-500">{item.seksi}</div>
+                  </td>
+                  <td className="px-4 py-3 font-mono border-r border-slate-100">
+                    {item.qty} {item.unit}
+                  </td>
+                  <td className="px-4 py-3 font-mono border-r border-slate-100 text-right">
+                    {formatRp(item.price)}
+                  </td>
+                  <td className="px-4 py-3 font-semibold font-mono border-r border-slate-100 text-right text-indigo-700">
+                    {formatRp(item.total)}
+                  </td>
+                  <td className="px-4 py-3 text-[10px] border-r border-slate-100">
+                    <span className="px-2 py-0.5 rounded-full bg-slate-100 border border-slate-200 text-slate-600 font-medium">
+                      {item.fundingSource}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3 font-mono font-medium text-[10px] border-r border-slate-100">
+                    <span className={`px-2 py-0.5 rounded-full font-bold ${item.status === 'Disetujui' ? 'bg-emerald-100 text-emerald-700' : item.status === 'Belanja' ? 'bg-blue-100 text-blue-700' : item.status === 'Ditolak' ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700'}`}>
+                      {item.status}
+                    </span>
+                  </td>
+                  {!isModal && (
+                    <td className="px-4 py-3 print:hidden">
+                      {item.status === 'Draft' && (
+                        <div className="flex gap-1.5">
+                          <button 
+                            onClick={() => handleOpenEdit(item)} 
+                            title="Edit"
+                            className="p-1 text-blue-600 hover:text-blue-800 bg-blue-50 rounded"
+                          >
+                            <Edit className="w-3.5 h-3.5" />
+                          </button>
+                          <button 
+                            onClick={() => handleDelete(item)} 
+                            title="Hapus"
+                            className="p-1 text-red-600 hover:text-red-800 bg-red-50 rounded"
+                          >
+                            <Trash className="w-3.5 h-3.5" />
+                          </button>
+                          <button 
+                            onClick={() => handleApprove(item)} 
+                            title="Setujui"
+                            className="p-1 text-emerald-600 hover:text-emerald-800 bg-emerald-50 rounded"
+                          >
+                            <CheckCircle className="w-3.5 h-3.5" />
+                          </button>
+                          <button 
+                            onClick={() => handleReject(item)} 
+                            title="Tolak"
+                            className="p-1 text-red-600 hover:text-red-800 bg-red-50 rounded"
+                          >
+                            <XCircle className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      )}
+                    </td>
+                  )}
+                </tr>
+              ))}
+              {(isModal ? filteredRKBA : currentItems).length === 0 && (
+                <tr>
+                  <td colSpan={isModal ? 6 : 7} className="text-center py-6 text-slate-400 font-sans">
+                    Tidak ada item anggaran yang sesuai dengan filter saringan saat ini.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+          
+          {/* Pagination is hidden in print modal */}
+          {!isModal && totalPages > 1 && (
+            <div className="px-4 py-3 border-t border-slate-200 flex items-center justify-between">
+              <button
+                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                disabled={currentPage === 1}
+                className="text-[11px] font-bold text-slate-600 hover:text-red-700 disabled:opacity-50"
+              >
+                Sebelumnya
+              </button>
+              <span className="text-[11px] text-slate-500">
+                Halaman {currentPage} dari {totalPages}
+              </span>
+              <button
+                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                disabled={currentPage === totalPages}
+                className="text-[11px] font-bold text-slate-600 hover:text-red-700 disabled:opacity-50"
+              >
+                Selanjutnya
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
 
   const toggleExpandAI = (id: string) => {
     setExpandedAI(prev => ({
@@ -84,11 +424,69 @@ export default function RKBAView({
     return matchSeksi && matchStatus && matchSource;
   });
 
+  // Reset to first page when filters change
+  React.useEffect(() => {
+    setCurrentPage(1);
+  }, [filterSeksi, filterStatus, filterSource, rkba]);
+
+  // Data for chart
+  const rkbaChartData = React.useMemo(() => {
+    const seksiMap = new Map<string, { seksi: string, usulan: number, realisasi: number }>();
+    rkba.forEach(item => {
+      const seksi = item.seksi;
+      if (!seksiMap.has(seksi)) {
+        seksiMap.set(seksi, { seksi, usulan: 0, realisasi: 0 });
+      }
+      const current = seksiMap.get(seksi)!;
+      current.usulan += item.total;
+      
+      // Calculate realisasi based on keuangan transactions if possible, 
+      // or based on approved items in RKBA
+      if (item.status === 'Disetujui' || item.status === 'Belanja') {
+        current.realisasi += item.total;
+      }
+    });
+    
+    // Calculate actual spending from Keuangan that matches these items?
+    // Since RKBA item has realisasi from Keuangan? Actually Keuangan has refId to RKBA
+    // For a more accurate chart, let's use Keuangan for realisasi if we want actual spending.
+    keuangan.forEach(k => {
+      if (k.type === 'Keluar' && k.category === 'RKBA Belanja' && k.refId) {
+        const relatedRkba = rkba.find(r => r.id === k.refId);
+        if (relatedRkba && seksiMap.has(relatedRkba.seksi)) {
+          // Subtract from the assumed realisasi (which was the approved amount) 
+          // and add the actual spent amount. Actually, we might just track them separately.
+        }
+      }
+    });
+    
+    return Array.from(seksiMap.values());
+  }, [rkba, keuangan]);
+
+  const rkbaSourceData = React.useMemo(() => {
+    const sourceMap = new Map<string, number>();
+    rkba.forEach(item => {
+      // Only include approved or spent items for the source pie chart
+      if (item.status === 'Disetujui' || item.status === 'Belanja') {
+        const source = item.fundingSource || 'Lainnya';
+        sourceMap.set(source, (sourceMap.get(source) || 0) + item.total);
+      }
+    });
+    return Array.from(sourceMap.entries()).map(([name, value]) => ({ name, value }));
+  }, [rkba]);
+
+  const COLORS = ['#0f172a', '#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ef4444'];
+
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const currentItems = filteredRKBA.slice(indexOfFirstItem, indexOfLastItem);
+  const totalPages = Math.ceil(filteredRKBA.length / itemsPerPage);
+
   const handleOpenAdd = () => {
     setEditingItem(null);
     setForm({
       name: "",
-      seksi: settings.seksiList[0] || "Acara",
+      seksi: safeSettings.seksiList[0] || "Acara",
       qty: 1,
       unit: "Pcs",
       price: 10000,
@@ -141,6 +539,29 @@ export default function RKBAView({
     await onSaveRKBA('reject', item);
   };
 
+  const handleAnalyzeBudget = async () => {
+    setIsAIModalOpen(true);
+    setIsAnalyzing(true);
+    setAiAnalysisResult("");
+    try {
+      const response = await fetch("/api/sems/analyze-budget-ai", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ rkba, keuangan, kegiatan, settings })
+      });
+      const data = await response.json();
+      if (data.success) {
+        setAiAnalysisResult(data.analysis);
+      } else {
+        setAiAnalysisResult("Gagal menganalisis anggaran: " + data.error);
+      }
+    } catch (err: any) {
+      setAiAnalysisResult("Terjadi kesalahan jaringan: " + err.message);
+    } finally {
+      setIsAnalyzing(false);
+    }
+  };
+
   const formatRp = (num: number) => {
     return "Rp " + num.toLocaleString("id-ID");
   };
@@ -159,14 +580,27 @@ export default function RKBAView({
             Pengajuan kebutuhan, penganggaran seksi, audit kelayakan anggaran, serta persetujuan bendahara & ketua panitia.
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <button
-            onClick={handleExportPDF}
-            disabled={isExportingPDF}
-            className="flex items-center gap-1 bg-white hover:bg-slate-50 text-slate-700 text-[11px] font-bold px-3 py-1.5 rounded border border-slate-200 shadow-xs transition-all duration-150 uppercase tracking-wide cursor-pointer disabled:opacity-50"
+            onClick={() => setIsPreviewOpen(true)}
+            className="flex items-center gap-1 bg-indigo-600 hover:bg-indigo-700 text-white text-[11px] font-bold px-3 py-1.5 rounded shadow-xs transition-all duration-150 uppercase tracking-wide cursor-pointer"
           >
-            <Download className="w-3.5 h-3.5 text-slate-500" />
-            {isExportingPDF ? "Mengekspor..." : "Ekspor PDF"}
+            <Eye className="w-3.5 h-3.5" />
+            Pratinjau Cetak
+          </button>
+          <button
+            onClick={handleExportWord}
+            className="flex items-center gap-1 bg-blue-600 hover:bg-blue-700 text-white text-[11px] font-bold px-3 py-1.5 rounded shadow-xs transition-all duration-150 uppercase tracking-wide cursor-pointer"
+          >
+            <Download className="w-3.5 h-3.5" />
+            Unduh DOC
+          </button>
+          <button
+            onClick={handleAnalyzeBudget}
+            className="flex items-center gap-1 bg-amber-500 hover:bg-amber-600 text-white text-[11px] font-bold px-3 py-1.5 rounded shadow-xs transition-all duration-150 self-start md:self-auto uppercase tracking-wide cursor-pointer"
+          >
+            <Sparkles className="w-3.5 h-3.5" />
+            AI Smart Budget
           </button>
           <button
             id="btn-add-rkba"
@@ -176,68 +610,6 @@ export default function RKBAView({
             <Plus className="w-3.5 h-3.5" />
             Ajukan Kebutuhan Anggaran
           </button>
-        </div>
-      </div>
-
-      {/* Printable Wrapper for High-Fidelity PDF Export */}
-      <div id="printable-rkba-area" className="space-y-4 bg-white p-6 rounded-lg border border-slate-200">
-        
-        {/* Printable Document Title Header */}
-        <div className="border-b-[3px] border-double border-slate-950 pb-3 mb-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-          <div>
-            <h1 className="text-xs font-black font-serif tracking-wide uppercase text-slate-950">
-              LAPORAN RENCANA KEBUTUHAN BARANG & ANGGARAN (RKBA)
-            </h1>
-            <p className="text-[9px] text-slate-500 font-serif">
-              Sistem Manajemen Event Kemasyarakatan (SEMS) RW 04 Ngabean • HUT RI Ke-81
-            </p>
-          </div>
-          <div className="text-left sm:text-right">
-            <span className="text-[9px] font-mono text-slate-500 bg-slate-50 px-2 py-0.5 rounded border border-slate-100 block">
-              Tanggal Cetak: {new Date().toLocaleDateString("id-ID")}
-            </span>
-            <span className="text-[8px] text-slate-400 block mt-1">
-              Seksi: {filterSeksi} • Status: {filterStatus} • Sumber: {filterSource}
-            </span>
-          </div>
-        </div>
-
-        {/* 2. Mini Budget Summary Widgets */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="bg-white p-3 rounded-lg border border-slate-200 flex items-center gap-3 shadow-xs">
-          <div className="p-2 bg-slate-50 border border-slate-100 rounded">
-            <HelpCircle className="w-4 h-4 text-slate-500" />
-          </div>
-          <div>
-            <span className="text-[9px] text-slate-400 font-bold uppercase tracking-wider block">TOTAL USULAN (PROPOSED)</span>
-            <span className="text-sm font-mono font-bold text-slate-700">{formatRp(proposedTotal)}</span>
-          </div>
-        </div>
-
-        <div className="bg-white p-3 rounded-lg border border-slate-200 flex items-center gap-3 shadow-xs">
-          <div className="p-2 bg-red-50 border border-red-100 rounded">
-            <CheckCircle className="w-4 h-4 text-red-600" />
-          </div>
-          <div>
-            <span className="text-[9px] text-slate-400 font-bold uppercase tracking-wider block">DISETUJUI (APPROVED REALISASI)</span>
-            <span className="text-sm font-mono font-bold text-slate-800">{formatRp(approvedTotal)}</span>
-          </div>
-        </div>
-
-        <div className="bg-white p-3 rounded-lg border border-slate-200 flex items-center gap-3 shadow-xs">
-          <div className="p-2 bg-emerald-50 border border-emerald-100 rounded">
-            <ShoppingBag className="w-4 h-4 text-emerald-600" />
-          </div>
-          <div>
-            <span className="text-[9px] text-slate-400 font-bold uppercase tracking-wider block">Buku Belanja Terbayar</span>
-            <span className="text-sm font-mono font-bold text-emerald-700">
-              {formatRp(
-                keuangan
-                  .filter(t => t.type === 'Keluar' && t.category === 'RKBA Belanja')
-                  .reduce((sum, t) => sum + t.amount, 0)
-              )}
-            </span>
-          </div>
         </div>
       </div>
 
@@ -257,7 +629,7 @@ export default function RKBAView({
             className="text-[11px] bg-slate-50 border border-slate-200 focus:outline-none focus:border-red-500 rounded p-1 text-slate-700 font-semibold"
           >
             <option value="Semua">Semua Seksi</option>
-            {settings.seksiList.map(s => (
+            {safeSettings.seksiList.map(s => (
               <option key={s} value={s}>{s}</option>
             ))}
           </select>
@@ -310,147 +682,23 @@ export default function RKBAView({
         )}
       </div>
 
-      {/* 4. RKBA Items Table list */}
-      <div className="bg-white border border-slate-200 rounded-lg overflow-hidden shadow-sm">
-        <table className="w-full text-left border-collapse">
-          <thead>
-            <tr className="bg-slate-50 text-slate-500 font-sans text-[10px] uppercase tracking-wider border-b border-slate-200 font-bold">
-              <th className="px-4 py-2 font-bold text-slate-600">Kebutuhan / Seksi</th>
-              <th className="px-4 py-2 font-bold text-slate-600">Volume</th>
-              <th className="px-4 py-2 font-bold text-slate-600">Harga Satuan</th>
-              <th className="px-4 py-2 font-bold text-slate-600">Total Kebutuhan</th>
-              <th className="px-4 py-2 font-bold text-slate-600">Sumber Dana</th>
-              <th className="px-4 py-2 font-bold text-slate-600">Status</th>
-              <th className="px-4 py-2 font-bold text-slate-600 text-right no-print">Menu / Tindakan</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-slate-100 text-xs text-slate-700">
-            {filteredRKBA.map((item) => {
-              const hasBeenSpent = item.status === 'Belanja' || keuangan.some(t => t.refId === item.id);
-              const statusMap = {
-                "Draft": "bg-slate-100 text-slate-600 border-slate-200",
-                "Disetujui": "bg-red-100 text-red-700 border-red-200",
-                "Ditolak": "bg-rose-50 text-rose-600 border-rose-100",
-                "Belanja": "bg-emerald-100 text-emerald-700 border-emerald-200"
-              };
+      {renderPrintableContent(false)}
+
+      <div id="printable-rkba-area" className="hidden print:block">
+        {renderPrintableContent(true)}
+      </div>
+
+      <PDFPreviewModal 
+        isOpen={isPreviewOpen} 
+        onClose={() => setIsPreviewOpen(false)} 
+        title="Pratinjau Laporan RKBA" 
+        onDownload={handleExportPDF}
+        onExportWord={handleExportWord}
+      >
+        {renderPrintableContent(true)}
+      </PDFPreviewModal>
 
 
-
-              return (
-                <React.Fragment key={item.id}>
-                  <tr className="hover:bg-slate-50/40 transition-colors duration-150">
-                    <td className="px-4 py-2">
-                      <div>
-                        <span className="font-bold text-slate-800 text-xs block">{item.name}</span>
-                        <span className="text-[10px] font-mono font-medium text-slate-400 mt-0.5 block">
-                          Seksi: {item.seksi}
-                        </span>
-                      </div>
-                    </td>
-                    <td className="px-4 py-2 font-mono text-slate-600 font-bold">
-                      {item.qty} {item.unit}
-                    </td>
-                    <td className="px-4 py-2 font-mono text-slate-500">
-                      {formatRp(item.price)}
-                    </td>
-                    <td className="px-4 py-2 font-bold font-mono text-slate-800">
-                      {formatRp(item.total)}
-                    </td>
-                    <td className="px-4 py-2">
-                      <span className="bg-indigo-50 text-indigo-700 text-[9px] font-bold border border-indigo-100 px-1.5 py-0.5 rounded">
-                        {item.fundingSource}
-                      </span>
-                    </td>
-                    <td className="px-4 py-2">
-                      <span className={`text-[9px] font-mono font-bold px-1.5 py-0.5 rounded border ${statusMap[item.status]}`}>
-                        {item.status}
-                      </span>
-                    </td>
-
-                     {/* MENU & ACTIONS */}
-                     <td className="px-4 py-2 text-right no-print">
-                       <div className="flex justify-end items-center gap-1">
-                         
-                         {/* Approval workflow buttons for leadership */}
-                         {item.status === 'Draft' && (
-                           <>
-                             <button
-                               id={`approve-btn-${item.id}`}
-                               onClick={() => handleApprove(item)}
-                               title="Setujui Anggaran"
-                               className="p-1 text-emerald-600 hover:bg-emerald-50 rounded border border-emerald-100"
-                             >
-                               <CheckCircle className="w-3.5 h-3.5" />
-                             </button>
-                             <button
-                               id={`reject-btn-${item.id}`}
-                               onClick={() => handleReject(item)}
-                               title="Tolak Anggaran"
-                               className="p-1 text-rose-600 hover:bg-rose-50 rounded border border-rose-100"
-                             >
-                               <XCircle className="w-3.5 h-3.5" />
-                             </button>
-                           </>
-                         )}
-
-                         {/* RECORD BELANJA (SINGLE-CLICK TRANSAKSI) */}
-                         {item.status === 'Disetujui' && (
-                           <button
-                             id={`belanja-btn-${item.id}`}
-                             onClick={() => onBelanjaItem(item.id)}
-                             disabled={hasBeenSpent || isRecordingBelanjaId === item.id}
-                             className={`flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold font-sans border transition-all ${
-                               hasBeenSpent 
-                                 ? "bg-slate-50 text-slate-400 border-slate-200 cursor-not-allowed"
-                                 : "bg-emerald-600 hover:bg-emerald-700 text-white border-emerald-500 shadow-xs"
-                             }`}
-                           >
-                             <ShoppingBag className="w-3 h-3 shrink-0" />
-                             <span>
-                               {hasBeenSpent 
-                                 ? "Dibukukan" 
-                                 : isRecordingBelanjaId === item.id 
-                                   ? "Membukukan..." 
-                                   : "Belanjakan"}
-                             </span>
-                           </button>
-                         )}
-
-                         {/* Edit and Trash */}
-                         <button
-                           id={`edit-rkba-${item.id}`}
-                           onClick={() => handleOpenEdit(item)}
-                           className="p-1 text-slate-400 hover:text-slate-800 hover:bg-slate-100 rounded"
-                         >
-                           <Edit className="w-3.5 h-3.5" />
-                         </button>
-                         <button
-                           id={`delete-rkba-${item.id}`}
-                           onClick={() => handleDelete(item)}
-                           className="p-1 text-rose-500 hover:text-rose-700 hover:bg-rose-50 rounded"
-                         >
-                           <Trash className="w-3.5 h-3.5" />
-                         </button>
-
-                       </div>
-                     </td>
-                   </tr>
-
-                 </React.Fragment>
-               );
-             })}
-             {filteredRKBA.length === 0 && (
-               <tr>
-                 <td colSpan={7} className="text-center py-6 text-slate-400 font-sans">
-                   Tidak ada item anggaran yang sesuai dengan filter saringan saat ini.
-                 </td>
-               </tr>
-             )}
-           </tbody>
-         </table>
-       </div>
-
-       </div>
 
         {/* 5. ADD/EDIT ITEM MODAL */}
        {showModal && (
@@ -489,7 +737,7 @@ export default function RKBAView({
                      onChange={(e) => setForm({ ...form, seksi: e.target.value })}
                      className="w-full text-xs border border-slate-200 focus:border-red-500 focus:outline-none rounded p-1.5 bg-slate-50"
                    >
-                     {settings.seksiList.map(s => (
+                     {safeSettings.seksiList.map(s => (
                        <option key={s} value={s}>{s}</option>
                      ))}
                    </select>
@@ -578,6 +826,63 @@ export default function RKBAView({
                </div>
              </form>
            </div>
+        </div>
+      )}
+
+      {/* 6. AI SMART BUDGET MODAL */}
+      {isAIModalOpen && (
+        <div className="fixed inset-0 bg-slate-900/60 flex items-center justify-center z-50 p-4 backdrop-blur-xs">
+          <div className="bg-white rounded-xl w-full max-w-2xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden border border-slate-200 animate-in fade-in zoom-in-95 duration-200">
+            <div className="bg-amber-500 text-white px-5 py-4 flex justify-between items-center">
+              <h3 className="font-sans font-bold text-sm uppercase tracking-wider flex items-center gap-2">
+                <Sparkles className="w-4 h-4" />
+                AI Smart Budget Analysis
+              </h3>
+              <button 
+                onClick={() => setIsAIModalOpen(false)}
+                className="text-white/80 hover:text-white font-bold"
+              >
+                ✕
+              </button>
+            </div>
+            
+            <div className="p-6 overflow-y-auto flex-1 bg-slate-50">
+              {isAnalyzing ? (
+                <div className="flex flex-col items-center justify-center py-12 text-slate-500">
+                  <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-amber-500 mb-4"></div>
+                  <p className="text-sm font-semibold animate-pulse">AI sedang menganalisis kewajaran harga & proporsi anggaran...</p>
+                </div>
+              ) : (
+                <div className="prose prose-sm prose-slate max-w-none 
+                  prose-headings:font-bold prose-headings:text-slate-800 
+                  prose-h1:text-lg prose-h2:text-md prose-h3:text-sm 
+                  prose-p:text-slate-600 prose-li:text-slate-600
+                  prose-strong:text-slate-800 prose-strong:font-bold"
+                >
+                  <div dangerouslySetInnerHTML={{ 
+                    __html: aiAnalysisResult
+                      .replace(/^### (.*$)/gim, '<h3>$1</h3>')
+                      .replace(/^## (.*$)/gim, '<h2>$1</h2>')
+                      .replace(/^# (.*$)/gim, '<h1>$1</h1>')
+                      .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                      .replace(/\*(.*?)\*/g, '<em>$1</em>')
+                      .replace(/^\- (.*$)/gim, '<ul><li>$1</li></ul>')
+                      .replace(/<\/ul>\n<ul>/gim, '')
+                      .replace(/\n/g, '<br/>')
+                  }} />
+                </div>
+              )}
+            </div>
+            
+            <div className="p-4 bg-white border-t border-slate-200 flex justify-end">
+              <button
+                onClick={() => setIsAIModalOpen(false)}
+                className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded shadow-xs transition-colors uppercase tracking-wide"
+              >
+                Tutup Analisis
+              </button>
+            </div>
+          </div>
         </div>
       )}
 

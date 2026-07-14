@@ -1,0 +1,1868 @@
+import React, { useState, useEffect } from "react";
+import { 
+  TrendingUp, 
+  CheckSquare, 
+  Clock, 
+  AlertCircle, 
+  Play, 
+  Check, 
+  RefreshCw, 
+  Clipboard, 
+  Download, 
+  Users, 
+  Info,
+  Calendar,
+  Layers,
+  ArrowUpRight,
+  ClipboardCheck,
+  FileText,
+  Printer,
+  Palette,
+  Type,
+  Award,
+  Sparkles,
+  ShieldCheck,
+  Upload,
+  X,
+  Image
+} from "lucide-react";
+import { SeksiTask, SystemSetting, KeuanganTransaction, RKBAItem, Panitia } from "../types";
+import { exportToPDF } from "../utils/pdfExport";
+import { PDFPreviewModal } from "./PDFPreviewModal";
+import OrgChart from "./OrgChart";
+import DocumentPreviewRenderer from "./DocumentPreviewRenderer";
+import LPJPreview from "./LPJPreview";
+
+interface ProposalViewProps {
+  tasks: SeksiTask[];
+  settings: SystemSetting;
+  keuangan: KeuanganTransaction[];
+  rkba: RKBAItem[];
+  panitia: Panitia[];
+  onToggleTaskStatus: (taskId: string) => Promise<void>;
+}
+
+export default function ProposalView({
+  tasks,
+  settings,
+  keuangan,
+  rkba,
+  panitia,
+  onToggleTaskStatus
+}: ProposalViewProps) {
+  // Safety checks for props to prevent crashes
+  const safeTasks = tasks || [];
+  const safeRKBA = rkba || [];
+  const safeSettings: SystemSetting = {
+    id: settings?.id || "temp-id",
+    rtList: settings?.rtList || [],
+    seksiList: settings?.seksiList || [],
+    targetIuranPerRT: settings?.targetIuranPerRT || 0,
+    paguAnggaranSeksi: settings?.paguAnggaranSeksi || {},
+    sheetId: settings?.sheetId || "",
+    sheetApiKey: settings?.sheetApiKey || "",
+    themeColor: settings?.themeColor || "#ff0000"
+  };
+  const safePanitia = panitia || [];
+  const safeKeuangan = keuangan || [];
+
+  const [proposalMarkdown, setProposalMarkdown] = useState<string>("");
+  const [showLPJConsole, setShowLPJConsole] = useState(false);
+  const [consoleLog, setConsoleLog] = useState<string[]>([]);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [copiedLPJ, setCopiedLPJ] = useState(false);
+  const [isExportingPDF, setIsExportingPDF] = useState(false);
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+
+  // Custom LPJ Template settings & inputs
+  const [selectedTemplate, setSelectedTemplate] = useState<"formal" | "ringkas" | "sponsor">("formal");
+  
+  // Sponsor Package states
+  const [sponsorshipPackages, setSponsorshipPackages] = useState<{ name: string; benefit: string; price?: number }[]>([
+    { name: "Platinum", benefit: "Logo eksklusif pada seluruh media promosi, Ad-lib khusus, Booth besar.", price: 3000000 },
+    { name: "Gold", benefit: "Logo pada spanduk utama, Penyebutan nama, Booth standar.", price: 2500000 },
+    { name: "Silver", benefit: "Logo berukuran kecil pada banner, Penyebutan nama.", price: 1500000 }
+  ]);
+
+  const [namaRW, setNamaRW] = useState<string>("RW 04 Ngabean");
+  const [namaKegiatan, setNamaKegiatan] = useState<string>("Peringatan HUT RI Ke-81");
+  const [tanggalLPJ, setTanggalLPJ] = useState<string>("17 Agustus 2026");
+  const [namaKetua, setNamaKetua] = useState<string>("");
+  const [namaSekretaris, setNamaSekretaris] = useState<string>("");
+  const [namaBendahara, setNamaBendahara] = useState<string>("");
+  const [namaRWKetua, setNamaRWKetua] = useState<string>("");
+
+  // Auto-populate committee states when the panitia prop loads
+  useEffect(() => {
+    if (safePanitia && safePanitia.length > 0) {
+      const k = safePanitia.find(p => p.role.toLowerCase() === "ketua" || p.role.toLowerCase().includes("ketua panitia"));
+      if (k && !namaKetua) setNamaKetua(k.name);
+      
+      const s = safePanitia.find(p => p.role.toLowerCase() === "sekretaris" || p.role.toLowerCase().includes("sekretaris"));
+      if (s && !namaSekretaris) setNamaSekretaris(s.name);
+      
+      const b = safePanitia.find(p => p.role.toLowerCase() === "bendahara" || p.role.toLowerCase().includes("bendahara"));
+      if (b && !namaBendahara) setNamaBendahara(b.name);
+      
+      const r = safePanitia.find(p => p.role.toLowerCase().includes("rw") || p.role.toLowerCase().includes("pelindung") || p.role.toLowerCase().includes("pembina"));
+      if (r && !namaRWKetua) setNamaRWKetua(r.name);
+    }
+  }, [safePanitia]);
+
+  // Custom LPJ Styling states
+  const [paperTheme, setPaperTheme] = useState<"classic" | "creamy" | "minimal" | "green-gold">("classic");
+  const [fontStyle, setFontStyle] = useState<"poppins" | "arial" | "mono">("poppins");
+  const [showWatermark, setShowWatermark] = useState<boolean>(true);
+  const [showStamp, setShowStamp] = useState<boolean>(true);
+
+  // Logo HUT RI and offline fallback states
+  const [eventLogo, setEventLogo] = useState<string>(() => {
+    try {
+      return localStorage.getItem("sems_lpj_logo") || "";
+    } catch (e) {
+      return "";
+    }
+  });
+  const [useMockData, setUseMockData] = useState<boolean>(false);
+
+  // 1. Compute RT Contributions
+  const rtCollections = (settings?.rtList || []).map((rtName) => {
+    const collected = (keuangan || [])
+      .filter((t) => t.type === "Masuk" && t.category === "Iuran RT" && (t.notes || "").toLowerCase().includes(rtName.toLowerCase()))
+      .reduce((sum, t) => sum + t.amount, 0);
+
+    const naturaValue = 0;
+
+    const totalContribution = collected + naturaValue;
+    const targetIuran = settings?.targetIuranPerRT || 0;
+    const percent = targetIuran > 0 ? Math.min(100, Math.round((collected / targetIuran) * 100)) : 0;
+
+    let status = "Belum Mulai";
+    let statusClass = "bg-slate-100 text-slate-500 border-slate-200";
+    if (targetIuran > 0 && collected >= targetIuran) {
+      status = "LUNAS";
+      statusClass = "bg-emerald-100 text-emerald-700 border-emerald-200";
+    } else if (collected > 0) {
+      status = "Kurang";
+      statusClass = "bg-amber-100 text-amber-700 border-amber-200";
+    }
+
+    return {
+      name: rtName,
+      collected,
+      naturaValue,
+      totalContribution,
+      percent,
+      status,
+      statusClass
+    };
+  });
+
+  const formatRp = (num: number) => {
+    return "Rp " + num.toLocaleString("id-ID");
+  };
+
+  const generateLocalLPJ = (templateType: "formal" | "ringkas" | "sponsor", useMock: boolean) => {
+    const tanggalProposal = new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+    
+    // Use mock data if requested
+    const rkbaTotal = useMock ? 15000000 : (rkba || []).reduce((sum, r) => sum + r.total, 0);
+    const totalPemasukan = useMock ? 16500000 : (keuangan || []).filter(t => t.type === 'Masuk').reduce((sum, t) => sum + t.amount, 0);
+
+    if (templateType === "formal") {
+      return `# PROPOSAL KEGIATAN
+${namaKegiatan}
+${useMock ? "(Data Simulasi)" : ""}
+
+---
+
+### KATA PENGANTAR
+
+Puji syukur kami panjatkan kepada Tuhan Yang Maha Esa atas tersusunnya proposal kegiatan ${namaKegiatan} di wilayah ${namaRW} Kelurahan Ngabean Semarang. Proposal ini disusun untuk memberikan gambaran menyeluruh tentang rencana kegiatan, kebutuhan anggaran, dan target pencapaian yang akan dilaksanakan.
+
+Semoga proposal ini dapat menjadi acuan bersama dalam mensukseskan kegiatan warga yang kita cintai ini.
+
+Semarang, ${tanggalProposal}
+Panitia Pelaksana
+
+---
+
+### DAFTAR ISI
+
+1. Judul Utama
+2. Kata Pengantar
+3. Bab I. Pendahuluan
+4. Bab II. Susunan Panitia
+5. Bab III. Rencana Program Kerja
+6. Bab IV. Rencana Anggaran Biaya (RAB)
+7. Bab V. Penawaran Kerjasama Sponsorship
+8. Bab VI. Penutup
+
+---
+
+### BAB I. PENDAHULUAN
+
+**1. Latar Belakang**
+Kegiatan ${namaKegiatan} ini digagas sebagai wujud kepedulian dan kebersamaan warga ${namaRW}. Melalui kegiatan ini, kami berharap dapat mempererat tali silaturahmi, menumbuhkan jiwa gotong royong, serta meningkatkan kesejahteraan lingkungan.
+
+**2. Tujuan Kegiatan**
+- Membangun kerukunan antar warga.
+- Menjadi wadah kreativitas dan kolaborasi positif.
+- Meningkatkan semangat partisipasi masyarakat dalam program lingkungan.
+
+---
+
+### BAB II. SUSUNAN PANITIA
+
+Struktur organisasi kepanitiaan telah dibentuk untuk memastikan setiap bidang tugas memiliki penanggung jawab yang kompeten. Berikut adalah bagan struktur organisasi panitia pelaksana kegiatan.
+
+---
+
+### BAB III. RENCANA PROGRAM KERJA
+
+Kepanitiaan ini telah menyusun serangkaian agenda kegiatan yang akan dilaksanakan oleh berbagai seksi. Berikut adalah daftar program kerja yang telah dicanangkan untuk mensukseskan acara.
+
+---
+
+### BAB IV. RENCANA ANGGARAN BIAYA (RAB)
+
+Untuk merealisasikan seluruh program kerja yang telah disusun, berikut adalah proyeksi kebutuhan dana dan rencana pendanaan (Rencana Anggaran Biaya).
+
+---
+
+### BAB V. PENAWARAN KERJASAMA SPONSORSHIP
+
+Kami menawarkan beberapa tingkatan kerjasama yang dapat disesuaikan dengan fokus promosi mitra donatur/sponsor:
+
+{{SPONSORSHIP_TABLE}}
+
+---
+
+### BAB VI. PENUTUP
+
+Demikian proposal kegiatan ${namaKegiatan} ini kami susun. Besar harapan kami atas partisipasi, dukungan, dan bantuan dari seluruh pihak, baik moril maupun materiil, demi kelancaran dan kesuksesan kegiatan ini. Atas perhatian dan kerjasama yang baik, kami ucapkan terima kasih.
+
+Semarang, ${tanggalProposal}
+`;
+    } else if (templateType === "sponsor") {
+      return `# PROPOSAL PENAWARAN KERJASAMA SPONSORSHIP
+${namaKegiatan.toUpperCase()}
+${useMock ? "(Data Simulasi)" : ""}
+
+---
+
+### BAB I. PENDAHULUAN
+
+Kegiatan ini merupakan sarana strategis bagi perusahaan Anda untuk berinteraksi langsung dengan komunitas, meningkatkan *brand awareness*, serta menunjukkan komitmen sosial perusahaan di tengah masyarakat.
+
+---
+
+### BAB II. SUSUNAN PANITIA
+
+Kepanitiaan yang solid telah dibentuk untuk menjamin profesionalitas eksekusi kegiatan dan akuntabilitas kerjasama sponsorship.
+
+---
+
+### BAB III. RENCANA PROGRAM KERJA
+
+Berikut adalah rincian agenda kegiatan yang akan menjadi wadah bagi eksposur brand perusahaan Anda di tengah masyarakat.
+
+---
+
+### BAB IV. RENCANA ANGGARAN BIAYA (RAB)
+
+Proyeksi anggaran disusun secara transparan dan akuntabel untuk memastikan efektivitas setiap rupiah yang diinvestasikan oleh mitra sponsor.
+
+---
+
+### BAB V. PENAWARAN KERJASAMA SPONSORSHIP
+
+Kami menawarkan beberapa tingkatan kerjasama yang dapat disesuaikan dengan fokus promosi perusahaan Anda:
+
+| Paket | Harga | Benefit |
+| :--- | :--- | :--- |
+${sponsorshipPackages.map(p => `| **${p.name}** | Rp ${p.price ? p.price.toLocaleString('id-ID') : 0} | ${p.benefit} |`).join('\n')}
+
+---
+
+### BAB VI. PENUTUP
+
+
+Demikian proposal penawaran kerjasama ini kami sampaikan. Besar harapan kami agar perusahaan Anda dapat menjadi bagian dari kesuksesan ${namaKegiatan}.
+
+Atas perhatian, dukungan, dan kerjasamanya, kami ucapkan terima kasih.
+
+Semarang, ${tanggalProposal}
+
+**Panitia Pelaksana ${namaKegiatan}**
+`;
+    } else {
+      return `# EXECUTIVE SUMMARY PROPOSAL
+${namaKegiatan} - ${namaRW}
+${useMock ? "(Data Simulasi)" : ""}
+
+**1. Deskripsi Singkat**
+Proposal ini diajukan untuk kegiatan ${namaKegiatan} guna mempererat kerukunan warga ${namaRW}.
+
+**2. Rangkuman Anggaran**
+Total Rencana Anggaran Biaya (RAB) telah disusun secara efisien untuk mendukung seluruh program kerja panitia.
+Total RAB: ${formatRp(rkbaTotal)}
+
+**3. Harapan & Dukungan**
+Kami sangat mengharapkan dukungan penuh dari warga dan donatur untuk merealisasikan acara ini bersama-sama.
+
+Semarang, ${tanggalProposal}
+`;
+    }
+  };
+  const triggerLPJGeneration = async () => {
+    setShowLPJConsole(true);
+    setIsGenerating(true);
+    setProposalMarkdown("");
+    setConsoleLog([]);
+
+    const logStep = (msg: string, delay: number) => {
+      return new Promise<void>((resolve) => {
+        setTimeout(() => {
+          setConsoleLog((prev) => [...prev, `[${new Date().toLocaleTimeString()}] ${msg}`]);
+          resolve();
+        }, delay);
+      });
+    };
+
+    await logStep("Inisialisasi Pembuatan Dokumen Proposal...", 150);
+    await logStep("Menghubungkan ke basis data internal (Single Source of Truth)...", 200);
+    await logStep("Mengagregasi rencana kebutuhan anggaran: menghitung proyeksi biaya...", 250);
+    await logStep("Menganalisis matriks progress program kerja dari seluruh seksi...", 250);
+    await logStep("Menyusun draf rekomendasi kemandirian kegiatan...", 150);
+
+    const report = generateLocalLPJ(selectedTemplate, useMockData);
+    setProposalMarkdown(report);
+    setIsGenerating(false);
+    await logStep("Sukses! Dokumen Proposal otomatis telah berhasil dirumuskan.", 100);
+  };
+
+  const triggerAILPJGeneration = async () => {
+    setShowLPJConsole(true);
+    setIsGenerating(true);
+    setProposalMarkdown("");
+    setConsoleLog([]);
+
+    const logStep = (msg: string, delay: number) => {
+      return new Promise<void>((resolve) => {
+        setTimeout(() => {
+          setConsoleLog((prev) => [...prev, `[${new Date().toLocaleTimeString()}] ${msg}`]);
+          resolve();
+        }, delay);
+      });
+    };
+
+    try {
+      await logStep("Menginisialisasi Mesin Kecerdasan Buatan Gemini AI...", 150);
+      await logStep("Mengonsolidasikan basis data rill rencana anggaran (RKBA) dan progres progja...", 200);
+      await logStep("Memetakan target kontribusi & sponsorship ke dalam variabel analisis...", 200);
+      await logStep("Membangun konteks instruksi penulisan proposal profesional (Bahasa Indonesia)...", 150);
+      await logStep("Mengirim muatan data rill ke model gemini-3.5-flash...", 250);
+
+      const response = await fetch("/api/sems/generate-proposal-ai", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          templateType: selectedTemplate,
+          namaKegiatan,
+          namaRW,
+          tanggalProposal: tanggalLPJ,
+          namaKetua,
+          namaSekretaris,
+          namaBendahara,
+          namaRWKetua,
+          sponsorshipPackages,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (data.success && data.proposal) {
+        setProposalMarkdown(data.proposal);
+        await logStep("Analisis mendalam selesai! AI sukses menulis naskah Proposal yang kaya kosa kata.", 100);
+      } else {
+        throw new Error(data.error || "Gagal memproses draf Proposal dari AI.");
+      }
+    } catch (err: any) {
+      console.error(err);
+      
+      let userFriendlyMessage = "Gagal berkomunikasi dengan server AI.";
+      if (err.message && err.message.includes("429")) {
+        userFriendlyMessage = "⌛ Kapasitas AI penuh. Mengaktifkan generator draf lokal...";
+      } else {
+        userFriendlyMessage = `⚠️ Error: ${err.message || "Gagal memproses draf."}`;
+      }
+      
+      await logStep(userFriendlyMessage, 100);
+      await logStep("Mengaktifkan mode penulisan aman offline (Draf Lokal)...", 150);
+      const report = generateLocalLPJ(selectedTemplate, useMockData);
+      setProposalMarkdown(report);
+      await logStep("Sukses! Draf Proposal standar lokal berhasil dirumuskan sebagai cadangan.", 100);
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  const copyLPJToClipboard = () => {
+    if (!proposalMarkdown) return;
+    const sponsorshipTable = `| Paket | Harga | Benefit |\n| :--- | :--- | :--- |\n${(sponsorshipPackages || []).map(p => `| **${p.name}** | Rp ${p.price ? p.price.toLocaleString('id-ID') : 0} | ${p.benefit} |`).join('\n')}`;
+    const textToCopy = proposalMarkdown.replace("{{SPONSORSHIP_TABLE}}", sponsorshipTable);
+    navigator.clipboard.writeText(textToCopy);
+    setCopiedLPJ(true);
+    setTimeout(() => setCopiedLPJ(false), 2000);
+  };
+
+  const handleExportPDF = async () => {
+    if (!namaKegiatan || !namaKetua || !namaRWKetua) {
+      alert("Mohon lengkapi data identitas proposal (Nama Kegiatan, Ketua Panitia, Ketua RW) sebelum export.");
+      return;
+    }
+    setIsExportingPDF(true);
+    await exportToPDF("printable-lpj-paper", `Proposal-${namaKegiatan.replace(/\s+/g, "-")}.pdf`);
+    setIsExportingPDF(false);
+    setIsPreviewOpen(false);
+  };
+
+  return (
+    <div className="space-y-5">
+      <PDFPreviewModal 
+        isOpen={isPreviewOpen} 
+        onClose={() => setIsPreviewOpen(false)} 
+        title="Pratinjau Proposal" 
+        onDownload={handleExportPDF}
+      >
+        <div className="space-y-8 print:space-y-0">
+           {/* Need to copy the content of printable-lpj-paper here */}
+        </div>
+      </PDFPreviewModal>
+      
+      {/* 1. Header Area */}
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white p-4 rounded-lg shadow-sm border border-slate-200">
+        <div>
+          <h2 className="text-sm font-extrabold text-slate-800 flex items-center gap-2 uppercase tracking-wide">
+            <TrendingUp className="w-4 h-4 text-red-600" />
+            Monitoring Progress, Proposal & LPJ
+          </h2>
+          <p className="text-[11px] text-slate-500 mt-0.5">
+            Pantau rincian tugas, susun proposal, dan laporan pertanggungjawaban (LPJ).
+          </p>
+        </div>
+      </div>
+
+      {/* Org Chart */}
+      <div className="bg-white p-4 rounded-lg shadow-sm border border-slate-200">
+        <OrgChart panitia={safePanitia} settings={safeSettings} />
+      </div>
+
+      {/* Grid: Tasks & Iuran RT */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        
+        {/* Card Left: Seksi Tasks list */}
+        <div className="bg-white p-4 rounded-lg shadow-sm border border-slate-200">
+          <div className="flex justify-between items-center mb-3">
+            <div>
+              <h3 className="font-sans font-extrabold text-slate-800 text-xs uppercase tracking-wider">Progress Program Kerja (Tugas)</h3>
+              <p className="text-[11px] text-slate-500">Klik status untuk mengubah progres (Belum &rarr; Proses &rarr; Selesai)</p>
+            </div>
+            <span className="text-[9px] text-slate-500 font-sans font-bold bg-slate-100 border border-slate-200 px-1.5 py-0.5 rounded uppercase tracking-wide">
+              Total: {tasks.length} Program
+            </span>
+          </div>
+
+          <div className="space-y-2.5 max-h-[420px] overflow-y-auto pr-1">
+            {tasks.map((task) => {
+              let statusColor = "bg-slate-50 border-slate-200 text-slate-600";
+              if (task.status === "Proses") statusColor = "bg-amber-50 border-amber-200 text-amber-700";
+              else if (task.status === "Selesai") statusColor = "bg-emerald-50 border-emerald-200 text-emerald-700 font-bold";
+
+              return (
+                <div 
+                  key={task.id} 
+                  className="p-2.5 border border-slate-200 bg-slate-50/10 hover:bg-white hover:shadow-xs rounded flex items-center justify-between gap-4 transition-all duration-150"
+                >
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-[9px] font-bold text-red-700 bg-red-50 border border-red-100 px-1 py-0.2 rounded uppercase tracking-wide font-mono">
+                        {task.seksi}
+                      </span>
+                      <span className="text-xs font-bold text-slate-800 line-clamp-1">{task.taskName}</span>
+                    </div>
+                    <div className="flex items-center gap-3 text-[9px] text-slate-400 font-sans">
+                      <span>PIC: <strong className="text-slate-600 font-medium">{task.assignedTo}</strong></span>
+                      <span className="flex items-center gap-1">
+                        <Calendar className="w-3 h-3 text-slate-400" />
+                        <span>Deadline: {task.deadline}</span>
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Toggleable Action pill */}
+                  <button
+                    id={`toggle-task-${task.id}`}
+                    onClick={() => onToggleTaskStatus(task.id)}
+                    className={`flex items-center gap-1 border px-2 py-1 rounded text-[9px] font-sans font-bold tracking-wide uppercase hover:opacity-85 shadow-2xs transition-all ${statusColor}`}
+                  >
+                    {task.status === "Selesai" ? (
+                      <Check className="w-3 h-3 shrink-0 text-emerald-600" />
+                    ) : (
+                      <Clock className="w-3 h-3 shrink-0 text-amber-500 animate-pulse" />
+                    )}
+                    <span>{task.status}</span>
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Card Right: Iuran RT Board */}
+        <div className="bg-white p-4 rounded-lg shadow-sm border border-slate-200 flex flex-col justify-between">
+          <div>
+            <h3 className="font-sans font-extrabold text-slate-800 text-xs uppercase tracking-wider mb-1">Papan Kontribusi Wilayah (RT)</h3>
+            <p className="text-[11px] text-slate-500 mb-3">Laporan rincian setoran kas tunai per RT 01 - RT 07 Ngabean</p>
+
+            <div className="space-y-2.5 max-h-[380px] overflow-y-auto pr-1">
+              {rtCollections.map((rt) => (
+                <div key={rt.name} className="p-2 bg-slate-50/50 rounded border border-slate-200 flex items-center justify-between gap-4">
+                  <div className="space-y-1 flex-1">
+                    <div className="flex justify-between items-center text-[11px]">
+                      <span className="font-bold text-slate-800">{rt.name} Ngabean</span>
+                      <span className="font-mono text-slate-500 font-bold">{formatRp(rt.collected)} / {formatRp(settings?.targetIuranPerRT || 0)}</span>
+                    </div>
+                    <div className="relative w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                      <div 
+                        className="h-full bg-emerald-500 rounded-full transition-all duration-300"
+                        style={{ width: `${rt.percent}%` }}
+                      />
+                    </div>
+                    {rt.naturaValue > 0 && (
+                      <span className="text-[8px] text-amber-700 font-bold uppercase tracking-wide block">
+                        + Kontribusi Natura RT Senilai: {formatRp(rt.naturaValue)}
+                      </span>
+                    )}
+                  </div>
+
+                  <span className={`text-[9px] font-mono font-bold px-1.5 py-0.5 rounded border shrink-0 ${rt.statusClass}`}>
+                    {rt.status}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="mt-3 pt-3 border-t border-slate-200 flex justify-between items-center text-[11px]">
+            <span className="text-slate-400">Ketentuan Target RT:</span>
+            <span className="font-bold text-slate-700">Rp {(settings?.targetIuranPerRT || 0).toLocaleString("id-ID")} (Kas Tunai) / RT</span>
+          </div>
+        </div>
+
+      </div>
+
+      {/* Proposal Generator module */}
+      <div className="bg-white p-4 rounded-lg shadow-sm border border-slate-200 space-y-4">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+          <div>
+            <h3 className="font-sans font-extrabold text-slate-800 text-xs uppercase tracking-wider flex items-center gap-1.5">
+              <FileText className="w-4 h-4 text-red-600" />
+              Penyusunan & Pengaturan Dokumen Proposal
+            </h3>
+            <p className="text-[11px] text-slate-500 mt-0.5">
+              Pilih dari berbagai template proposal formal dan sesuaikan data tanda tangan pengurus secara real-time.
+            </p>
+          </div>
+          <div className="flex gap-2 w-full md:w-auto">
+            <select
+              value={selectedTemplate}
+              onChange={(e) => setSelectedTemplate(e.target.value as any)}
+              className="text-xs border border-slate-200 focus:border-red-500 focus:outline-none rounded px-3 py-2 bg-slate-50 font-bold text-slate-700"
+            >
+              <option value="formal">Template Proposal Resmi (Lengkap)</option>
+              <option value="ringkas">Template Proposal Ringkas</option>
+              <option value="sponsor">Template Proposal Sponsor</option>
+            </select>
+            <button
+              id="btn-generate-proposal-ai"
+              onClick={triggerAILPJGeneration}
+              disabled={isGenerating}
+              className="flex items-center justify-center gap-1.5 bg-gradient-to-r from-red-600 to-amber-500 hover:from-red-700 hover:to-amber-600 text-white font-extrabold text-[11px] px-4 py-2 rounded shadow-md transition-all duration-150 border border-transparent uppercase tracking-wide disabled:opacity-50 shrink-0 cursor-pointer"
+            >
+              {isGenerating ? (
+                <RefreshCw className="w-3.5 h-3.5 text-white animate-spin" />
+              ) : (
+                <Sparkles className="w-3.5 h-3.5 text-amber-200" />
+              )}
+              {isGenerating ? "Menganalisis..." : "Generate dengan AI ✨"}
+            </button>
+            <button
+              id="btn-generate-proposal-local"
+              onClick={triggerLPJGeneration}
+              disabled={isGenerating}
+              className="flex items-center justify-center gap-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-[11px] px-3.5 py-2 rounded border border-slate-200 uppercase tracking-wide disabled:opacity-50 shrink-0 cursor-pointer"
+            >
+              <FileText className="w-3.5 h-3.5 text-slate-500" />
+              Draf Cepat
+            </button>
+          </div>
+        </div>
+        {selectedTemplate === "sponsor" && (
+          <div className="flex flex-col gap-2 p-3 bg-slate-50 border border-slate-200 rounded text-xs mt-2 w-full">
+            <label className="font-bold text-slate-600">Konfigurasi Paket Sponsor:</label>
+            {sponsorshipPackages.map((pkg, index) => (
+              <div key={index} className="flex gap-2">
+                <input 
+                  type="text" 
+                  value={pkg.name} 
+                  onChange={(e) => {
+                    setSponsorshipPackages(prev => prev.map((p, i) => 
+                      i === index ? { ...p, name: e.target.value } : p
+                    ));
+                  }}
+                  className="p-1 border rounded w-1/4"
+                  placeholder="Nama Paket"
+                />
+                <input 
+                  type="number" 
+                  value={pkg.price || ""} 
+                  onChange={(e) => {
+                    setSponsorshipPackages(prev => prev.map((p, i) => 
+                      i === index ? { ...p, price: Number(e.target.value) } : p
+                    ));
+                  }}
+                  className="p-1 border rounded w-1/4"
+                  placeholder="Harga"
+                />
+                <input 
+                  type="text" 
+                  value={pkg.benefit} 
+                  onChange={(e) => {
+                    setSponsorshipPackages(prev => prev.map((p, i) => 
+                      i === index ? { ...p, benefit: e.target.value } : p
+                    ));
+                  }}
+                  className="p-1 border rounded w-2/4"
+                  placeholder="Benefit"
+                />
+                <button
+                  onClick={() => setSponsorshipPackages(sponsorshipPackages.filter((_, i) => i !== index))}
+                  className="bg-red-100 text-red-600 px-2 rounded"
+                >
+                  X
+                </button>
+              </div>
+            ))}
+            <button
+              onClick={() => setSponsorshipPackages([...sponsorshipPackages, { name: "", benefit: "", price: 0 }])}
+              className="bg-blue-500 text-white p-1 rounded text-xs"
+            >
+              Tambah Paket
+            </button>
+          </div>
+        )}
+
+        {/* Live Input Controls */}
+        <div className="bg-slate-50 p-4 rounded border border-slate-200/80 space-y-3">
+          <div className="flex items-center gap-2 border-b border-slate-200 pb-1.5">
+            <Info className="w-3.5 h-3.5 text-slate-500" />
+            <h4 className="text-[10px] font-extrabold text-slate-700 uppercase tracking-wider">Sesuaikan Data Identitas Proposal (Live Update)</h4>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-3.5">
+            <div>
+              <label className="block text-[9px] font-bold text-slate-500 uppercase tracking-wider mb-1">Nama Kegiatan</label>
+              <input
+                type="text"
+                value={namaKegiatan}
+                onChange={(e) => setNamaKegiatan(e.target.value)}
+                className="w-full text-xs border border-slate-200 focus:border-red-500 focus:outline-none rounded p-1.5 bg-white font-medium"
+                placeholder="Peringatan HUT RI Ke-81"
+              />
+            </div>
+            <div>
+              <label className="block text-[9px] font-bold text-slate-500 uppercase tracking-wider mb-1">Wilayah / RW</label>
+              <input
+                type="text"
+                value={namaRW}
+                onChange={(e) => setNamaRW(e.target.value)}
+                className="w-full text-xs border border-slate-200 focus:border-red-500 focus:outline-none rounded p-1.5 bg-white font-medium"
+                placeholder="RW 04 Ngabean"
+              />
+            </div>
+            <div>
+              <label className="block text-[9px] font-bold text-slate-500 uppercase tracking-wider mb-1">Tanggal Dokumen</label>
+              <input
+                type="text"
+                value={tanggalLPJ}
+                onChange={(e) => setTanggalLPJ(e.target.value)}
+                className="w-full text-xs border border-slate-200 focus:border-red-500 focus:outline-none rounded p-1.5 bg-white font-medium"
+                placeholder="17 Agustus 2026"
+              />
+            </div>
+            <div>
+              <label className="block text-[9px] font-bold text-slate-500 uppercase tracking-wider mb-1">Ketua Panitia</label>
+              <input
+                type="text"
+                value={namaKetua}
+                onChange={(e) => setNamaKetua(e.target.value)}
+                className="w-full text-xs border border-slate-200 focus:border-red-500 focus:outline-none rounded p-1.5 bg-white font-medium"
+                placeholder="Ketik nama Ketua Panitia..."
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-3.5 pt-1">
+            <div>
+              <label className="block text-[9px] font-bold text-slate-500 uppercase tracking-wider mb-1">Sekretaris</label>
+              <input
+                type="text"
+                value={namaSekretaris}
+                onChange={(e) => setNamaSekretaris(e.target.value)}
+                className="w-full text-xs border border-slate-200 focus:border-red-500 focus:outline-none rounded p-1.5 bg-white font-medium"
+                placeholder="Ketik nama Sekretaris..."
+              />
+            </div>
+            <div>
+              <label className="block text-[9px] font-bold text-slate-500 uppercase tracking-wider mb-1">Bendahara</label>
+              <input
+                type="text"
+                value={namaBendahara}
+                onChange={(e) => setNamaBendahara(e.target.value)}
+                className="w-full text-xs border border-slate-200 focus:border-red-500 focus:outline-none rounded p-1.5 bg-white font-medium"
+                placeholder="Ketik nama Bendahara..."
+              />
+            </div>
+            <div>
+              <label className="block text-[9px] font-bold text-slate-500 uppercase tracking-wider mb-1">Ketua RW</label>
+              <input
+                type="text"
+                value={namaRWKetua}
+                onChange={(e) => setNamaRWKetua(e.target.value)}
+                className="w-full text-xs border border-slate-200 focus:border-red-500 focus:outline-none rounded p-1.5 bg-white font-medium"
+                placeholder="Ketik nama Ketua RW..."
+              />
+            </div>
+            <div className="flex flex-col justify-end">
+              <label className="block text-[9px] font-bold text-slate-500 uppercase tracking-wider mb-1">Mode Data Dokumen</label>
+              <div className="flex items-center gap-2 bg-white px-2 py-1.5 rounded border border-slate-200">
+                <input
+                  type="checkbox"
+                  id="toggle-use-mock-data"
+                  checked={useMockData}
+                  onChange={(e) => {
+                    setUseMockData(e.target.checked);
+                    // Automatically trigger draf update
+                    setTimeout(() => {
+                      const btn = document.getElementById("btn-generate-proposal-local");
+                      if (btn) btn.click();
+                    }, 50);
+                  }}
+                  className="rounded accent-red-600 focus:ring-0 w-3.5 h-3.5 cursor-pointer"
+                />
+                <label htmlFor="toggle-use-mock-data" className="text-[10px] font-extrabold text-slate-700 uppercase tracking-wider cursor-pointer flex items-center gap-1 select-none">
+                  <Sparkles className="w-3 h-3 text-amber-500" />
+                  Simulasi Mockup Offline
+                </label>
+              </div>
+            </div>
+          </div>
+
+          {/* Logo Upload Row */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-3 border-t border-slate-200/60">
+            <div>
+              <label className="block text-[9px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">Unggah Logo HUT RI / Event</label>
+              <div className="flex items-center gap-3 bg-white p-2.5 rounded border border-slate-200 shadow-3xs">
+                {eventLogo ? (
+                  <div className="relative w-12 h-12 border border-slate-100 rounded-lg bg-slate-50 flex items-center justify-center overflow-hidden shrink-0 group">
+                    <img src={eventLogo} alt="Logo HUT RI" className="max-w-full max-h-full object-contain" />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setEventLogo("");
+                        try { localStorage.removeItem("sems_lpj_logo"); } catch (e) {}
+                      }}
+                      className="absolute inset-0 bg-red-600/90 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-150 cursor-pointer text-[8px] font-bold uppercase"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                ) : (
+                  <div className="w-12 h-12 border-2 border-dashed border-slate-300 rounded-lg bg-slate-50 flex items-center justify-center shrink-0">
+                    <Image className="w-4.5 h-4.5 text-slate-400" />
+                  </div>
+                )}
+                <div className="flex-1">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    id="logo-upload-input"
+                    className="hidden"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        const reader = new FileReader();
+                        reader.onload = (event) => {
+                          const base64 = event.target?.result as string;
+                          setEventLogo(base64);
+                          try { localStorage.setItem("sems_lpj_logo", base64); } catch (e) {}
+                        };
+                        reader.readAsDataURL(file);
+                      }
+                    }}
+                  />
+                  <label
+                    htmlFor="logo-upload-input"
+                    className="inline-flex items-center gap-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-extrabold text-[10px] px-2.5 py-1.5 rounded border border-slate-200 cursor-pointer transition-colors uppercase tracking-wider shadow-2xs"
+                  >
+                    <Upload className="w-3 h-3 text-slate-500" />
+                    Pilih Gambar
+                  </label>
+                  <p className="text-[8px] text-slate-400 mt-1">Format JPG/PNG, maks 1MB. Tampil di sisi kanan Kop Surat.</p>
+                </div>
+              </div>
+            </div>
+            <div className="flex items-center justify-start text-[9.5px] text-slate-500 bg-amber-50/40 p-2.5 rounded border border-amber-100/50">
+              <Info className="w-4 h-4 text-amber-600 shrink-0 mr-2" />
+              <span className="leading-snug">
+                <strong>Visual Tip:</strong> Gunakan opsi <strong>Simulasi Mockup Offline</strong> apabila tidak ada koneksi internet atau data pembukuan masih kosong. Sistem akan seketika menyusun naskah Proposal lengkap menggunakan data demo berkualitas tinggi.
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* Print Media Style Overrides */}
+        <style>{`
+          @media print {
+            body * {
+              visibility: hidden !important;
+            }
+            #printable-lpj-paper, #printable-lpj-paper * {
+              visibility: visible !important;
+            }
+            #printable-lpj-paper {
+              position: absolute !important;
+              left: 0 !important;
+              top: 0 !important;
+              width: 100% !important;
+              max-width: 100% !important;
+              border: none !important;
+              box-shadow: none !important;
+              background: white !important;
+              color: black !important;
+              padding: 1.5cm !important;
+              margin: 0 !important;
+            }
+          }
+        `}</style>
+
+        {/* Console loading terminal or LPJ output */}
+        {showLPJConsole && (
+          <div className="space-y-4">
+            
+            {/* Terminal screen if loading */}
+            {isGenerating && (
+              <div className="bg-slate-950 p-3 rounded border border-slate-800 font-mono text-[9px] text-emerald-400 space-y-1.5 max-h-48 overflow-y-auto">
+                {consoleLog.map((log, idx) => (
+                  <div key={idx} className="animate-fade-in">{log}</div>
+                ))}
+                <div className="flex items-center gap-1 text-slate-400">
+                  <RefreshCw className="w-3 h-3 animate-spin text-amber-400" />
+                  <span>Sedang merumuskan draf Proposal berbasis pembukuan waktu nyata...</span>
+                </div>
+              </div>
+            )}
+
+            {/* Markdown Display if ready */}
+            {proposalMarkdown && !isGenerating && (
+              (() => {
+                const getPaperClass = () => {
+                  let base = "relative p-8 sm:p-14 shadow-md max-w-[794px] min-h-[1123px] mx-auto select-text overflow-hidden transition-all duration-300 z-10 break-after-page flex flex-col justify-between print:min-h-0 print:shadow-none print:border-none print:p-0 print:mb-0 print:break-after-page ";
+                  
+                  if (paperTheme === "classic") {
+                    base += "bg-white border-t-[8px] border-t-red-600 border border-slate-200 text-slate-900";
+                  } else if (paperTheme === "creamy") {
+                    base += "bg-[#FCF9F2] border-t-[8px] border-t-amber-800 border border-amber-900/15 text-stone-900";
+                  } else if (paperTheme === "minimal") {
+                    base += "bg-slate-50 border-t-[8px] border-t-slate-800 border border-slate-300 text-slate-900";
+                  } else if (paperTheme === "green-gold") {
+                    base += "bg-emerald-50/10 border-4 border-double border-emerald-600 text-emerald-950";
+                  }
+                  
+                  if (fontStyle === "poppins") {
+                    base += " font-poppins text-[11px] sm:text-[12px] tracking-wide leading-relaxed";
+                  } else if (fontStyle === "arial") {
+                    base += " font-arial text-[11px] sm:text-[12px] tracking-normal leading-relaxed";
+                  } else if (fontStyle === "mono") {
+                    base += " font-mono text-[10px] sm:text-[11px] tracking-tight leading-normal";
+                  }
+                  
+                  return base;
+                };
+
+                const renderRightLogoAndDivider = (dividerColorClass: string = "border-slate-300") => {
+                  return (
+                    <div className={`flex items-center shrink-0 pl-3 ml-3 border-l-2 ${dividerColorClass} h-12`}>
+                      {eventLogo ? (
+                        <img src={eventLogo} alt="Logo Event" className="w-12 h-12 object-contain" />
+                      ) : (
+                        /* Beautiful default fallback logo HUT RI 81 */
+                        <div className="w-11 h-11 rounded border border-red-200 bg-red-50 flex flex-col items-center justify-center text-red-600 font-extrabold select-none p-0.5 leading-none shadow-3xs shrink-0">
+                          <span className="text-[7.5px] font-serif font-black tracking-tighter uppercase">HUT RI</span>
+                          <span className="text-xs font-sans font-black tracking-tighter mt-0.5">81</span>
+                        </div>
+                      )}
+                    </div>
+                  );
+                };
+
+                const renderLetterhead = () => {
+                  if (paperTheme === "classic") {
+                    return (
+                      <div className="flex justify-between items-center border-b-[3px] border-double border-slate-900 pb-3 mb-6">
+                        <div className="w-12 h-12 shrink-0" />
+                        <div className="text-center flex-1 px-3">
+                          <h2 className="text-[12px] sm:text-sm font-black tracking-wider uppercase font-serif text-slate-950">{namaKegiatan}</h2>
+                          <h3 className="text-[10px] sm:text-xs font-bold uppercase font-serif text-slate-800">{namaRW} KELURAHAN NGABEAN</h3>
+                          <p className="text-[8px] sm:text-[9px] text-slate-500 italic font-serif mt-0.5">Sekretariat: RT 04 Ngabean, Kota Semarang, Jawa Tengah</p>
+                        </div>
+                        {renderRightLogoAndDivider("border-slate-900/40")}
+                      </div>
+                    );
+                  }
+                  
+                  if (paperTheme === "creamy") {
+                    return (
+                      <div className="flex justify-between items-center border-b-[3px] border-double border-amber-900 pb-3 mb-6">
+                        <div className="w-12 h-12 shrink-0" />
+                        <div className="text-center flex-1 px-3">
+                          <h2 className="text-[12px] sm:text-sm font-black tracking-wider uppercase font-serif text-amber-950">{namaKegiatan}</h2>
+                          <h3 className="text-[10px] sm:text-xs font-bold uppercase font-serif text-amber-900">{namaRW} KELURAHAN NGABEAN</h3>
+                          <p className="text-[8px] sm:text-[9px] text-amber-800/70 italic font-serif mt-0.5 font-bold">PANITIA PERINGATAN KEMERDEKAAN RI KE-81</p>
+                        </div>
+                        {renderRightLogoAndDivider("border-amber-900/30")}
+                      </div>
+                    );
+                  }
+                  
+                  if (paperTheme === "minimal") {
+                    return (
+                      <div className="flex justify-between items-end border-b border-slate-300 pb-4 mb-6">
+                        <div className="text-left flex-1">
+                          <div className="text-[8px] font-extrabold text-slate-400 uppercase tracking-widest font-sans">Dokumen Resmi Pertanggungjawaban</div>
+                          <h2 className="text-sm sm:text-base font-black tracking-tight text-slate-900 uppercase font-sans mt-0.5">{namaKegiatan}</h2>
+                          <p className="text-[9px] sm:text-[10px] text-slate-600 font-sans mt-0.5 font-semibold">{namaRW} Ngabean, Semarang, Jawa Tengah</p>
+                        </div>
+                        {renderRightLogoAndDivider("border-slate-300")}
+                      </div>
+                    );
+                  }
+
+                  return (
+                    <div className="flex justify-between items-center border-b-2 border-emerald-600 pb-3 mb-6">
+                      <div className="w-12 h-12 shrink-0" />
+                      <div className="text-center flex-1 px-3">
+                        <h2 className="text-[12px] sm:text-sm font-extrabold tracking-wider uppercase text-emerald-900">{namaKegiatan}</h2>
+                        <h3 className="text-[10px] sm:text-xs font-bold uppercase text-emerald-800">{namaRW} KELURAHAN NGABEAN</h3>
+                        <p className="text-[8px] sm:text-[9px] text-emerald-700 italic mt-0.5">Pemberdayaan Gotong Royong & Swadaya Kemandirian</p>
+                      </div>
+                      {renderRightLogoAndDivider("border-emerald-600/40")}
+                    </div>
+                  );
+                };
+
+                const renderSignatureGrid = () => {
+                  return (
+                    <div className="mt-10 pt-8 border-t border-slate-200/50 space-y-6">
+                      <div className="text-right text-[10.5px] font-medium text-slate-700 pr-10">
+                        Semarang, {tanggalLPJ}
+                      </div>
+                      <div className="grid grid-cols-2 gap-y-10 text-center text-slate-900">
+                        {/* Row 1 */}
+                        <div className="space-y-1">
+                          <p className="text-[9px] font-bold uppercase text-slate-500 tracking-wider">Ketua Panitia Pelaksana</p>
+                          <div className="h-14 flex items-center justify-center relative">
+                            <span className="font-serif italic text-sm text-blue-700/80 tracking-widest font-bold rotate-[-3deg] select-none">
+                              {namaKetua}
+                            </span>
+                          </div>
+                          <p className="font-bold underline text-[11px] text-slate-800">{namaKetua}</p>
+                        </div>
+
+                        <div className="space-y-1">
+                          <p className="text-[9px] font-bold uppercase text-slate-500 tracking-wider">Sekretaris Panitia</p>
+                          <div className="h-14 flex items-center justify-center relative">
+                            <span className="font-serif italic text-sm text-slate-500/80 tracking-widest font-bold rotate-[2deg] select-none">
+                              {namaSekretaris}
+                            </span>
+                          </div>
+                          <p className="font-bold underline text-[11px] text-slate-800">{namaSekretaris}</p>
+                        </div>
+
+                        {/* Row 2 */}
+                        <div className="space-y-1 relative">
+                          <p className="text-[9px] font-bold uppercase text-slate-500 tracking-wider">Bendahara Keuangan</p>
+                          <div className="h-14 flex items-center justify-center relative z-10">
+                            <span className="font-serif italic text-sm text-emerald-700/80 tracking-widest font-bold rotate-[-1deg] select-none">
+                              {namaBendahara}
+                            </span>
+                          </div>
+                          <p className="font-bold underline text-[11px] text-slate-800">{namaBendahara}</p>
+                        </div>
+
+                        <div className="space-y-1 relative">
+                          <p className="text-[9px] font-bold uppercase text-slate-500 tracking-wider">Mengetahui, Ketua RW</p>
+                          <div className="h-14 flex items-center justify-center relative">
+                            {/* The circular stamp/seal */}
+                            {showStamp && (
+                              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-20 h-20 rounded-full border-2 border-dashed border-indigo-600/60 flex items-center justify-center rotate-[-12deg] pointer-events-none select-none z-0 shadow-xs">
+                                <div className="w-[72px] h-[72px] rounded-full border border-double border-indigo-600/50 flex flex-col items-center justify-center text-[5px] font-sans font-bold text-indigo-600/70 text-center leading-none">
+                                  <span className="uppercase text-[4px]">PANITIA HUT-RI</span>
+                                  <Award className="w-3.5 h-3.5 text-indigo-600/80 my-0.5" />
+                                  <span className="uppercase text-[4.5px] tracking-tight">{namaRW.toUpperCase()} NGABEAN</span>
+                                </div>
+                              </div>
+                            )}
+                            <span className="font-serif italic text-sm text-indigo-800/80 tracking-widest font-bold rotate-[1deg] relative z-10 select-none">
+                              {namaRWKetua}
+                            </span>
+                          </div>
+                          <p className="font-bold underline text-[11px] text-slate-800">{namaRWKetua}</p>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                };
+
+                const renderPaperContent = () => {
+                  try {
+                    let mainBodyText = proposalMarkdown;
+                  const signatureIndex = proposalMarkdown.lastIndexOf("Semarang, ");
+                  if (signatureIndex !== -1) {
+                    mainBodyText = proposalMarkdown.substring(0, signatureIndex);
+                  }
+
+                  const activePemasukan = (keuangan || [])
+                    .filter(t => t.type === 'Masuk')
+                    .reduce((sum, t) => sum + t.amount, 0);
+
+                  const activeNatura = 0;
+
+                  const activePengeluaran = (keuangan || [])
+                    .filter(t => t.type === 'Keluar')
+                    .reduce((sum, t) => sum + t.amount, 0);
+
+                  const totalPemasukan = useMockData ? 16500000 : activePemasukan;
+                  const totalNatura = 0;
+                  const totalPengeluaran = useMockData ? 12800000 : activePengeluaran;
+                  const saldoSisa = totalPemasukan - totalPengeluaran;
+                  const totalCombinedValue = totalPemasukan + totalNatura;
+
+                  // Percentage calculations
+                  const percentPemasukan = totalCombinedValue > 0 ? Math.round((totalPemasukan / totalCombinedValue) * 100) : 0;
+                  const percentNatura = totalCombinedValue > 0 ? Math.round((totalNatura / totalCombinedValue) * 100) : 0;
+                  const percentPengeluaran = totalPemasukan > 0 ? Math.round((totalPengeluaran / totalPemasukan) * 100) : 0;
+
+                  // Get theme-specific visual assets
+                  const theme = (() => {
+                    if (paperTheme === "classic") {
+                      return {
+                        bg: "bg-red-50/40 border-red-200/60",
+                        badge: "bg-red-100 text-red-800 border-red-200",
+                        bar1: "bg-red-600",
+                        bar2: "bg-amber-500",
+                        bar3: "bg-red-600",
+                        textAccent: "text-red-800",
+                        thBg: "bg-red-700 text-white",
+                        thBorder: "border-red-800/20",
+                        stripeBg: "even:bg-red-50/15",
+                        sumBg: "bg-red-50/90 text-red-950",
+                        sumBorder: "border-t-2 border-red-300",
+                        tableBorder: "border-red-200/80"
+                      };
+                    }
+                    if (paperTheme === "creamy") {
+                      return {
+                        bg: "bg-amber-50/50 border-amber-900/10",
+                        badge: "bg-amber-100 text-amber-900 border-amber-900/20",
+                        bar1: "bg-amber-800",
+                        bar2: "bg-amber-500",
+                        bar3: "bg-amber-800",
+                        textAccent: "text-amber-900",
+                        thBg: "bg-amber-900 text-amber-50",
+                        thBorder: "border-amber-950/20",
+                        stripeBg: "even:bg-amber-50/15",
+                        sumBg: "bg-amber-100/60 text-amber-950",
+                        sumBorder: "border-t-2 border-amber-800/40",
+                        tableBorder: "border-amber-900/10"
+                      };
+                    }
+                    if (paperTheme === "minimal") {
+                      return {
+                        bg: "bg-slate-100/60 border-slate-200",
+                        badge: "bg-slate-200 text-slate-800 border-slate-300",
+                        bar1: "bg-slate-800",
+                        bar2: "bg-slate-400",
+                        bar3: "bg-slate-800",
+                        textAccent: "text-slate-800",
+                        thBg: "bg-slate-900 text-slate-100",
+                        thBorder: "border-slate-950/20",
+                        stripeBg: "even:bg-slate-100/30",
+                        sumBg: "bg-slate-100 text-slate-950",
+                        sumBorder: "border-t-2 border-slate-400",
+                        tableBorder: "border-slate-300"
+                      };
+                    }
+                    // green-gold
+                    return {
+                      bg: "bg-emerald-50/50 border-emerald-200/55",
+                      badge: "bg-emerald-100 text-emerald-800 border-emerald-200",
+                      bar1: "bg-emerald-600",
+                      bar2: "bg-emerald-400",
+                      bar3: "bg-emerald-700",
+                      textAccent: "text-emerald-950",
+                      thBg: "bg-emerald-800 text-white",
+                      thBorder: "border-emerald-900/20",
+                      stripeBg: "even:bg-emerald-50/15",
+                      sumBg: "bg-emerald-50/90 text-emerald-950",
+                      sumBorder: "border-t-2 border-emerald-300",
+                      tableBorder: "border-emerald-200"
+                    };
+                  })();
+
+                  // Clean markdown parsing & rendering helper to strip raw stars and hashes
+                  const renderCleanText = (text: string) => {
+                    if (!text) return "";
+                    // Regex split for **bold text**
+                    const parts = text.split(/\*\*([\s\S]*?)\*\*/g);
+                    return parts.map((part, index) => {
+                      if (index % 2 === 1) {
+                        return <strong key={index} className="font-extrabold text-slate-950">{part.replace(/[*#]/g, "")}</strong>;
+                      }
+                      return part.replace(/[*#]/g, "");
+                    });
+                  };
+
+                  const renderMarkdownCleanly = (markdownText: string) => {
+                    if (!markdownText) return null;
+
+                    const lines = markdownText.split("\n");
+                    const elements: React.ReactNode[] = [];
+                    let inList = false;
+                    let listItems: React.ReactNode[] = [];
+                    let inOrderedList = false;
+                    let oListItems: React.ReactNode[] = [];
+
+                    const flushLists = (keyPrefix: string) => {
+                      if (inList && listItems.length > 0) {
+                        elements.push(
+                          <ul key={`ul-${keyPrefix}-${elements.length}`} className="list-disc pl-5 my-2 space-y-1 font-sans text-slate-700 leading-relaxed text-[11px] sm:text-[12px] text-justify">
+                            {listItems}
+                          </ul>
+                        );
+                        listItems = [];
+                        inList = false;
+                      }
+                      if (inOrderedList && oListItems.length > 0) {
+                        elements.push(
+                          <ol key={`ol-${keyPrefix}-${elements.length}`} className="list-decimal pl-5 my-2 space-y-1.5 font-sans text-slate-700 leading-relaxed text-[11px] sm:text-[12px] text-justify">
+                            {oListItems}
+                          </ol>
+                        );
+                        oListItems = [];
+                        inOrderedList = false;
+                      }
+                    };
+
+                    for (let i = 0; i < lines.length; i++) {
+                      const rawLine = lines[i];
+                      const trimmed = rawLine.trim();
+
+                      // Skip markdown table lines entirely as we render beautiful colored HTML tables instead
+                      if (trimmed.startsWith("|") || trimmed.startsWith("+-") || (trimmed.startsWith(":") && trimmed.includes("-"))) {
+                        flushLists(`table-${i}`);
+                        continue;
+                      }
+
+                      if (trimmed === "---") {
+                        flushLists(`hr-${i}`);
+                        elements.push(<hr key={`hr-${i}`} className="border-t border-slate-200/60 my-4" />);
+                        continue;
+                      }
+
+                      // Header 1 (e.g. # DOKUMEN PROPOSAL (LPJ) KEPANITIAAN)
+                      if (trimmed.startsWith("# ")) {
+                        flushLists(`h1-${i}`);
+                        const cleanHeader = trimmed.substring(2).replace(/[#*]/g, "").trim();
+                        elements.push(
+                          <h1 key={`h1-${i}`} className={`text-[12px] sm:text-[14px] font-black tracking-wider uppercase text-center ${theme.textAccent} font-sans mt-3 mb-1.5`}>
+                            {cleanHeader}
+                          </h1>
+                        );
+                        continue;
+                      }
+
+                      // Header 2 (e.g. ## PERINGATAN...)
+                      if (trimmed.startsWith("## ")) {
+                        flushLists(`h2-${i}`);
+                        const cleanHeader = trimmed.substring(3).replace(/[#*]/g, "").trim();
+                        elements.push(
+                          <h2 key={`h2-${i}`} className="text-[10px] sm:text-[12px] font-extrabold tracking-normal uppercase text-center text-slate-800 font-sans mb-3">
+                            {cleanHeader}
+                          </h2>
+                        );
+                        continue;
+                      }
+
+                      // Header 3 (e.g. ### I. PENDAHULUAN)
+                      if (trimmed.startsWith("### ")) {
+                        flushLists(`h3-${i}`);
+                        const cleanHeader = trimmed.substring(4).replace(/[#*]/g, "").trim();
+                        elements.push(
+                          <h3 key={`h3-${i}`} className={`text-xs font-black tracking-wider uppercase ${theme.textAccent} font-sans mt-5 mb-2.5 flex items-center gap-1.5 border-b pb-1`}>
+                            {cleanHeader}
+                          </h3>
+                        );
+                        continue;
+                      }
+
+                      // Header 4 (e.g. #### A. Laporan Realisasi)
+                      if (trimmed.startsWith("#### ")) {
+                        flushLists(`h4-${i}`);
+                        const cleanHeader = trimmed.substring(5).replace(/[#*]/g, "").trim();
+                        elements.push(
+                          <h4 key={`h4-${i}`} className="text-[10px] sm:text-[11px] font-bold text-slate-800 font-sans uppercase tracking-wider mt-4 mb-2">
+                            {cleanHeader}
+                          </h4>
+                        );
+                        continue;
+                      }
+
+                      // Bullet list item
+                      if (trimmed.startsWith("- ") || trimmed.startsWith("* ")) {
+                        if (inOrderedList) flushLists(`switch-list-${i}`);
+                        inList = true;
+                        const cleanItem = trimmed.substring(2);
+                        listItems.push(
+                          <li key={`li-${i}`} className="pl-1 text-justify">
+                            {renderCleanText(cleanItem)}
+                          </li>
+                        );
+                        continue;
+                      }
+
+                      // Numbered list item
+                      const numMatch = trimmed.match(/^(\d+)\.\s(.*)/);
+                      if (numMatch) {
+                        if (inList) flushLists(`switch-olist-${i}`);
+                        inOrderedList = true;
+                        const cleanItem = numMatch[2];
+                        oListItems.push(
+                          <li key={`oli-${i}`} className="pl-1 text-justify">
+                            {renderCleanText(cleanItem)}
+                          </li>
+                        );
+                        continue;
+                      }
+
+                      // Empty line
+                      if (trimmed === "") {
+                        flushLists(`empty-${i}`);
+                        elements.push(<div key={`space-${i}`} className="h-1.5" />);
+                        continue;
+                      }
+
+                      // Regular paragraph
+                      flushLists(`p-${i}`);
+                      elements.push(
+                        <p key={`p-${i}`} className="text-[11px] sm:text-[12px] text-slate-700 leading-relaxed font-sans mb-2 text-justify">
+                          {renderCleanText(rawLine)}
+                        </p>
+                      );
+                    }
+
+                    // Final flush
+                    flushLists("final");
+
+                    return elements;
+                  };
+                  
+                  const safeTasks = tasks || [];
+                  const safeRKBA = rkba || [];
+                  const safeSettings: SystemSetting = {
+                    id: settings?.id || "temp-id",
+                    rtList: settings?.rtList || [],
+                    seksiList: settings?.seksiList || [],
+                    targetIuranPerRT: settings?.targetIuranPerRT || 0,
+                    paguAnggaranSeksi: settings?.paguAnggaranSeksi || {},
+                    sheetId: settings?.sheetId || "",
+                    sheetApiKey: settings?.sheetApiKey || "",
+                    themeColor: settings?.themeColor || "#ff0000"
+                  };
+                  const safePanitia = panitia || [];
+                  const safeSponsorshipPackages = sponsorshipPackages || [];
+
+                  // Mock or real tasks
+                  const activeTasks = useMockData ? [
+                    { id: "mock_t1", taskName: "Penyusunan Rencana Jadwal Lomba", seksi: "Seksi Lomba", status: "Selesai" as const, assignedTo: "Budi", deadline: "10 Juli 2026" },
+                    { id: "mock_t2", taskName: "Pembersihan Lapangan Upacara", seksi: "Perlengkapan", status: "Proses" as const, assignedTo: "Siti", deadline: "12 Juli 2026" },
+                    { id: "mock_t3", taskName: "Sewa Sound System & Genset", seksi: "Perlengkapan", status: "Selesai" as const, assignedTo: "Hadi", deadline: "15 Juli 2026" },
+                    { id: "mock_t4", taskName: "Pemesanan Tumpeng & Konsumsi Warga", seksi: "Konsumsi", status: "Selesai" as const, assignedTo: "Rina", deadline: "16 Agustus 2026" },
+                    { id: "mock_t5", taskName: "Publikasi Media & Spanduk", seksi: "Humas", status: "Belum" as const, assignedTo: "Andi", deadline: "1 Agustus 2026" },
+                    { id: "mock_t6", taskName: "Koordinasi Keamanan dengan Babinsa", seksi: "Keamanan dan Kebersihan", status: "Selesai" as const, assignedTo: "Joni", deadline: "14 Agustus 2026" }
+                  ] : safeTasks;
+
+                  // Mock or real rkba
+                  const activeRKBA = useMockData ? [
+                    { id: "mock_r1", name: "Hadiah Lomba Utama & Piala", seksi: "Seksi Lomba", qty: 1, unit: "Set", price: 2000000, total: 2000000, fundingSource: "Iuran RT" as const, status: "Disetujui" as const, notes: "", dateAdded: "" },
+                    { id: "mock_r2", name: "Sewa Panggung & Tenda Lapangan", seksi: "Perlengkapan", qty: 1, unit: "Unit", price: 4000000, total: 4000000, fundingSource: "Sponsorship" as const, status: "Disetujui" as const, notes: "", dateAdded: "" },
+                    { id: "mock_r3", name: "Sound System 5000 Watt", seksi: "Perlengkapan", qty: 1, unit: "Set", price: 1500000, total: 1500000, fundingSource: "Sponsorship" as const, status: "Disetujui" as const, notes: "", dateAdded: "" },
+                    { id: "mock_r4", name: "Konsumsi Snack & Nasi Kotak Warga", seksi: "Konsumsi", qty: 250, unit: "Kotak", price: 15000, total: 3750000, fundingSource: "Iuran RT" as const, status: "Disetujui" as const, notes: "", dateAdded: "" },
+                    { id: "mock_r5", name: "Spanduk Banner 4x1 Meter", seksi: "Humas", qty: 3, unit: "Pcs", price: 100000, total: 300000, fundingSource: "Kas Utama" as const, status: "Disetujui" as const, notes: "", dateAdded: "" },
+                    { id: "mock_r6", name: "Peralatan Kebersihan & P3K", seksi: "Keamanan dan Kebersihan", qty: 1, unit: "Paket", price: 450000, total: 450000, fundingSource: "Kas Utama" as const, status: "Disetujui" as const, notes: "", dateAdded: "" }
+                  ] : safeRKBA;
+                  
+                  // Calculate Seksi budget data
+                  const seksiList = safeSettings.seksiList || [];
+                  const totalRABBySeksi = seksiList.map((seksiName, idx) => {
+                    const rabSeksi = activeRKBA.filter(r => r.seksi === seksiName);
+                    const totalSeksi = rabSeksi.reduce((sum, r) => sum + r.total, 0);
+                    return { idx: idx + 1, seksi: seksiName, total: totalSeksi, itemCount: rabSeksi.length };
+                  }).filter(s => s.total > 0 || s.itemCount > 0);
+
+                  const totalRAB = totalRABBySeksi.reduce((sum, s) => sum + s.total, 0);
+                  const totalTargetIuran = (safeSettings.targetIuranPerRT || 0) * (safeSettings.rtList || []).length;
+                  const totalSponsorshipTarget = Math.max(0, totalRAB - totalTargetIuran);
+
+                  const rincianPendanaan = [
+                    { nama: "Proyeksi Kas Iuran Warga (" + (safeSettings.rtList || []).length + " RT)", jumlah: totalTargetIuran },
+                    { nama: "Proyeksi Sponsorship / Donatur Eksternal", jumlah: totalSponsorshipTarget }
+                  ];
+                  const totalPendanaan = totalTargetIuran + totalSponsorshipTarget;
+
+                  // Render multi-page document layout
+                  const pages = mainBodyText.split("---").map(p => p.trim()).filter(p => p.length > 0);
+
+                  // Set up tracking variables to prevent duplicate component injections
+                  let hasInjectedBabII = false;
+                  let hasInjectedBabIII = false;
+                  let hasInjectedBabIV = false;
+                  let hasInjectedSponsorship = false;
+
+                  return pages.map((pageText, pageIndex) => {
+                    const isCoverPage = pageIndex === 0;
+                    const isLastPage = pageIndex === pages.length - 1;
+                    
+                    const isBabIPage = (selectedTemplate === "formal" || selectedTemplate === "sponsor") && /^[\s#*]*BAB I[.:\s]+PENDAHULUAN/im.test(pageText);
+                    
+                    let isBabIIPage = false;
+                    if (!hasInjectedBabII && (selectedTemplate === "formal" || selectedTemplate === "sponsor") && (
+                      /^[\s#*]*BAB II[.:\s]+SUSUNAN PANITIA/im.test(pageText) || (pageIndex === 3 && pages.length >= 8)
+                    )) {
+                      isBabIIPage = true;
+                      hasInjectedBabII = true;
+                    }
+                    
+                    let isBabIIIPage = false;
+                    if (!hasInjectedBabIII && (selectedTemplate === "formal" || selectedTemplate === "sponsor") && (
+                      /^[\s#*]*BAB III[.:\s]+RENCANA PROGRAM KERJA/im.test(pageText) || (pageIndex === 4 && pages.length >= 8)
+                    )) {
+                      isBabIIIPage = true;
+                      hasInjectedBabIII = true;
+                    }
+                    
+                    let isBabIVPage = false;
+                    if (!hasInjectedBabIV && (selectedTemplate === "formal" || selectedTemplate === "sponsor") && (
+                      /^[\s#*]*BAB IV[.:\s]+RENCANA ANGGARAN BIAYA/im.test(pageText) || (pageIndex === 5 && pages.length >= 8)
+                    )) {
+                      isBabIVPage = true;
+                      hasInjectedBabIV = true;
+                    }
+                    
+                    let isSponsorshipPage = false;
+                    if (!hasInjectedSponsorship && (selectedTemplate === "sponsor" || selectedTemplate === "formal") && (
+                      /^[\s#*]*(?:BAB V[.:\s]+)?PENAWARAN KERJASAMA SPONSORSHIP/im.test(pageText) || 
+                      /^[\s#*]*PAKET SPONSORSHIP/im.test(pageText) ||
+                      /^[\s#*]*KERJASAMA SPONSOR/im.test(pageText) ||
+                      (pageIndex === 6 && pages.length >= 8)
+                    )) {
+                      isSponsorshipPage = true;
+                      hasInjectedSponsorship = true;
+                    }
+
+                    return (
+                      <div key={`page-${pageIndex}`} className={getPaperClass()}>
+                        
+                        {/* Decorative watermark */}
+                        {showWatermark && (
+                          <div className="absolute inset-0 flex items-center justify-center pointer-events-none overflow-hidden select-none z-0">
+                            <div className="text-red-600/[0.035] font-serif font-black text-3xl sm:text-4xl uppercase tracking-[0.25em] -rotate-[30deg] text-center whitespace-nowrap leading-none select-none">
+                              {namaRW.toUpperCase()} SEMARANG — DRAF ASLI
+                            </div>
+                          </div>
+                        )}
+
+                        <div className="relative z-10 flex-1 flex flex-col">
+                          {isCoverPage ? (
+                            <div className="flex-1 flex flex-col justify-between p-6 sm:p-10 border-4 border-red-600/20 rounded-xl relative overflow-hidden bg-gradient-to-b from-red-50/20 via-white to-red-50/10 h-full min-h-[680px]">
+                              {/* Patriotic red & white top bar */}
+                              <div className="absolute top-0 left-0 right-0 h-2 bg-gradient-to-r from-red-600 via-white to-red-600" />
+                              
+                              {/* Top Emblem and Title */}
+                              <div className="text-center space-y-4 pt-4">
+                                <div className="inline-flex items-center gap-2 px-3 py-1 bg-red-600 text-white rounded-full text-[9px] font-black tracking-widest uppercase shadow-sm">
+                                  <Sparkles className="w-3 h-3 text-amber-300 fill-amber-300 animate-pulse" />
+                                  PROPOSAL KEGIATAN RESMI
+                                </div>
+                                <div className="mt-2 text-[10px] font-mono uppercase tracking-[0.3em] text-slate-500 font-extrabold">
+                                  {namaRW.toUpperCase()} KELURAHAN NGABEAN
+                                </div>
+                              </div>
+
+                              {/* Big Elegant Center Title Card */}
+                              <div className="text-center my-auto py-8 space-y-6 relative">
+                                {/* Decorative circular sunburst / glow behind */}
+                                <div className="absolute inset-0 flex items-center justify-center -z-10 pointer-events-none opacity-[0.08]">
+                                  <div className="w-56 h-56 rounded-full bg-red-600 blur-3xl animate-pulse" />
+                                </div>
+
+                                {/* Custom HUT RI 81 Emblem */}
+                                <div className="mx-auto w-24 h-24 sm:w-28 sm:h-28 rounded-full bg-gradient-to-br from-red-600 to-red-700 p-1.5 shadow-xl border-4 border-white flex items-center justify-center relative animate-bounce-slow overflow-hidden">
+                                  {/* Outer decorative ring */}
+                                  <div className="absolute inset-0 rounded-full border border-dashed border-white/40 animate-spin-slow z-0" />
+                                  {eventLogo ? (
+                                    <div className="w-full h-full rounded-full bg-white flex items-center justify-center p-1.5 relative z-10">
+                                      <img src={eventLogo} alt="Logo HUT RI" className="w-full h-full object-contain" />
+                                    </div>
+                                  ) : (
+                                    <div className="w-full h-full rounded-full bg-white flex flex-col items-center justify-center relative z-10">
+                                      <span className="text-[10px] font-black text-red-600 leading-none tracking-widest uppercase">HUT RI</span>
+                                      <span className="text-3xl sm:text-4xl font-serif font-black text-red-700 leading-none my-1">81</span>
+                                      <span className="text-[8px] font-bold text-slate-600 leading-none tracking-wider">1945-2026</span>
+                                    </div>
+                                  )}
+                                </div>
+
+                                <div className="space-y-3">
+                                  <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-slate-900 leading-tight uppercase font-serif">
+                                    {namaKegiatan}
+                                  </h1>
+                                  <div className="w-24 h-1 bg-gradient-to-r from-transparent via-red-600 to-transparent mx-auto" />
+                                  <p className="text-xs text-slate-600 font-medium italic max-w-md mx-auto">
+                                    "Menjalin Kebersamaan, Memupuk Gotong Royong, Mewujudkan Lingkungan Mandiri"
+                                  </p>
+                                </div>
+                              </div>
+
+                              {/* Bottom Metadata Block */}
+                              <div className="space-y-6 border-t border-slate-200/60 pt-6">
+                                <div className="grid grid-cols-2 gap-4 text-left text-[10px] text-slate-600">
+                                  <div className="p-3 bg-slate-50/80 rounded-lg border border-slate-100 shadow-3xs">
+                                    <div className="font-bold text-slate-400 uppercase tracking-widest text-[8px] mb-1">Diusulkan Oleh:</div>
+                                    <div className="font-extrabold text-slate-800 leading-tight">{namaRW} Ngabean</div>
+                                    <div className="text-[9px] text-slate-500">Panitia Pelaksana Kemerdekaan</div>
+                                  </div>
+                                  <div className="p-3 bg-slate-50/80 rounded-lg border border-slate-100 shadow-3xs">
+                                    <div className="font-bold text-slate-400 uppercase tracking-widest text-[8px] mb-1">Tanggal Pengajuan:</div>
+                                    <div className="font-extrabold text-slate-800 leading-tight">{tanggalLPJ}</div>
+                                    <div className="text-[9px] text-slate-500">Kota Semarang, Jawa Tengah</div>
+                                  </div>
+                                </div>
+
+                                {/* Custom generated subtitle text from model */}
+                                <div className="text-center text-[9px] text-slate-400 font-mono tracking-widest uppercase flex items-center justify-center gap-1.5">
+                                  <span>INDONESIA MAJU</span>
+                                  <span className="text-red-500 font-sans">•</span>
+                                  <span>NUSANTARA BARU</span>
+                                </div>
+                              </div>
+                            </div>
+                          ) : (
+                            <>
+                              <div className="mb-8">
+                                {renderLetterhead()}
+                              </div>
+
+                              <div className="leading-relaxed flex-1">
+                                {renderMarkdownCleanly(pageText.replace(/[\n\r]*{{SPONSORSHIP_TABLE}}[\n\r]*/g, ""))}
+
+                            {/* Inject Sponsorship Packages in Sponsorship Page */}
+                            {isSponsorshipPage && (
+                              <div className="mt-6 space-y-4">
+                                <div className="flex items-center justify-between border-b border-slate-200 pb-2">
+                                  <h4 className={`text-xs font-black tracking-wider uppercase ${theme.textAccent} font-sans flex items-center gap-1.5`}>
+                                    <Award className="w-4 h-4 shrink-0" />
+                                    DAFTAR PILIHAN PAKET KERJASAMA SPONSORSHIP
+                                  </h4>
+                                </div>
+                                <div className="grid grid-cols-1 gap-3">
+                                  {safeSponsorshipPackages.map((pkg, idx) => (
+                                    <div key={`pkg-${idx}`} className="p-3 border border-slate-200 rounded-lg bg-slate-50/50 flex flex-col gap-1.5 shadow-3xs">
+                                      <div className="flex items-center justify-between">
+                                        <span className="font-black text-xs uppercase tracking-widest text-red-700">{(pkg?.name || "Paket " + (idx + 1))} Package</span>
+                                        <div className="flex gap-0.5">
+                                          {[...Array(Math.max(1, Math.min(3, 3-idx)))].map((_, i) => <Sparkles key={i} className="w-2.5 h-2.5 text-amber-500 fill-amber-500" />)}
+                                        </div>
+                                      </div>
+                                      <p className="text-[10px] text-slate-600 leading-relaxed italic">
+                                        "{pkg?.benefit || "-"}"
+                                      </p>
+                                    </div>
+                                  ))}
+                                </div>
+                                <div className="p-3 bg-red-50 border border-red-100 rounded text-[9.5px] text-red-800 leading-relaxed italic">
+                                  * Keterangan: Rincian teknis penempatan logo dan benefit lainnya akan dibahas lebih lanjut dalam kontrak kerjasama terpisah. Panitia juga menerima bentuk sponsorship natura (produk/barang/jasa) yang nilainya dikonversikan setara dengan paket di atas.
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Inject Bagan Struktur Organisasi in BAB II Page (Susunan Panitia) */}
+                            {isBabIIPage && (
+                              <div className="mt-5 space-y-3 border-t border-slate-200/40 pt-4 break-inside-avoid">
+                                <div className="flex items-center justify-between border-b border-slate-200/50 pb-1.5">
+                                  <h4 className={`text-[10px] font-black tracking-wider uppercase ${theme.textAccent} font-sans flex items-center gap-1.5`}>
+                                    <Layers className="w-3.5 h-3.5 shrink-0 text-red-600" />
+                                    BAGAN ALUR STRUKTUR ORGANISASI KEPANITIAAN
+                                  </h4>
+                                  <span className="text-[7px] font-mono font-bold uppercase bg-slate-900 text-amber-400 px-1.5 py-0.5 rounded">
+                                    Garis Koordinasi
+                                  </span>
+                                </div>
+                                <div className="p-1 border border-slate-100 rounded-lg">
+                                  <OrgChart panitia={safePanitia} settings={safeSettings} printMode={true} />
+                                </div>
+                              </div>
+                            )}
+                            
+                            {/* Inject Tables in BAB III Page (Program Kerja) */}
+                            {isBabIIIPage && (
+                                <div className="mt-8 space-y-8">
+                                  <div className="space-y-2">
+                                    <div className="flex items-center justify-between border-b border-slate-200/50 pb-2">
+                                      <h4 className={`text-xs font-black tracking-wider uppercase ${theme.textAccent} font-sans flex items-center gap-1.5`}>
+                                        <TrendingUp className="w-4 h-4 shrink-0" />
+                                        DAFTAR RENCANA PROGRAM KERJA PANITIA
+                                      </h4>
+                                      <span className="text-[8px] font-mono font-bold uppercase bg-slate-900 text-amber-400 px-2 py-0.5 rounded">
+                                        Perencanaan Terpadu
+                                      </span>
+                                    </div>
+
+                                    <div className={`overflow-x-auto rounded-lg border ${theme.tableBorder} bg-white shadow-3xs`}>
+                                      <table className="w-full text-left border-collapse text-[10.5px] sm:text-[11px]">
+                                        <thead>
+                                          <tr className={`${theme.thBg} border-b ${theme.thBorder} font-bold uppercase tracking-wider text-[9px]`}>
+                                            <th className="px-3 py-2.5 text-inherit w-10 text-center">No</th>
+                                            <th className="px-3 py-2.5 text-inherit">Nama Program Kegiatan</th>
+                                            <th className="px-3 py-2.5 text-center text-inherit">Seksi Penanggungjawab</th>
+                                          </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-slate-100 font-sans">
+                                          {activeTasks.map((t, idx) => (
+                                            <tr key={t.id} className={`${theme.stripeBg} hover:bg-slate-50/50 transition-colors`}>
+                                              <td className="px-3 py-2 font-medium text-slate-500 text-center">{idx + 1}</td>
+                                              <td className="px-3 py-2 font-medium text-slate-800">{t.taskName}</td>
+                                              <td className="px-3 py-2 text-center">
+                                                <span className="px-2 py-0.5 rounded bg-slate-100 border border-slate-200 text-slate-700 font-bold text-[9px] uppercase">
+                                                  Seksi {t.seksi}
+                                                </span>
+                                              </td>
+                                            </tr>
+                                          ))}
+                                          <tr className="bg-slate-50/60 font-bold text-slate-800">
+                                            <td className="px-3 py-2.5 text-center">Σ</td>
+                                            <td className="px-3 py-2.5">Total Keseluruhan Agenda Kegiatan</td>
+                                            <td className="px-3 py-2.5 text-center font-mono text-indigo-800">
+                                              {activeTasks.length} Program
+                                            </td>
+                                          </tr>
+                                        </tbody>
+                                      </table>
+                                    </div>
+                                  </div>
+                                </div>
+                            )}
+
+                            {/* Inject Tables in BAB IV Page (RAB) */}
+                            {isBabIVPage && (
+                              <div className="mt-8 space-y-8">
+                                {/* Section A Table */}
+                                <div className="space-y-2">
+                                  <h4 className="text-[10.5px] sm:text-[11.5px] font-bold text-slate-800 font-sans uppercase tracking-wider">
+                                    A. Rekapitulasi Rencana Anggaran Biaya (RAB) per Seksi
+                                  </h4>
+                                  
+                                  <div className={`overflow-x-auto rounded border ${theme.tableBorder} bg-white shadow-3xs`}>
+                                    <table className="w-full text-left border-collapse text-[11px] sm:text-[12px]">
+                                      <thead>
+                                        <tr className={`${theme.thBg} border-b ${theme.thBorder} font-bold uppercase tracking-wider text-[9px]`}>
+                                          <th className="px-3 py-2.5 text-center text-inherit w-12">No</th>
+                                          <th className="px-3 py-2.5 text-inherit">Seksi Pelaksana</th>
+                                          <th className="px-3 py-2.5 text-center text-inherit">Total Item</th>
+                                          <th className="px-3 py-2.5 text-right text-inherit">Estimasi Biaya (Rp)</th>
+                                        </tr>
+                                      </thead>
+                                      <tbody className="divide-y divide-slate-100 font-sans">
+                                        {totalRABBySeksi.map((row) => (
+                                          <tr key={row.idx} className={`hover:bg-slate-50/50 transition-colors ${theme.stripeBg}`}>
+                                            <td className="px-3 py-2 text-center text-slate-400 font-medium">{row.idx}</td>
+                                            <td className="px-3 py-2 font-semibold text-slate-800">Seksi {row.seksi}</td>
+                                            <td className="px-3 py-2 text-center font-mono text-slate-600">{row.itemCount} item</td>
+                                            <td className="px-3 py-2 text-right font-mono font-bold text-slate-800">{formatRp(row.total)}</td>
+                                          </tr>
+                                        ))}
+                                        <tr className={`${theme.sumBg} font-extrabold ${theme.sumBorder}`}>
+                                          <td className="px-3 py-2.5 text-center">Σ</td>
+                                          <td className="px-3 py-2.5 uppercase tracking-wide text-[9px]">Total Rencana Anggaran Biaya (RAB)</td>
+                                          <td className="px-3 py-2.5 text-center font-mono">{activeRKBA.length} item</td>
+                                          <td className="px-3 py-2.5 text-right font-mono text-emerald-700">{formatRp(totalRAB)}</td>
+                                        </tr>
+                                      </tbody>
+                                    </table>
+                                  </div>
+                                </div>
+
+                                {/* Section B Table */}
+                                <div className="space-y-2 pt-2">
+                                  <h4 className="text-[10.5px] sm:text-[11.5px] font-bold text-slate-800 font-sans uppercase tracking-wider">
+                                    B. Rencana Proyeksi Pendanaan
+                                  </h4>
+                                  
+                                  <div className={`overflow-x-auto rounded border ${theme.tableBorder} bg-white shadow-3xs`}>
+                                    <table className="w-full text-left border-collapse text-[11px] sm:text-[12px]">
+                                      <thead>
+                                        <tr className={`${theme.thBg} border-b ${theme.thBorder} font-bold uppercase tracking-wider text-[9px]`}>
+                                          <th className="px-3 py-2.5 text-center text-inherit w-12">No</th>
+                                          <th className="px-3 py-2.5 text-inherit">Sumber Dana</th>
+                                          <th className="px-3 py-2.5 text-right text-inherit">Target Rupiah (Rp)</th>
+                                        </tr>
+                                      </thead>
+                                      <tbody className="divide-y divide-slate-100 font-sans">
+                                        {rincianPendanaan.map((row, idx) => (
+                                          <tr key={idx} className={`hover:bg-slate-50/50 transition-colors ${theme.stripeBg}`}>
+                                            <td className="px-3 py-2 text-center text-slate-400 font-medium">{idx + 1}</td>
+                                            <td className="px-3 py-2 font-semibold text-slate-800">{row.nama}</td>
+                                            <td className="px-3 py-2 text-right font-mono font-bold text-slate-800">{formatRp(row.jumlah)}</td>
+                                          </tr>
+                                        ))}
+                                        <tr className={`${theme.sumBg} font-extrabold ${theme.sumBorder}`}>
+                                          <td className="px-3 py-2.5 text-center">Σ</td>
+                                          <td className="px-3 py-2.5 uppercase tracking-wide text-[9px]">Total Proyeksi Pendanaan</td>
+                                          <td className="px-3 py-2.5 text-right font-mono text-indigo-700">{formatRp(totalPendanaan)}</td>
+                                        </tr>
+                                      </tbody>
+                                    </table>
+                                  </div>
+                                </div>
+                              </div>
+                            )}
+
+                          </div>
+                        </>
+                      )}
+
+                          {/* Appended Content on Last Page */}
+                          {isLastPage && (
+                            <div className="mt-8">
+                              {renderSignatureGrid()}
+                            </div>
+                          )}
+
+                        </div>
+
+                        {!isCoverPage && (
+                          <div className="mt-6 text-center text-[10px] text-slate-400 font-mono">
+                            - {pageIndex} -
+                          </div>
+                        )}
+                      </div>
+                    );
+                  });
+                } catch (error) {
+                  console.error("Proposal Render Error:", error);
+                  return (
+                    <div className="p-10 bg-white border-2 border-dashed border-red-200 rounded-xl text-center">
+                      <AlertCircle className="w-10 h-10 text-red-500 mx-auto mb-3" />
+                      <h3 className="text-sm font-bold text-slate-800 uppercase">Gagal Merender Preview</h3>
+                      <p className="text-xs text-slate-500 mt-1">Terjadi kesalahan teknis saat menyusun tampilan dokumen. Mohon periksa kembali data input Anda atau coba generate ulang.</p>
+                    </div>
+                  );
+                }
+              };
+
+                return (
+                  <div className="border border-slate-200 rounded-lg overflow-hidden shadow-sm">
+                    
+                    {/* Proposal Toolbar controls */}
+                    <div className="bg-slate-50 border-b border-slate-200 px-3 py-2.5 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 text-[11px]">
+                      <span className="font-bold text-slate-700 font-sans flex items-center gap-1.5">
+                        <ClipboardCheck className="w-4 h-4 text-emerald-600" />
+                        Preview Dokumen Hasil Rumusan Proposal
+                      </span>
+                      <div className="flex gap-2 w-full sm:w-auto">
+                        <button
+                          onClick={copyLPJToClipboard}
+                          className="flex-1 sm:flex-none flex items-center justify-center gap-1 px-3 py-1.5 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 rounded text-xs font-bold shadow-2xs"
+                        >
+                          <Clipboard className="w-3.5 h-3.5 text-slate-400" />
+                          {copiedLPJ ? "Tersalin!" : "Salin Teks"}
+                        </button>
+                        <button
+                          onClick={() => {
+                            if (!proposalMarkdown) return;
+                            const sponsorshipTable = `| Paket | Harga | Benefit |\n| :--- | :--- | :--- |\n${(sponsorshipPackages || []).map(p => `| **${p.name}** | Rp ${p.price ? p.price.toLocaleString('id-ID') : 0} | ${p.benefit} |`).join('\n')}`;
+                            const textToDownload = proposalMarkdown.replace("{{SPONSORSHIP_TABLE}}", sponsorshipTable);
+                            const element = document.createElement("a");
+                            const file = new Blob([textToDownload], {type: 'text/plain;charset=utf-8'});
+                            element.href = URL.createObjectURL(file);
+                            element.download = `Proposal-${namaKegiatan.replace(/\s+/g, "-")}.txt`;
+                            document.body.appendChild(element);
+                            element.click();
+                            document.body.removeChild(element);
+                          }}
+                          className="flex-1 sm:flex-none flex items-center justify-center gap-1 px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-amber-400 rounded text-xs font-bold shadow-2xs"
+                        >
+                          <Download className="w-3.5 h-3.5 text-amber-400" />
+                          Unduh (.TXT)
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Document Styling Customization Toolbar */}
+                    <div className="bg-slate-900 text-slate-200 px-4 py-3 border-b border-slate-800 flex flex-col md:flex-row justify-between items-start md:items-center gap-3.5">
+                      <div className="flex flex-wrap items-center gap-4 text-xs">
+                        <span className="font-extrabold text-amber-400 flex items-center gap-1.5 font-sans uppercase tracking-wider text-[10px]">
+                          <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+                          Studio Desain Dokumen
+                        </span>
+                        
+                        {/* Theme presets picker */}
+                        <div className="flex items-center gap-1.5">
+                          <Palette className="w-3.5 h-3.5 text-slate-400" />
+                          <span className="text-slate-400 text-[10px] font-bold uppercase tracking-wider">Kertas:</span>
+                          <div className="flex gap-1 bg-slate-950 p-0.5 rounded border border-slate-800">
+                            <button
+                              onClick={() => setPaperTheme("classic")}
+                              className={`px-2 py-0.5 rounded text-[9px] font-bold uppercase transition-all ${paperTheme === "classic" ? "bg-red-600 text-white" : "text-slate-400 hover:text-white"}`}
+                            >
+                              Resmi (Merah)
+                            </button>
+                            <button
+                              onClick={() => setPaperTheme("creamy")}
+                              className={`px-2 py-0.5 rounded text-[9px] font-bold uppercase transition-all ${paperTheme === "creamy" ? "bg-amber-600 text-white" : "text-slate-400 hover:text-white"}`}
+                            >
+                              Klasik (Cream)
+                            </button>
+                            <button
+                              onClick={() => setPaperTheme("minimal")}
+                              className={`px-2 py-0.5 rounded text-[9px] font-bold uppercase transition-all ${paperTheme === "minimal" ? "bg-slate-700 text-white" : "text-slate-400 hover:text-white"}`}
+                            >
+                              Modern
+                            </button>
+                            <button
+                              onClick={() => setPaperTheme("green-gold")}
+                              className={`px-2 py-0.5 rounded text-[9px] font-bold uppercase transition-all ${paperTheme === "green-gold" ? "bg-emerald-600 text-white" : "text-slate-400 hover:text-white"}`}
+                            >
+                              Swadaya
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* Font picker */}
+                        <div className="flex items-center gap-1.5">
+                          <Type className="w-3.5 h-3.5 text-slate-400" />
+                          <span className="text-slate-400 text-[10px] font-bold uppercase tracking-wider">Font:</span>
+                          <div className="flex gap-1 bg-slate-950 p-0.5 rounded border border-slate-800">
+                            <button
+                              onClick={() => setFontStyle("poppins")}
+                              className={`px-2 py-0.5 rounded text-[9px] font-bold transition-all ${fontStyle === "poppins" ? "bg-slate-700 text-white" : "text-slate-400 hover:text-white"}`}
+                            >
+                              Poppins
+                            </button>
+                            <button
+                              onClick={() => setFontStyle("arial")}
+                              className={`px-2 py-0.5 rounded text-[9px] font-bold transition-all ${fontStyle === "arial" ? "bg-slate-700 text-white" : "text-slate-400 hover:text-white"}`}
+                            >
+                              Arial
+                            </button>
+                            <button
+                              onClick={() => setFontStyle("mono")}
+                              className={`px-2 py-0.5 rounded text-[9px] font-bold transition-all ${fontStyle === "mono" ? "bg-slate-700 text-white" : "text-slate-400 hover:text-white"}`}
+                            >
+                              Mono
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Extra layout toggles */}
+                      <div className="flex flex-wrap items-center gap-3.5 text-xs">
+                        <label className="flex items-center gap-1.5 cursor-pointer text-slate-300 hover:text-white select-none text-[10px] font-bold uppercase">
+                          <input
+                            type="checkbox"
+                            checked={showWatermark}
+                            onChange={(e) => setShowWatermark(e.target.checked)}
+                            className="rounded accent-red-600 focus:ring-0 w-3 h-3 cursor-pointer"
+                          />
+                          <span>Watermark</span>
+                        </label>
+                        <label className="flex items-center gap-1.5 cursor-pointer text-slate-300 hover:text-white select-none text-[10px] font-bold uppercase">
+                          <input
+                            type="checkbox"
+                            checked={showStamp}
+                            onChange={(e) => setShowStamp(e.target.checked)}
+                            className="rounded accent-red-600 focus:ring-0 w-3 h-3 cursor-pointer"
+                          />
+                          <span>Stempel</span>
+                        </label>
+                        
+                        <button
+                          onClick={() => window.print()}
+                          className="flex items-center gap-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 px-3 py-1 rounded text-[10px] font-black uppercase transition-all shadow-md"
+                        >
+                          <Printer className="w-3.5 h-3.5 text-slate-950" />
+                          Cetak Dokumen
+                        </button>
+                        
+                        <button
+                          onClick={handleExportPDF}
+                          disabled={isExportingPDF}
+                          className="flex items-center gap-1.5 bg-red-600 hover:bg-red-500 text-white px-3 py-1 rounded text-[10px] font-black uppercase transition-all shadow-md disabled:opacity-50 cursor-pointer"
+                        >
+                          {isExportingPDF ? (
+                            <RefreshCw className="w-3.5 h-3.5 text-white animate-spin" />
+                          ) : (
+                            <Download className="w-3.5 h-3.5 text-white" />
+                          )}
+                          {isExportingPDF ? "Mengekspor..." : "Ekspor PDF"}
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Styled virtual paper layout */}
+                    <div className="p-4 sm:p-8 bg-slate-200/60 h-[800px] overflow-y-auto select-text print:h-auto print:bg-white print:p-0">
+                      <div id="printable-lpj-paper" className="space-y-8 print:space-y-0">
+                        {renderPaperContent()}
+                      </div>
+                    </div>
+
+                    <div className="bg-red-50 p-2 text-[9px] text-red-800 border-t border-slate-200 font-bold tracking-wide uppercase text-center">
+                      *Proposal Konsolidasi Real-time: Estimasi Total RAB {formatRp((rkba || []).reduce((sum, r) => sum + r.total, 0))} | Proyeksi Swadaya RT ({(settings?.rtList || []).length} RT) {formatRp((settings?.targetIuranPerRT || 0) * (settings?.rtList || []).length)} | Target Sponsorship {formatRp(Math.max(0, (rkba || []).reduce((sum, r) => sum + r.total, 0) - ((settings?.targetIuranPerRT || 0) * (settings?.rtList || []).length)))}
+                    </div>
+
+                  </div>
+                );
+              })()
+            )}
+
+          </div>
+        )}
+
+      </div>
+
+    </div>
+  );
+}

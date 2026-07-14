@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { 
   TrendingUp, 
   CheckSquare, 
@@ -27,28 +27,34 @@ import {
   Image,
   Eye
 } from "lucide-react";
-import { SeksiTask, SystemSetting, KeuanganTransaction, Panitia } from "../types";
+import { SeksiTask, SystemSetting, KeuanganTransaction, RKBAItem, Panitia } from "../types";
 import { exportToPDF } from "../utils/pdfExport";
 import { exportToWord } from "../utils/wordExport";
 import { PDFPreviewModal } from "./PDFPreviewModal";
 import OrgChart from "./OrgChart";
+import DocumentPreviewRenderer from "./DocumentPreviewRenderer";
+import LPJPreview from "./LPJPreview";
 
-interface MonitoringViewProps {
+interface ProposalViewProps {
   tasks: SeksiTask[];
   settings: SystemSetting;
   keuangan: KeuanganTransaction[];
+  rkba: RKBAItem[];
   panitia: Panitia[];
   onToggleTaskStatus: (taskId: string) => Promise<void>;
 }
 
-export default function MonitoringView({
+export default function ProposalView({
   tasks,
   settings,
   keuangan,
+  rkba,
   panitia,
   onToggleTaskStatus
-}: MonitoringViewProps) {
-  // Safety checks for props
+}: ProposalViewProps) {
+  // Safety checks for props to prevent crashes
+  const safeTasks = tasks || [];
+  const safeRKBA = rkba || [];
   const safeSettings: SystemSetting = {
     id: settings?.id || "temp-id",
     rtList: settings?.rtList || [],
@@ -57,10 +63,12 @@ export default function MonitoringView({
     paguAnggaranSeksi: settings?.paguAnggaranSeksi || {},
     sheetId: settings?.sheetId || "",
     sheetApiKey: settings?.sheetApiKey || "",
-    themeColor: settings?.themeColor || "#cc0000"
+    themeColor: settings?.themeColor || "#ff0000"
   };
+  const safePanitia = panitia || [];
+  const safeKeuangan = keuangan || [];
 
-  const [lpjMarkdown, setLpjMarkdown] = useState<string>("");
+  const [proposalMarkdown, setProposalMarkdown] = useState<string>("");
   const [showLPJConsole, setShowLPJConsole] = useState(false);
   const [consoleLog, setConsoleLog] = useState<string[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -69,7 +77,15 @@ export default function MonitoringView({
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
 
   // Custom LPJ Template settings & inputs
-  const [selectedTemplate, setSelectedTemplate] = useState<"formal" | "ringkas">("formal");
+  const [selectedTemplate, setSelectedTemplate] = useState<"formal" | "ringkas" | "sponsor">("formal");
+  
+  // Sponsor Package states
+  const [sponsorshipPackages, setSponsorshipPackages] = useState<{ name: string; benefit: string; price?: number }[]>([
+    { name: "Platinum", benefit: "Logo eksklusif pada seluruh media promosi, Ad-lib khusus, Booth besar.", price: 3000000 },
+    { name: "Gold", benefit: "Logo pada spanduk utama, Penyebutan nama, Booth standar.", price: 2500000 },
+    { name: "Silver", benefit: "Logo berukuran kecil pada banner, Penyebutan nama.", price: 1500000 }
+  ]);
+
   const [namaRW, setNamaRW] = useState<string>("RW 04 Ngabean");
   const [namaKegiatan, setNamaKegiatan] = useState<string>("Peringatan HUT RI Ke-81");
   const [tanggalLPJ, setTanggalLPJ] = useState<string>("17 Agustus 2026");
@@ -77,6 +93,23 @@ export default function MonitoringView({
   const [namaSekretaris, setNamaSekretaris] = useState<string>("");
   const [namaBendahara, setNamaBendahara] = useState<string>("");
   const [namaRWKetua, setNamaRWKetua] = useState<string>("");
+
+  // Auto-populate committee states when the panitia prop loads
+  useEffect(() => {
+    if (safePanitia && safePanitia.length > 0) {
+      const k = safePanitia.find(p => p.role.toLowerCase() === "ketua" || p.role.toLowerCase().includes("ketua panitia"));
+      if (k && !namaKetua) setNamaKetua(k.name);
+      
+      const s = safePanitia.find(p => p.role.toLowerCase() === "sekretaris" || p.role.toLowerCase().includes("sekretaris"));
+      if (s && !namaSekretaris) setNamaSekretaris(s.name);
+      
+      const b = safePanitia.find(p => p.role.toLowerCase() === "bendahara" || p.role.toLowerCase().includes("bendahara"));
+      if (b && !namaBendahara) setNamaBendahara(b.name);
+      
+      const r = safePanitia.find(p => p.role.toLowerCase().includes("rw") || p.role.toLowerCase().includes("pelindung") || p.role.toLowerCase().includes("pembina"));
+      if (r && !namaRWKetua) setNamaRWKetua(r.name);
+    }
+  }, [safePanitia]);
 
   // Custom LPJ Styling states
   const [paperTheme, setPaperTheme] = useState<"classic" | "creamy" | "minimal" | "green-gold">("classic");
@@ -95,16 +128,20 @@ export default function MonitoringView({
   const [useMockData, setUseMockData] = useState<boolean>(false);
 
   // 1. Compute RT Contributions
-  const rtCollections = safeSettings.rtList.map((rtName) => {
-    const collected = keuangan
+  const rtCollections = (settings?.rtList || []).map((rtName) => {
+    const collected = (keuangan || [])
       .filter((t) => t.type === "Masuk" && t.category === "Iuran RT" && (t.notes || "").toLowerCase().includes(rtName.toLowerCase()))
       .reduce((sum, t) => sum + t.amount, 0);
 
-    const percent = Math.min(100, Math.round((collected / safeSettings.targetIuranPerRT) * 100));
+    const naturaValue = 0;
+
+    const totalContribution = collected + naturaValue;
+    const targetIuran = settings?.targetIuranPerRT || 0;
+    const percent = targetIuran > 0 ? Math.min(100, Math.round((collected / targetIuran) * 100)) : 0;
 
     let status = "Belum Mulai";
     let statusClass = "bg-slate-100 text-slate-500 border-slate-200";
-    if (collected >= safeSettings.targetIuranPerRT) {
+    if (targetIuran > 0 && collected >= targetIuran) {
       status = "LUNAS";
       statusClass = "bg-emerald-100 text-emerald-700 border-emerald-200";
     } else if (collected > 0) {
@@ -115,6 +152,8 @@ export default function MonitoringView({
     return {
       name: rtName,
       collected,
+      naturaValue,
+      totalContribution,
       percent,
       status,
       statusClass
@@ -125,309 +164,163 @@ export default function MonitoringView({
     return "Rp " + num.toLocaleString("id-ID");
   };
 
-  const generateLocalLPJ = (templateType: "formal" | "ringkas") => {
-    // Math computations for the report
-    const activePemasukan = keuangan
-      .filter(t => t.type === 'Masuk')
-      .reduce((sum, t) => sum + t.amount, 0);
+  const generateLocalLPJ = (templateType: "formal" | "ringkas" | "sponsor", useMock: boolean) => {
+    const tanggalProposal = new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+    
+    // Use mock data if requested
+    const rkbaTotal = useMock ? 15000000 : (rkba || []).reduce((sum, r) => sum + r.total, 0);
+    const totalPemasukan = useMock ? 16500000 : (keuangan || []).filter(t => t.type === 'Masuk').reduce((sum, t) => sum + t.amount, 0);
 
-    const activePengeluaran = keuangan
-      .filter(t => t.type === 'Keluar')
-      .reduce((sum, t) => sum + t.amount, 0);
-
-    const totalPemasukan = useMockData ? 16500000 : activePemasukan;
-    const totalPengeluaran = useMockData ? 12800000 : activePengeluaran;
-
-    const saldoSisa = totalPemasukan - totalPengeluaran;
-
-    const totalTasks = useMockData ? 18 : tasks.length;
-    const completedTasks = useMockData ? 15 : tasks.filter(t => t.status === 'Selesai').length;
-    const processingTasks = useMockData ? 2 : tasks.filter(t => t.status === 'Proses').length;
-    const pendingTasks = useMockData ? 1 : tasks.filter(t => t.status === 'Belum').length;
-    const persenTugas = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
-
-    // Detailed RT Collections output
-    const rtCollectionsDetails = useMockData
-      ? `- **RT 01 Ngabean:** Kas Tunai: Rp 4.500.000 (100% lunas)\n- **RT 02 Ngabean:** Kas Tunai: Rp 4.500.000 (100% lunas)\n- **RT 03 Ngabean:** Kas Tunai: Rp 3.000.000 (80% lunas)\n- **RT 04 Ngabean:** Kas Tunai: Rp 4.500.000 (100% lunas)`
-      : rtCollections.map(rt => {
-          return `- **${rt.name} ${namaRW.replace(/RW\s*\d+\s*/i, "")}:** Kas Tunai: ${formatRp(rt.collected)} (${rt.percent}% lunas)`;
-        }).join("\n");
-
-    // Detailed Tasks per Seksi output
-    const seksiList = safeSettings.seksiList;
-    const seksiTasksDetails = useMockData
-      ? `- **Seksi Acara:** Menyelesaikan 3 dari 3 program kerja. (Pagu Maksimal: Rp 3.000.000)\n- **Seksi Perlengkapan:** Menyelesaikan 4 dari 4 program kerja. (Pagu Maksimal: Rp 4.000.000)\n- **Seksi Konsumsi:** Menyelesaikan 2 dari 2 program kerja. (Pagu Maksimal: Rp 5.000.000)\n- **Seksi Lomba:** Menyelesaikan 4 dari 5 program kerja. (Pagu Maksimal: Rp 2.000.000)`
-      : seksiList.map(seksiName => {
-          const seksiTasks = tasks.filter(t => t.seksi === seksiName);
-          const done = seksiTasks.filter(t => t.status === 'Selesai').length;
-          const total = seksiTasks.length;
-          const pagu = safeSettings.paguAnggaranSeksi[seksiName] || 0;
-          return `- **Seksi ${seksiName}:** Menyelesaikan ${done} dari ${total} program kerja. (Pagu Maksimal: ${formatRp(pagu)})`;
-        }).join("\n");
-
-    // Total sisa pagu
-    const totalSisaPagu = Object.values(safeSettings.paguAnggaranSeksi).reduce((s,v) => s+v, 0) - totalPengeluaran;
-
-    // Laporan Realisasi Anggaran Seksi (Panitia) Table Markdown
-    const seksiRows = seksiList.map((seksiName, idx) => {
-      let pagu = safeSettings.paguAnggaranSeksi[seksiName] || 0;
-      let spent = 0;
-      if (useMockData) {
-        if (seksiName.includes("Acara")) { pagu = 3000000; spent = 2800000; }
-        else if (seksiName.includes("Perlengkap")) { pagu = 4000000; spent = 3900000; }
-        else if (seksiName.includes("Konsumsi")) { pagu = 5000000; spent = 4700000; }
-        else if (seksiName.includes("Lomba")) { pagu = 2000000; spent = 1400000; }
-        else { spent = Math.round(pagu * 0.9); }
-      } else {
-        spent = keuangan.filter(t => t.type === 'Keluar' && (t.notes?.toLowerCase().includes(seksiName.toLowerCase()) || (t as any).seksi === seksiName)).reduce((sum, t) => sum + t.amount, 0);
-      }
-      const sisa = pagu - spent;
-      const pct = pagu > 0 ? Math.round((spent / pagu) * 100) : 0;
-      return `| ${idx + 1} | Seksi ${seksiName} | ${formatRp(pagu)} | ${formatRp(spent)} | ${formatRp(sisa)} | ${pct}% |`;
-    }).join("\n");
-
-    const totalPaguSeksi = useMockData 
-      ? 14000000 
-      : Object.values(safeSettings.paguAnggaranSeksi).reduce((s, v) => s + v, 0);
-    const totalSpentSeksi = totalPengeluaran;
-    const totalSisaSeksi = totalPaguSeksi - totalSpentSeksi;
-    const totalPctSeksi = totalPaguSeksi > 0 ? Math.round((totalSpentSeksi / totalPaguSeksi) * 100) : 0;
-
-    const seksiBudgetTableMarkdown = `| No | Pos / Seksi Anggaran | Alokasi Pagu (Rp) | Realisasi Belanja (Rp) | Sisa Alokasi (Rp) | % Penyerapan |
-|:--:|:---------------------|------------------:|-----------------------:|----------------------:|:------------:|
-${seksiRows}
-| **Σ** | **TOTAL BELANJA SEKSI** | **${formatRp(totalPaguSeksi)}** | **${formatRp(totalSpentSeksi)}** | **${formatRp(totalSisaSeksi)}** | **${totalPctSeksi}%** |`;
-
-    // Detail Kontribusi Wilayah RT Table Markdown
-    const rtRows = (useMockData
-      ? [
-          { name: "RT 01 Ngabean", target: 4500000, collected: 4500000, pct: 100 },
-          { name: "RT 02 Ngabean", target: 4500000, collected: 4500000, pct: 100 },
-          { name: "RT 03 Ngabean", target: 4500000, collected: 3000000, pct: 80 },
-          { name: "RT 04 Ngabean", target: 4500000, collected: 4500000, pct: 100 },
-        ]
-      : rtCollections.map(rt => ({
-          name: `${rt.name} ${namaRW.replace(/RW\s*\d+\s*/i, "")}`,
-          target: safeSettings.targetIuranPerRT,
-          collected: rt.collected,
-          pct: rt.percent,
-        }))
-    ).map((rt, idx) => {
-      return `| ${idx + 1} | ${rt.name} | ${formatRp(rt.target)} | ${formatRp(rt.collected)} | ${rt.pct}% |`;
-    }).join("\n");
-
-    const totalTargetRT = useMockData ? 18000000 : safeSettings.targetIuranPerRT * safeSettings.rtList.length;
-    const totalCollectedRT = useMockData ? 16500000 : rtCollections.reduce((s, r) => s + r.collected, 0);
-    const avgPctRT = totalTargetRT > 0 ? Math.round((totalCollectedRT / totalTargetRT) * 100) : 0;
-
-    const rtContributionTableMarkdown = `| No | Wilayah RT | Target Pokok (Rp) | Iuran Tunai (Rp) | % Capaian |
-|:--:|:-----------|------------------:|-----------------:|:---------:|
-${rtRows}
-| **Σ** | **TOTAL KONTRIBUSI** | **${formatRp(totalTargetRT)}** | **${formatRp(totalCollectedRT)}** | **${avgPctRT}%** |`;
-
-    if (templateType === "ringkas") {
-      return `# RINGKASAN EKSEKUTIF LAPORAN PERTANGGUNGJAWABAN (LPJ)
-## DOKUMEN RINGKAS WARGA - KEGIATAN: ${namaKegiatan.toUpperCase()}
-## ${namaRW.toUpperCase()} KELURAHAN NGABEAN SEMARANG
-
-Yth. Bapak/Ibu Warga ${namaRW},
-
-Salam sejahtera untuk kita semua. Atas nama seluruh jajaran Panitia Pelaksana, kami mengucapkan terima kasih sebesar-besarnya atas kebersamaan, sumbangan iuran, waktu, serta tenaga yang melimpah dari seluruh warga dalam memeriahkan ${namaKegiatan}.
-
-Berikut adalah ringkasan kilas balik keuangan dan progress kegiatan yang dapat kami laporkan secara terbuka:
-
-### I. KILAS BALIK REALISASI KEUANGAN
-1. Total Dana Masuk (Kas Tunai Warga & Donatur): ${formatRp(totalPemasukan)}
-2. Total Pengeluaran Kegiatan (Belanja Panitia): ${formatRp(totalPengeluaran)}
-3. Sisa Saldo Kas Bersih Panitia: ${formatRp(saldoSisa)}
-
-Sisa saldo sebesar ${formatRp(saldoSisa)} ini telah diserahkan kembali secara utuh kepada kas RW untuk kemaslahatan warga berikutnya.
-
-### II. CAPAIAN PROGRAM KERJA & TUGAS SEKSI
-Kepanitiaan sukses merampungkan ${persenTugas}% dari total target kegiatan:
-- Total Program Kerja: ${totalTasks} Agenda Kegiatan
-- Selesai & Sukses: ${completedTasks} Agenda (Contoh: Lomba anak-anak, tirakatan malam HUT RI, jalan sehat)
-- Dalam Proses/Evaluasi: ${processingTasks} Agenda
-- Belum Terlaksana: ${pendingTasks} Agenda
-
-Sinergi gotong royong dan partisipasi aktif dari warga berhasil mensukseskan seluruh rangkaian kegiatan secara mandiri, membuktikan bahwa warga ${namaRW} sangat guyub dan rukun.
-
-Semarang, ${tanggalLPJ}
-Hormat Kami,
-
-[${namaKetua}]
-Ketua Panitia Pelaksana`;
-    }
-
-    // Default: Formal - Standard Template (12-part structure)
-    return `# LAPORAN PERTANGGUNGJAWABAN (LPJ)
-## PANITIA PELAKSANA PERINGATAN HUT RI KE-81
-## ${namaKegiatan.toUpperCase()}
-## ${namaRW.toUpperCase()} KELURAHAN NGABEAN KOTA SEMARANG
-
----
-
-### HALAMAN JUDUL
-
-**LAPORAN PERTANGGUNGJAWABAN (LPJ)**
-**PELAKSANAAN KEGIATAN PERINGATAN HARI ULANG TAHUN KEMERDEKAAN REPUBLIK INDONESIA KE-81**
-
-Diajukan oleh:
-Panitia Pelaksana Peringatan HUT RI Ke-81
-${namaRW} Kelurahan Ngabean, Kecamatan Gunungpati, Kota Semarang
-
-Sebagai wujud akuntabilitas, transparansi, dan dokumentasi sejarah atas pelaksanaan agenda sosial kemasyarakatan di tingkat wilayah.
-
----
-
-### LEMBAR PENGESAHAN
-
-Dokumen Laporan Pertanggungjawaban (LPJ) Peringatan Hari Ulang Tahun Kemerdekaan Republik Indonesia Ke-81 ini telah diperiksa, dievaluasi, dan disahkan oleh pengurus kepanitiaan serta pimpinan wilayah pada:
-
-Hari/Tanggal: ${tanggalLPJ}
-Tempat: Balai Warga ${namaRW} Kelurahan Ngabean, Semarang
-
-Dengan pengesahan ini, masa bakti kepanitiaan dinyatakan selesai dengan rasa hormat dan apresiasi yang setinggi-tingginya dari warga.
+    if (templateType === "formal") {
+      return `# PROPOSAL KEGIATAN
+${namaKegiatan}
+${useMock ? "(Data Simulasi)" : ""}
 
 ---
 
 ### KATA PENGANTAR
 
-Puji syukur kehadirat Tuhan Yang Maha Esa, karena atas rahmat dan karunia-Nya seluruh rangkaian kegiatan peringatan Hari Ulang Tahun Kemerdekaan Republik Indonesia Ke-81 di wilayah ${namaRW} dapat terselenggara dengan lancar, tertib, dan penuh kemeriahan.
+Puji syukur kami panjatkan kepada Tuhan Yang Maha Esa atas tersusunnya proposal kegiatan ${namaKegiatan} di wilayah ${namaRW} Kelurahan Ngabean Semarang. Proposal ini disusun untuk memberikan gambaran menyeluruh tentang rencana kegiatan, kebutuhan anggaran, dan target pencapaian yang akan dilaksanakan.
 
-Laporan Pertanggungjawaban (LPJ) ini disusun sebagai bentuk transparansi dan tanggung jawab panitia pelaksana kepada seluruh warga, pengurus RW, serta para donatur yang telah memberikan dukungan moril maupun materiil. Kami menyadari bahwa kesuksesan rangkaian acara ini tidak lepas dari kerja keras panitia, partisipasi aktif warga, serta sinergi gotong royong yang luar biasa.
+Semoga proposal ini dapat menjadi acuan bersama dalam mensukseskan kegiatan warga yang kita cintai ini.
 
-Kami menyampaikan permohonan maaf atas segala kekurangan selama persiapan hingga pelaksanaan kegiatan. Semoga laporan ini bermanfaat untuk kepanitiaan di masa mendatang.
-
-Semarang, ${tanggalLPJ}
+Semarang, ${tanggalProposal}
 Panitia Pelaksana
 
 ---
 
 ### DAFTAR ISI
 
-1. Sampul (Cover)
-2. Halaman Judul
-3. Lembar Pengesahan
-4. Kata Pengantar
-5. Daftar Isi
-6. BAB I. PENDAHULUAN
-7. BAB II. PERENCANAAN KEGIATAN
-8. BAB III. PELAKSANAAN KEGIATAN
-9. BAB IV. PERTANGGUNGJAWABAN KEUANGAN
-10. BAB V. EVALUASI
-11. BAB VI. PENUTUP
-12. Lampiran
+1. Judul Utama
+2. Kata Pengantar
+3. Bab I. Pendahuluan
+4. Bab II. Susunan Panitia
+5. Bab III. Rencana Program Kerja
+6. Bab IV. Rencana Anggaran Biaya (RAB)
+7. Bab V. Penawaran Kerjasama Sponsorship
+8. Bab VI. Penutup
 
 ---
 
 ### BAB I. PENDAHULUAN
 
 **1. Latar Belakang**
-Hari Ulang Tahun Kemerdekaan Republik Indonesia merupakan momentum bersejarah yang wajib diperingati oleh seluruh warga negara sebagai wujud rasa syukur dan penghormatan terhadap jasa para pahlawan. Di tingkat wilayah ${namaRW} Ngabean, peringatan ini diselenggarakan untuk merajut kembali tali silaturahmi, membangkitkan rasa nasionalisme, serta memupuk semangat gotong royong dan kemandirian warga setelah sekian lama beraktivitas dalam kesibukan masing-masing.
+Kegiatan ${namaKegiatan} ini digagas sebagai wujud kepedulian dan kebersamaan warga ${namaRW}. Melalui kegiatan ini, kami berharap dapat mempererat tali silaturahmi, menumbuhkan jiwa gotong royong, serta meningkatkan kesejahteraan lingkungan.
 
-**2. Dasar Kegiatan**
-- Pancasila dan Undang-Undang Dasar Negara Republik Indonesia Tahun 1945.
-- Hasil Keputusan Rapat Warga ${namaRW} Ngabean tentang Pembentukan Panitia HUT RI Ke-81.
-
-**3. Tujuan Kegiatan**
-- Mempererat tali silaturahmi dan kerukunan antar tetangga di lingkungan ${namaRW}.
-- Menumbuhkan sportivitas, kreativitas, dan rasa percaya diri anak-anak serta remaja melalui berbagai perlombaan.
-- Menjaga kelestarian tradisi gotong royong dan swadaya mandiri masyarakat perkotaan.
+**2. Tujuan Kegiatan**
+- Membangun kerukunan antar warga.
+- Menjadi wadah kreativitas dan kolaborasi positif.
+- Meningkatkan semangat partisipasi masyarakat dalam program lingkungan.
 
 ---
 
-### BAB II. PERENCANAAN KEGIATAN
+### BAB II. SUSUNAN PANITIA
 
-Perencanaan kegiatan dirancang secara matang melalui beberapa kali rapat koordinasi panitia. Perencanaan mencakup pembentukan susunan panitia, penyusunan jadwal kerja, serta pembagian pagu anggaran per seksi demi memastikan penggunaan dana yang efektif dan efisien.
-
-**1. Struktur Kepanitiaan**
-Struktur kepanitiaan dibentuk secara inklusif melibatkan unsur tokoh masyarakat, karang taruna, dan perwakilan warga dari setiap RT. Bagan alur koordinasi kepanitiaan disematkan di bawah ini.
-
-**2. Jadwal & Program Kerja**
-Setiap seksi pelaksana (Acara, Perlengkapan, Konsumsi, Lomba, Humas, Keamanan) memiliki target agenda masing-masing dengan alokasi anggaran terkontrol.
+Struktur organisasi kepanitiaan telah dibentuk untuk memastikan setiap bidang tugas memiliki penanggung jawab yang kompeten. Berikut adalah bagan struktur organisasi panitia pelaksana kegiatan.
 
 ---
 
-### BAB III. PELAKSANAAN KEGIATAN
+### BAB III. RENCANA PROGRAM KERJA
 
-Rangkaian kegiatan HUT RI Ke-81 di wilayah ${namaRW} Ngabean telah sukses dilaksanakan dengan partisipasi aktif yang sangat tinggi dari warga dari seluruh RT (RT 01 s.d. RT 07).
-
-**1. Uraian Pelaksanaan Kegiatan**
-Seluruh seksi pelaksana telah mengeksekusi program kerja dengan tingkat keberhasilan mencapai ${persenTugas}%. Beberapa agenda utama yang terlaksana meliputi:
-- **Perlombaan Anak-anak & Dewasa:** Berjalan meriah dengan tingkat partisipasi mencapai ratusan warga.
-- **Malam Tirakatan 17 Agustus:** Berlangsung khidmat diisi dengan doa bersama, pemotongan tumpeng, serta kilas balik sejarah perjuangan bangsa.
-- **Jalan Sehat & Panggung Hiburan:** Diikuti oleh seluruh warga dengan pembagian doorprize menarik dari hasil gotong royong warga dan sponsor.
-
-**2. Status Capaian Kegiatan**
-- Total Program Kerja: ${totalTasks} Agenda Kegiatan
-- Selesai & Sukses: ${completedTasks} Agenda
-- Dalam Proses/Evaluasi: ${processingTasks} Agenda
-- Belum Terlaksana: ${pendingTasks} Agenda
+Kepanitiaan ini telah menyusun serangkaian agenda kegiatan yang akan dilaksanakan oleh berbagai seksi. Berikut adalah daftar program kerja yang telah dicanangkan untuk mensukseskan acara.
 
 ---
 
-### BAB IV. PERTANGGUNGJAWABAN KEUANGAN
+### BAB IV. RENCANA ANGGARAN BIAYA (RAB)
 
-Laporan keuangan ini disusun secara transparan dan akuntabel berdasarkan sistem pencatatan kas terintegrasi (Single Source of Truth). Seluruh pengeluaran seksi didukung oleh bukti belanja fisik yang sah.
-
-**1. Ringkasan Posisi Kas Bersih**
-- Total Pemasukan Kas Tunai: ${formatRp(totalPemasukan)}
-- Total Realisasi Pengeluaran: ${formatRp(totalPengeluaran)}
-- **Sisa Saldo Kas Akhir:** **${formatRp(saldoSisa)}** (Telah diserahkan kembali ke Kas RW)
-
-**2. Pengelolaan Dana Talangan / Pinjaman Sementara**
-Mengingat saldo kas awal kepanitiaan adalah Rp 0 pada saat pembentukan, panitia telah mengandalkan skema Dana Talangan / Pinjaman dari Pamsimas guna membiayai pengeluaran darurat awal (seperti perlengkapan kesekretariatan, uang muka, dan pubdok). Seluruh Dana Talangan tersebut kini telah dikembalikan secara penuh dan tuntas kepada pihak Pamsimas seiring dengan masuknya setoran iuran tunai swadaya dari seluruh RT. Dengan demikian, kewajiban hutang talangan panitia per tanggal laporan pertanggungjawaban ini adalah Rp 0 (LUNAS).
+Untuk merealisasikan seluruh program kerja yang telah disusun, berikut adalah proyeksi kebutuhan dana dan rencana pendanaan (Rencana Anggaran Biaya).
 
 ---
 
-### BAB V. EVALUASI
+### BAB V. PENAWARAN KERJASAMA SPONSORSHIP
 
-Evaluasi dilakukan untuk mencatat kendala yang dihadapi selama pelaksanaan serta solusi yang diterapkan sebagai pembelajaran berharga bagi kepanitiaan di masa mendatang.
+Kami menawarkan beberapa tingkatan kerjasama yang dapat disesuaikan dengan fokus promosi mitra donatur/sponsor:
 
-**1. Kendala yang Dihadapi**
-- Keterbatasan waktu koordinasi panitia karena kesibukan pekerjaan masing-masing pengurus.
-- Logistik cuaca panas pada siang hari saat perlombaan luar ruangan.
-- Fluktuasi kehadiran warga pada jam-jam awal pelaksanaan jalan sehat.
-
-**2. Solusi & Tindakan Korektif**
-- Mengoptimalkan koordinasi digital melalui grup komunikasi instan secara terjadwal.
-- Menyediakan pos air mineral tambahan dan tenda peneduh portabel di area perlombaan.
-- Memberikan reminder berkala dan memajukan waktu pembagian kupon doorprize utama.
-
-**3. Rekomendasi Masa Depan**
-Sistem pengelolaan iuran dan inventarisasi natura yang telah berjalan harus dipertahankan karena terbukti meningkatkan kepercayaan warga akan transparansi pengelolaan dana sosial.
+{{SPONSORSHIP_TABLE}}
 
 ---
 
 ### BAB VI. PENUTUP
 
-Demikian Laporan Pertanggungjawaban (LPJ) Peringatan HUT RI Ke-81 di wilayah ${namaRW} Ngabean ini kami susun dengan sebenar-benarnya. Suksesnya seluruh rangkaian acara ini merupakan bukti nyata bahwa semangat gotong royong dan kebersamaan warga masih sangat kental dan terjaga dengan baik.
+Demikian proposal kegiatan ${namaKegiatan} ini kami susun. Besar harapan kami atas partisipasi, dukungan, dan bantuan dari seluruh pihak, baik moril maupun materiil, demi kelancaran dan kesuksesan kegiatan ini. Atas perhatian dan kerjasama yang baik, kami ucapkan terima kasih.
 
-Kami mengucapkan terima kasih yang sebesar-besarnya kepada seluruh warga, pengurus RT/RW, donatur, serta jajaran panitia yang telah mendharmabaktikan waktu, tenaga, pikiran, dan materinya demi kehormatan lingkungan kita. Semoga kebersamaan ini terus terbina demi kemajuan wilayah kita bersama.
-
-Semarang, ${tanggalLPJ}
-
-**PANITIA PELAKSANA PERINGATAN HUT RI KE-81**
-**${namaRW.toUpperCase()} KELURAHAN NGABEAN**
+Semarang, ${tanggalProposal}
+`;
+    } else if (templateType === "sponsor") {
+      return `# PROPOSAL PENAWARAN KERJASAMA SPONSORSHIP
+${namaKegiatan.toUpperCase()}
+${useMock ? "(Data Simulasi)" : ""}
 
 ---
 
-### LAMPIRAN
+### BAB I. PENDAHULUAN
 
-Sebagai dokumen pendukung pertanggungjawaban panitia, berikut dilampirkan rincian pelengkap dokumen:
+Kegiatan ini merupakan sarana strategis bagi perusahaan Anda untuk berinteraksi langsung dengan komunitas, meningkatkan *brand awareness*, serta menunjukkan komitmen sosial perusahaan di tengah masyarakat.
 
-- **Lampiran 1:** Buku Kas Umum (BKU) Penerimaan & Pengeluaran Kas (Tercetak otomatis pada tab Keuangan)
-- **Lampiran 2:** Laporan Rekonsiliasi Pengembalian Dana Talangan Pamsimas (Arsip Bendahara)
-- **Lampiran 3:** Dokumentasi Kegiatan & Nota-nota Belanja Panitia (Arsip fisik Bendahara)
+---
 
-Laporan Pertanggungjawaban ini dibuat rangkap sebagai dokumentasi resmi dan arsip warga.`;
+### BAB II. SUSUNAN PANITIA
+
+Kepanitiaan yang solid telah dibentuk untuk menjamin profesionalitas eksekusi kegiatan dan akuntabilitas kerjasama sponsorship.
+
+---
+
+### BAB III. RENCANA PROGRAM KERJA
+
+Berikut adalah rincian agenda kegiatan yang akan menjadi wadah bagi eksposur brand perusahaan Anda di tengah masyarakat.
+
+---
+
+### BAB IV. RENCANA ANGGARAN BIAYA (RAB)
+
+Proyeksi anggaran disusun secara transparan dan akuntabel untuk memastikan efektivitas setiap rupiah yang diinvestasikan oleh mitra sponsor.
+
+---
+
+### BAB V. PENAWARAN KERJASAMA SPONSORSHIP
+
+Kami menawarkan beberapa tingkatan kerjasama yang dapat disesuaikan dengan fokus promosi perusahaan Anda:
+
+| Paket | Harga | Benefit |
+| :--- | :--- | :--- |
+${sponsorshipPackages.map(p => `| **${p.name}** | Rp ${p.price ? p.price.toLocaleString('id-ID') : 0} | ${p.benefit} |`).join('\n')}
+
+---
+
+### BAB VI. PENUTUP
+
+
+Demikian proposal penawaran kerjasama ini kami sampaikan. Besar harapan kami agar perusahaan Anda dapat menjadi bagian dari kesuksesan ${namaKegiatan}.
+
+Atas perhatian, dukungan, dan kerjasamanya, kami ucapkan terima kasih.
+
+Semarang, ${tanggalProposal}
+
+**Panitia Pelaksana ${namaKegiatan}**
+`;
+    } else {
+      return `# EXECUTIVE SUMMARY PROPOSAL
+${namaKegiatan} - ${namaRW}
+${useMock ? "(Data Simulasi)" : ""}
+
+**1. Deskripsi Singkat**
+Proposal ini diajukan untuk kegiatan ${namaKegiatan} guna mempererat kerukunan warga ${namaRW}.
+
+**2. Rangkuman Anggaran**
+Total Rencana Anggaran Biaya (RAB) telah disusun secara efisien untuk mendukung seluruh program kerja panitia.
+Total RAB: ${formatRp(rkbaTotal)}
+
+**3. Harapan & Dukungan**
+Kami sangat mengharapkan dukungan penuh dari warga dan donatur untuk merealisasikan acara ini bersama-sama.
+
+Semarang, ${tanggalProposal}
+`;
+    }
   };
-
   const triggerLPJGeneration = async () => {
     setShowLPJConsole(true);
     setIsGenerating(true);
-    setLpjMarkdown("");
+    setProposalMarkdown("");
     setConsoleLog([]);
 
     const logStep = (msg: string, delay: number) => {
@@ -439,24 +332,22 @@ Laporan Pertanggungjawaban ini dibuat rangkap sebagai dokumentasi resmi dan arsi
       });
     };
 
-    await logStep("Inisialisasi Pembuatan Laporan Pertanggungjawaban (LPJ)...", 150);
+    await logStep("Inisialisasi Pembuatan Dokumen Proposal...", 150);
     await logStep("Menghubungkan ke basis data internal (Single Source of Truth)...", 200);
-    await logStep("Mengagregasi pembukuan kas utama: menghitung pemasukan & pengeluaran...", 250);
-    await logStep("Membaca kontribusi swadaya tunai RT untuk kalkulasi total efisiensi...", 200);
+    await logStep("Mengagregasi rencana kebutuhan anggaran: menghitung proyeksi biaya...", 250);
     await logStep("Menganalisis matriks progress program kerja dari seluruh seksi...", 250);
-    await logStep("Melakukan komparasi realisasi anggaran terhadap pagu batas operasional...", 200);
-    await logStep("Menyusun draf rekomendasi keberlanjutan kepanitiaan...", 150);
+    await logStep("Menyusun draf rekomendasi kemandirian kegiatan...", 150);
 
-    const report = generateLocalLPJ(selectedTemplate);
-    setLpjMarkdown(report);
+    const report = generateLocalLPJ(selectedTemplate, useMockData);
+    setProposalMarkdown(report);
     setIsGenerating(false);
-    await logStep("Sukses! Dokumen LPJ otomatis telah berhasil dirumuskan.", 100);
+    await logStep("Sukses! Dokumen Proposal otomatis telah berhasil dirumuskan.", 100);
   };
 
   const triggerAILPJGeneration = async () => {
     setShowLPJConsole(true);
     setIsGenerating(true);
-    setLpjMarkdown("");
+    setProposalMarkdown("");
     setConsoleLog([]);
 
     const logStep = (msg: string, delay: number) => {
@@ -470,12 +361,12 @@ Laporan Pertanggungjawaban ini dibuat rangkap sebagai dokumentasi resmi dan arsi
 
     try {
       await logStep("Menginisialisasi Mesin Kecerdasan Buatan Gemini AI...", 150);
-      await logStep("Mengonsolidasikan basis data rill pembukuan keuangan dan progres progja...", 200);
-      await logStep("Memetakan sumbangan swadaya iuran RT ke dalam variabel analisis...", 200);
-      await logStep("Membangun konteks instruksi penulisan laporan profesional (Bahasa Indonesia)...", 150);
+      await logStep("Mengonsolidasikan basis data rill rencana anggaran (RKBA) dan progres progja...", 200);
+      await logStep("Memetakan target kontribusi & sponsorship ke dalam variabel analisis...", 200);
+      await logStep("Membangun konteks instruksi penulisan proposal profesional (Bahasa Indonesia)...", 150);
       await logStep("Mengirim muatan data rill ke model gemini-3.5-flash...", 250);
 
-      const response = await fetch("/api/sems/generate-lpj-ai", {
+      const response = await fetch("/api/sems/generate-proposal-ai", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -484,44 +375,59 @@ Laporan Pertanggungjawaban ini dibuat rangkap sebagai dokumentasi resmi dan arsi
           templateType: selectedTemplate,
           namaKegiatan,
           namaRW,
-          tanggalLPJ,
+          tanggalProposal: tanggalLPJ,
           namaKetua,
           namaSekretaris,
           namaBendahara,
           namaRWKetua,
+          sponsorshipPackages,
         }),
       });
 
       const data = await response.json();
 
-      if (data.success && data.lpj) {
-        setLpjMarkdown(data.lpj);
-        await logStep("Analisis mendalam selesai! AI sukses menulis naskah LPJ yang kaya kosa kata.", 100);
+      if (data.success && data.proposal) {
+        setProposalMarkdown(data.proposal);
+        await logStep("Analisis mendalam selesai! AI sukses menulis naskah Proposal yang kaya kosa kata.", 100);
       } else {
-        throw new Error(data.error || "Gagal memproses draf LPJ dari AI.");
+        throw new Error(data.error || "Gagal memproses draf Proposal dari AI.");
       }
     } catch (err: any) {
       console.error(err);
-      await logStep(`⚠️ Warning: ${err.message || "Gagal berkomunikasi dengan server AI."}`, 100);
+      
+      let userFriendlyMessage = "Gagal berkomunikasi dengan server AI.";
+      if (err.message && err.message.includes("429")) {
+        userFriendlyMessage = "⌛ Kapasitas AI penuh. Mengaktifkan generator draf lokal...";
+      } else {
+        userFriendlyMessage = `⚠️ Error: ${err.message || "Gagal memproses draf."}`;
+      }
+      
+      await logStep(userFriendlyMessage, 100);
       await logStep("Mengaktifkan mode penulisan aman offline (Draf Lokal)...", 150);
-      const report = generateLocalLPJ(selectedTemplate);
-      setLpjMarkdown(report);
-      await logStep("Sukses! Draf LPJ standar lokal berhasil dirumuskan sebagai cadangan.", 100);
+      const report = generateLocalLPJ(selectedTemplate, useMockData);
+      setProposalMarkdown(report);
+      await logStep("Sukses! Draf Proposal standar lokal berhasil dirumuskan sebagai cadangan.", 100);
     } finally {
       setIsGenerating(false);
     }
   };
 
   const copyLPJToClipboard = () => {
-    if (!lpjMarkdown) return;
-    navigator.clipboard.writeText(lpjMarkdown);
+    if (!proposalMarkdown) return;
+    const sponsorshipTable = `| Paket | Harga | Benefit |\n| :--- | :--- | :--- |\n${(sponsorshipPackages || []).map(p => `| **${p.name}** | Rp ${p.price ? p.price.toLocaleString('id-ID') : 0} | ${p.benefit} |`).join('\n')}`;
+    const textToCopy = proposalMarkdown.replace("{{SPONSORSHIP_TABLE}}", sponsorshipTable);
+    navigator.clipboard.writeText(textToCopy);
     setCopiedLPJ(true);
     setTimeout(() => setCopiedLPJ(false), 2000);
   };
 
   const handleExportPDF = async () => {
+    if (!namaKegiatan || !namaKetua || !namaRWKetua) {
+      alert("Mohon lengkapi data identitas proposal (Nama Kegiatan, Ketua Panitia, Ketua RW) sebelum export.");
+      return;
+    }
     setIsExportingPDF(true);
-    await exportToPDF("printable-lpj-paper", `LPJ-${namaKegiatan.replace(/\s+/g, "-")}.pdf`);
+    await exportToPDF("printable-lpj-paper", `Proposal-${namaKegiatan.replace(/\s+/g, "-")}.pdf`);
     setIsExportingPDF(false);
     setIsPreviewOpen(false);
   };
@@ -531,7 +437,7 @@ Laporan Pertanggungjawaban ini dibuat rangkap sebagai dokumentasi resmi dan arsi
       alert("Mohon lengkapi data identitas proposal (Nama Kegiatan) sebelum export.");
       return;
     }
-    await exportToWord("printable-lpj-paper", `LPJ-${namaKegiatan.replace(/\s+/g, "-")}`);
+    await exportToWord("printable-lpj-paper", `Proposal-${namaKegiatan.replace(/\s+/g, "-")}`);
     setIsPreviewOpen(false);
   };
 
@@ -540,7 +446,7 @@ Laporan Pertanggungjawaban ini dibuat rangkap sebagai dokumentasi resmi dan arsi
       <PDFPreviewModal 
         isOpen={isPreviewOpen} 
         onClose={() => setIsPreviewOpen(false)} 
-        title="Pratinjau LPJ" 
+        title="Pratinjau Proposal" 
         onDownload={handleExportPDF}
         onExportWord={handleExportWord}
       >
@@ -548,22 +454,27 @@ Laporan Pertanggungjawaban ini dibuat rangkap sebagai dokumentasi resmi dan arsi
            {/* Need to copy the content of printable-lpj-paper here */}
         </div>
       </PDFPreviewModal>
-
+      
       {/* 1. Header Area */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white p-4 rounded-lg shadow-sm border border-slate-200 print:hidden">
         <div>
           <h2 className="text-sm font-extrabold text-slate-800 flex items-center gap-2 uppercase tracking-wide">
             <TrendingUp className="w-4 h-4 text-red-600" />
-            Monitoring Progress & Penyusunan LPJ
+            Monitoring Progress, Proposal & LPJ
           </h2>
           <p className="text-[11px] text-slate-500 mt-0.5">
-            Pantau rincian tugas seksi, tagihan iuran RT, serta formulasikan Laporan Pertanggungjawaban (LPJ) lengkap berbasis data real-time secara instan.
+            Pantau rincian tugas, susun proposal, dan laporan pertanggungjawaban (LPJ).
           </p>
         </div>
       </div>
 
+      {/* Org Chart */}
+      <div className="bg-white p-4 rounded-lg shadow-sm border border-slate-200 print:hidden">
+        <OrgChart panitia={safePanitia} settings={safeSettings} />
+      </div>
+
       {/* Grid: Tasks & Iuran RT */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 print:hidden">
         
         {/* Card Left: Seksi Tasks list */}
         <div className="bg-white p-4 rounded-lg shadow-sm border border-slate-200">
@@ -635,7 +546,7 @@ Laporan Pertanggungjawaban ini dibuat rangkap sebagai dokumentasi resmi dan arsi
                   <div className="space-y-1 flex-1">
                     <div className="flex justify-between items-center text-[11px]">
                       <span className="font-bold text-slate-800">{rt.name} Ngabean</span>
-                      <span className="font-mono text-slate-500 font-bold">{formatRp(rt.collected)} / {formatRp(safeSettings.targetIuranPerRT)}</span>
+                      <span className="font-mono text-slate-500 font-bold">{formatRp(rt.collected)} / {formatRp(settings?.targetIuranPerRT || 0)}</span>
                     </div>
                     <div className="relative w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
                       <div 
@@ -643,6 +554,11 @@ Laporan Pertanggungjawaban ini dibuat rangkap sebagai dokumentasi resmi dan arsi
                         style={{ width: `${rt.percent}%` }}
                       />
                     </div>
+                    {rt.naturaValue > 0 && (
+                      <span className="text-[8px] text-amber-700 font-bold uppercase tracking-wide block">
+                        + Kontribusi Natura RT Senilai: {formatRp(rt.naturaValue)}
+                      </span>
+                    )}
                   </div>
 
                   <span className={`text-[9px] font-mono font-bold px-1.5 py-0.5 rounded border shrink-0 ${rt.statusClass}`}>
@@ -655,22 +571,22 @@ Laporan Pertanggungjawaban ini dibuat rangkap sebagai dokumentasi resmi dan arsi
 
           <div className="mt-3 pt-3 border-t border-slate-200 flex justify-between items-center text-[11px]">
             <span className="text-slate-400">Ketentuan Target RT:</span>
-            <span className="font-bold text-slate-700">Rp {safeSettings.targetIuranPerRT.toLocaleString("id-ID")} (Kas Tunai) / RT</span>
+            <span className="font-bold text-slate-700">Rp {(settings?.targetIuranPerRT || 0).toLocaleString("id-ID")} (Kas Tunai) / RT</span>
           </div>
         </div>
 
       </div>
 
-      {/* LPJ Generator module */}
+      {/* Proposal Generator module */}
       <div className="bg-white p-4 rounded-lg shadow-sm border border-slate-200 space-y-4 print:hidden">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div>
             <h3 className="font-sans font-extrabold text-slate-800 text-xs uppercase tracking-wider flex items-center gap-1.5">
               <FileText className="w-4 h-4 text-red-600" />
-              Penyusunan & Pengaturan Dokumen LPJ
+              Penyusunan & Pengaturan Dokumen Proposal
             </h3>
             <p className="text-[11px] text-slate-500 mt-0.5">
-              Pilih dari berbagai template laporan formal dan sesuaikan data tanda tangan pengurus secara real-time.
+              Pilih dari berbagai template proposal formal dan sesuaikan data tanda tangan pengurus secara real-time.
             </p>
           </div>
           <div className="flex gap-2 w-full md:w-auto">
@@ -679,11 +595,12 @@ Laporan Pertanggungjawaban ini dibuat rangkap sebagai dokumentasi resmi dan arsi
               onChange={(e) => setSelectedTemplate(e.target.value as any)}
               className="text-xs border border-slate-200 focus:border-red-500 focus:outline-none rounded px-3 py-2 bg-slate-50 font-bold text-slate-700"
             >
-              <option value="formal">Template LPJ Resmi (Lengkap)</option>
-              <option value="ringkas">Template LPJ Ringkas (Warga)</option>
+              <option value="formal">Template Proposal Resmi (Lengkap)</option>
+              <option value="ringkas">Template Proposal Ringkas</option>
+              <option value="sponsor">Template Proposal Sponsor</option>
             </select>
             <button
-              id="btn-generate-lpj-ai"
+              id="btn-generate-proposal-ai"
               onClick={triggerAILPJGeneration}
               disabled={isGenerating}
               className="flex items-center justify-center gap-1.5 bg-gradient-to-r from-red-600 to-amber-500 hover:from-red-700 hover:to-amber-600 text-white font-extrabold text-[11px] px-4 py-2 rounded shadow-md transition-all duration-150 border border-transparent uppercase tracking-wide disabled:opacity-50 shrink-0 cursor-pointer"
@@ -696,7 +613,7 @@ Laporan Pertanggungjawaban ini dibuat rangkap sebagai dokumentasi resmi dan arsi
               {isGenerating ? "Menganalisis..." : "Generate dengan AI ✨"}
             </button>
             <button
-              id="btn-generate-lpj-local"
+              id="btn-generate-proposal-local"
               onClick={triggerLPJGeneration}
               disabled={isGenerating}
               className="flex items-center justify-center gap-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-[11px] px-3.5 py-2 rounded border border-slate-200 uppercase tracking-wide disabled:opacity-50 shrink-0 cursor-pointer"
@@ -706,12 +623,66 @@ Laporan Pertanggungjawaban ini dibuat rangkap sebagai dokumentasi resmi dan arsi
             </button>
           </div>
         </div>
+        {selectedTemplate === "sponsor" && (
+          <div className="flex flex-col gap-2 p-3 bg-slate-50 border border-slate-200 rounded text-xs mt-2 w-full">
+            <label className="font-bold text-slate-600">Konfigurasi Paket Sponsor:</label>
+            {sponsorshipPackages.map((pkg, index) => (
+              <div key={index} className="flex gap-2">
+                <input 
+                  type="text" 
+                  value={pkg.name} 
+                  onChange={(e) => {
+                    setSponsorshipPackages(prev => prev.map((p, i) => 
+                      i === index ? { ...p, name: e.target.value } : p
+                    ));
+                  }}
+                  className="p-1 border rounded w-1/4"
+                  placeholder="Nama Paket"
+                />
+                <input 
+                  type="number" 
+                  value={pkg.price || ""} 
+                  onChange={(e) => {
+                    setSponsorshipPackages(prev => prev.map((p, i) => 
+                      i === index ? { ...p, price: Number(e.target.value) } : p
+                    ));
+                  }}
+                  className="p-1 border rounded w-1/4"
+                  placeholder="Harga"
+                />
+                <input 
+                  type="text" 
+                  value={pkg.benefit} 
+                  onChange={(e) => {
+                    setSponsorshipPackages(prev => prev.map((p, i) => 
+                      i === index ? { ...p, benefit: e.target.value } : p
+                    ));
+                  }}
+                  className="p-1 border rounded w-2/4"
+                  placeholder="Benefit"
+                />
+                <button
+                  onClick={() => setSponsorshipPackages(sponsorshipPackages.filter((_, i) => i !== index))}
+                  className="bg-red-100 text-red-600 px-2 rounded"
+                >
+                  X
+                </button>
+              </div>
+            ))}
+            <button
+              onClick={() => setSponsorshipPackages([...sponsorshipPackages, { name: "", benefit: "", price: 0 }])}
+              className="bg-blue-500 text-white p-1 rounded text-xs"
+            >
+              Tambah Paket
+            </button>
+          </div>
+        )}
 
         {/* Live Input Controls */}
         <div className="bg-slate-50 p-4 rounded border border-slate-200/80 space-y-3">
           <div className="flex items-center gap-2 border-b border-slate-200 pb-1.5">
             <Info className="w-3.5 h-3.5 text-slate-500" />
-            <h4 className="text-[10px] font-extrabold text-slate-700 uppercase tracking-wider">Sesuaikan Data Identitas LPJ (Live Update)</h4>
+            <h4 className="text-[10px] font-extrabold text-slate-700 uppercase tracking-wider">Sesuaikan Data Identitas Proposal (Live Update)</h4>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-3.5">
             <div>
@@ -798,7 +769,7 @@ Laporan Pertanggungjawaban ini dibuat rangkap sebagai dokumentasi resmi dan arsi
                     setUseMockData(e.target.checked);
                     // Automatically trigger draf update
                     setTimeout(() => {
-                      const btn = document.getElementById("btn-generate-lpj-local");
+                      const btn = document.getElementById("btn-generate-proposal-local");
                       if (btn) btn.click();
                     }, 50);
                   }}
@@ -869,7 +840,7 @@ Laporan Pertanggungjawaban ini dibuat rangkap sebagai dokumentasi resmi dan arsi
             <div className="flex items-center justify-start text-[9.5px] text-slate-500 bg-amber-50/40 p-2.5 rounded border border-amber-100/50">
               <Info className="w-4 h-4 text-amber-600 shrink-0 mr-2" />
               <span className="leading-snug">
-                <strong>Visual Tip:</strong> Gunakan opsi <strong>Simulasi Mockup Offline</strong> apabila tidak ada koneksi internet atau data pembukuan masih kosong. Sistem akan seketika menyusun naskah LPJ lengkap menggunakan data demo berkualitas tinggi.
+                <strong>Visual Tip:</strong> Gunakan opsi <strong>Simulasi Mockup Offline</strong> apabila tidak ada koneksi internet atau data pembukuan masih kosong. Sistem akan seketika menyusun naskah Proposal lengkap menggunakan data demo berkualitas tinggi.
               </span>
             </div>
           </div>
@@ -887,15 +858,14 @@ Laporan Pertanggungjawaban ini dibuat rangkap sebagai dokumentasi resmi dan arsi
                 ))}
                 <div className="flex items-center gap-1 text-slate-400">
                   <RefreshCw className="w-3 h-3 animate-spin text-amber-400" />
-                  <span>Sedang merumuskan draf LPJ berbasis pembukuan waktu nyata...</span>
+                  <span>Sedang merumuskan draf Proposal berbasis pembukuan waktu nyata...</span>
                 </div>
               </div>
             )}
 
             {/* Markdown Display if ready */}
-            {lpjMarkdown && !isGenerating && {
-              // Helper components inside the render cycle
-              ...(() => {
+            {proposalMarkdown && !isGenerating && (
+              (() => {
                 const getPaperClass = () => {
                   let base = "relative p-8 sm:p-14 shadow-md max-w-[794px] min-h-[1123px] mx-auto select-text overflow-hidden transition-all duration-300 z-10 break-after-page flex flex-col justify-between print:min-h-0 print:shadow-none print:border-none print:p-0 print:mb-0 print:break-after-page ";
                   
@@ -939,42 +909,39 @@ Laporan Pertanggungjawaban ini dibuat rangkap sebagai dokumentasi resmi dan arsi
                 const renderLetterhead = () => {
                   if (paperTheme === "classic") {
                     return (
-                      <div className="flex justify-between items-center border-b-[4px] border-double border-red-800 pb-4 mb-8 bg-red-50/30 p-4 rounded-t-lg">
-                        <div className="w-16 h-16 shrink-0 flex items-center justify-center">
-                          {eventLogo ? <img src={eventLogo} alt="Logo Event" className="w-full h-full object-contain" /> : <div className="w-full h-full bg-red-100 rounded-full flex items-center justify-center text-red-700 font-black">HUT</div>}
+                      <div className="flex justify-between items-center border-b-[3px] border-double border-slate-900 pb-3 mb-6">
+                        <div className="w-12 h-12 shrink-0" />
+                        <div className="text-center flex-1 px-3">
+                          <h2 className="text-[12px] sm:text-sm font-black tracking-wider uppercase font-serif text-slate-950">{namaKegiatan}</h2>
+                          <h3 className="text-[10px] sm:text-xs font-bold uppercase font-serif text-slate-800">{namaRW} KELURAHAN NGABEAN</h3>
+                          <p className="text-[8px] sm:text-[9px] text-slate-500 italic font-serif mt-0.5">Sekretariat: RT 04 Ngabean, Kota Semarang, Jawa Tengah</p>
                         </div>
-                        <div className="text-center flex-1 px-4">
-                          <h2 className="text-[14px] sm:text-lg font-black tracking-wider uppercase font-serif text-red-950">{namaKegiatan}</h2>
-                          <h3 className="text-[11px] sm:text-sm font-bold uppercase font-serif text-red-800 mt-1">{namaRW} KELURAHAN NGABEAN</h3>
-                          <p className="text-[9px] sm:text-[10px] text-slate-600 font-sans mt-1">Sekretariat: RT 04 Ngabean, Kota Semarang, Jawa Tengah</p>
-                        </div>
-                        <div className="w-16 h-16 shrink-0" />
+                        {renderRightLogoAndDivider("border-slate-900/40")}
                       </div>
                     );
                   }
                   
                   if (paperTheme === "creamy") {
                     return (
-                      <div className="flex justify-between items-center border-b-[2px] border-amber-900/40 pb-4 mb-8">
-                        <div className="w-16 h-16 shrink-0">
-                          {eventLogo && <img src={eventLogo} alt="Logo Event" className="w-full h-full object-contain" />}
-                        </div>
+                      <div className="flex justify-between items-center border-b-[3px] border-double border-amber-900 pb-3 mb-6">
+                        <div className="w-12 h-12 shrink-0" />
                         <div className="text-center flex-1 px-3">
-                          <h2 className="text-[13px] sm:text-base font-black tracking-widest uppercase font-serif text-amber-950">{namaKegiatan}</h2>
-                          <h3 className="text-[10px] sm:text-xs font-bold uppercase font-serif text-amber-900 mt-1">{namaRW} KELURAHAN NGABEAN</h3>
-                          <div className="w-1/3 h-[1px] bg-amber-900/30 mx-auto mt-2" />
+                          <h2 className="text-[12px] sm:text-sm font-black tracking-wider uppercase font-serif text-amber-950">{namaKegiatan}</h2>
+                          <h3 className="text-[10px] sm:text-xs font-bold uppercase font-serif text-amber-900">{namaRW} KELURAHAN NGABEAN</h3>
+                          <p className="text-[8px] sm:text-[9px] text-amber-800/70 italic font-serif mt-0.5 font-bold">PANITIA PERINGATAN KEMERDEKAAN RI KE-81</p>
                         </div>
-                        <div className="w-16 h-16 shrink-0" />
+                        {renderRightLogoAndDivider("border-amber-900/30")}
                       </div>
                     );
                   }
                   
                   if (paperTheme === "minimal") {
                     return (
-                      <div className="flex justify-between items-start border-b border-slate-300 pb-6 mb-8">
+                      <div className="flex justify-between items-end border-b border-slate-300 pb-4 mb-6">
                         <div className="text-left flex-1">
-                          <h2 className="text-base sm:text-xl font-black tracking-tight text-slate-950 uppercase font-sans">{namaKegiatan}</h2>
-                          <h3 className="text-[11px] sm:text-xs font-bold text-slate-700 font-sans uppercase tracking-widest mt-1">{namaRW} Ngabean, Semarang</h3>
+                          <div className="text-[8px] font-extrabold text-slate-400 uppercase tracking-widest font-sans">Dokumen Resmi Pertanggungjawaban</div>
+                          <h2 className="text-sm sm:text-base font-black tracking-tight text-slate-900 uppercase font-sans mt-0.5">{namaKegiatan}</h2>
+                          <p className="text-[9px] sm:text-[10px] text-slate-600 font-sans mt-0.5 font-semibold">{namaRW} Ngabean, Semarang, Jawa Tengah</p>
                         </div>
                         {renderRightLogoAndDivider("border-slate-300")}
                       </div>
@@ -982,15 +949,14 @@ Laporan Pertanggungjawaban ini dibuat rangkap sebagai dokumentasi resmi dan arsi
                   }
 
                   return (
-                    <div className="flex justify-between items-center border-b-2 border-emerald-700 pb-4 mb-8 bg-emerald-50/20 p-4 rounded-lg">
-                      <div className="w-14 h-14 shrink-0">
-                        {eventLogo && <img src={eventLogo} alt="Logo Event" className="w-full h-full object-contain" />}
-                      </div>
+                    <div className="flex justify-between items-center border-b-2 border-emerald-600 pb-3 mb-6">
+                      <div className="w-12 h-12 shrink-0" />
                       <div className="text-center flex-1 px-3">
-                        <h2 className="text-[13px] sm:text-base font-extrabold tracking-wider uppercase text-emerald-950">{namaKegiatan}</h2>
-                        <h3 className="text-[10px] sm:text-xs font-bold uppercase text-emerald-800 mt-1">{namaRW} KELURAHAN NGABEAN</h3>
+                        <h2 className="text-[12px] sm:text-sm font-extrabold tracking-wider uppercase text-emerald-900">{namaKegiatan}</h2>
+                        <h3 className="text-[10px] sm:text-xs font-bold uppercase text-emerald-800">{namaRW} KELURAHAN NGABEAN</h3>
+                        <p className="text-[8px] sm:text-[9px] text-emerald-700 italic mt-0.5">Pemberdayaan Gotong Royong & Swadaya Kemandirian</p>
                       </div>
-                      <div className="w-14 h-14 shrink-0" />
+                      {renderRightLogoAndDivider("border-emerald-600/40")}
                     </div>
                   );
                 };
@@ -1059,15 +1025,20 @@ Laporan Pertanggungjawaban ini dibuat rangkap sebagai dokumentasi resmi dan arsi
                 };
 
                 const renderPaperContent = () => {
-                  let mainBodyText = lpjMarkdown;
+                  try {
+                    let mainBodyText = proposalMarkdown;
+                  const signatureIndex = proposalMarkdown.lastIndexOf("Semarang, ");
+                  if (signatureIndex !== -1) {
+                    mainBodyText = proposalMarkdown.substring(0, signatureIndex);
+                  }
 
-                  const activePemasukan = keuangan
+                  const activePemasukan = (keuangan || [])
                     .filter(t => t.type === 'Masuk')
                     .reduce((sum, t) => sum + t.amount, 0);
 
                   const activeNatura = 0;
 
-                  const activePengeluaran = keuangan
+                  const activePengeluaran = (keuangan || [])
                     .filter(t => t.type === 'Keluar')
                     .reduce((sum, t) => sum + t.amount, 0);
 
@@ -1209,7 +1180,7 @@ Laporan Pertanggungjawaban ini dibuat rangkap sebagai dokumentasi resmi dan arsi
                         continue;
                       }
 
-                      // Header 1 (e.g. # LAPORAN PERTANGGUNGJAWABAN (LPJ) KEPANITIAAN)
+                      // Header 1 (e.g. # DOKUMEN PROPOSAL (LPJ) KEPANITIAAN)
                       if (trimmed.startsWith("# ")) {
                         flushLists(`h1-${i}`);
                         const cleanHeader = trimmed.substring(2).replace(/[#*]/g, "").trim();
@@ -1306,233 +1277,108 @@ Laporan Pertanggungjawaban ini dibuat rangkap sebagai dokumentasi resmi dan arsi
                     return elements;
                   };
                   
+                  const safeTasks = tasks || [];
+                  const safeRKBA = rkba || [];
+                  const safeSettings: SystemSetting = {
+                    id: settings?.id || "temp-id",
+                    rtList: settings?.rtList || [],
+                    seksiList: settings?.seksiList || [],
+                    targetIuranPerRT: settings?.targetIuranPerRT || 0,
+                    paguAnggaranSeksi: settings?.paguAnggaranSeksi || {},
+                    sheetId: settings?.sheetId || "",
+                    sheetApiKey: settings?.sheetApiKey || "",
+                    themeColor: settings?.themeColor || "#ff0000"
+                  };
+                  const safePanitia = panitia || [];
+                  const safeSponsorshipPackages = sponsorshipPackages || [];
+
+                  // Mock or real tasks
+                  const activeTasks = useMockData ? [
+                    { id: "mock_t1", taskName: "Penyusunan Rencana Jadwal Lomba", seksi: "Seksi Lomba", status: "Selesai" as const, assignedTo: "Budi", deadline: "10 Juli 2026" },
+                    { id: "mock_t2", taskName: "Pembersihan Lapangan Upacara", seksi: "Perlengkapan", status: "Proses" as const, assignedTo: "Siti", deadline: "12 Juli 2026" },
+                    { id: "mock_t3", taskName: "Sewa Sound System & Genset", seksi: "Perlengkapan", status: "Selesai" as const, assignedTo: "Hadi", deadline: "15 Juli 2026" },
+                    { id: "mock_t4", taskName: "Pemesanan Tumpeng & Konsumsi Warga", seksi: "Konsumsi", status: "Selesai" as const, assignedTo: "Rina", deadline: "16 Agustus 2026" },
+                    { id: "mock_t5", taskName: "Publikasi Media & Spanduk", seksi: "Humas", status: "Belum" as const, assignedTo: "Andi", deadline: "1 Agustus 2026" },
+                    { id: "mock_t6", taskName: "Koordinasi Keamanan dengan Babinsa", seksi: "Keamanan dan Kebersihan", status: "Selesai" as const, assignedTo: "Joni", deadline: "14 Agustus 2026" }
+                  ] : safeTasks;
+
+                  // Mock or real rkba
+                  const activeRKBA = useMockData ? [
+                    { id: "mock_r1", name: "Hadiah Lomba Utama & Piala", seksi: "Seksi Lomba", qty: 1, unit: "Set", price: 2000000, total: 2000000, fundingSource: "Iuran RT" as const, status: "Disetujui" as const, notes: "", dateAdded: "" },
+                    { id: "mock_r2", name: "Sewa Panggung & Tenda Lapangan", seksi: "Perlengkapan", qty: 1, unit: "Unit", price: 4000000, total: 4000000, fundingSource: "Sponsorship" as const, status: "Disetujui" as const, notes: "", dateAdded: "" },
+                    { id: "mock_r3", name: "Sound System 5000 Watt", seksi: "Perlengkapan", qty: 1, unit: "Set", price: 1500000, total: 1500000, fundingSource: "Sponsorship" as const, status: "Disetujui" as const, notes: "", dateAdded: "" },
+                    { id: "mock_r4", name: "Konsumsi Snack & Nasi Kotak Warga", seksi: "Konsumsi", qty: 250, unit: "Kotak", price: 15000, total: 3750000, fundingSource: "Iuran RT" as const, status: "Disetujui" as const, notes: "", dateAdded: "" },
+                    { id: "mock_r5", name: "Spanduk Banner 4x1 Meter", seksi: "Humas", qty: 3, unit: "Pcs", price: 100000, total: 300000, fundingSource: "Kas Utama" as const, status: "Disetujui" as const, notes: "", dateAdded: "" },
+                    { id: "mock_r6", name: "Peralatan Kebersihan & P3K", seksi: "Keamanan dan Kebersihan", qty: 1, unit: "Paket", price: 450000, total: 450000, fundingSource: "Kas Utama" as const, status: "Disetujui" as const, notes: "", dateAdded: "" }
+                  ] : safeRKBA;
+                  
                   // Calculate Seksi budget data
-                  const seksiList = safeSettings.seksiList;
-                  const seksiTableData = seksiList.map((seksiName, idx) => {
-                    let pagu = safeSettings.paguAnggaranSeksi[seksiName] || 0;
-                    let spent = 0;
-                    if (useMockData) {
-                      if (seksiName.includes("Acara")) { pagu = 3000000; spent = 2800000; }
-                      else if (seksiName.includes("Perlengkap")) { pagu = 4000000; spent = 3900000; }
-                      else if (seksiName.includes("Konsumsi")) { pagu = 5000000; spent = 4700000; }
-                      else if (seksiName.includes("Lomba")) { pagu = 2000000; spent = 1400000; }
-                      else { spent = Math.round(pagu * 0.9); }
-                    } else {
-                      spent = keuangan.filter(t => t.type === 'Keluar' && (t.notes?.toLowerCase().includes(seksiName.toLowerCase()) || (t as any).seksi === seksiName)).reduce((sum, t) => sum + t.amount, 0);
-                    }
-                    const sisa = pagu - spent;
-                    const percent = pagu > 0 ? Math.round((spent / pagu) * 100) : 0;
-                    return { idx: idx + 1, seksi: seksiName, pagu, spent, sisa, percent };
-                  });
+                  const seksiList = safeSettings.seksiList || [];
+                  const totalRABBySeksi = seksiList.map((seksiName, idx) => {
+                    const rabSeksi = activeRKBA.filter(r => r.seksi === seksiName);
+                    const totalSeksi = rabSeksi.reduce((sum, r) => sum + r.total, 0);
+                    return { idx: idx + 1, seksi: seksiName, total: totalSeksi, itemCount: rabSeksi.length };
+                  }).filter(s => s.total > 0 || s.itemCount > 0);
 
-                  const totalPaguSeksi = useMockData ? 14000000 : Object.values(safeSettings.paguAnggaranSeksi).reduce((s, v) => s + v, 0);
-                  const totalSpentSeksi = totalPengeluaran;
-                  const totalSisaSeksi = totalPaguSeksi - totalSpentSeksi;
-                  const totalPercentSeksi = totalPaguSeksi > 0 ? Math.round((totalSpentSeksi / totalPaguSeksi) * 100) : 0;
+                  const totalRAB = totalRABBySeksi.reduce((sum, s) => sum + s.total, 0);
+                  const totalTargetIuran = (safeSettings.targetIuranPerRT || 0) * (safeSettings.rtList || []).length;
+                  const totalSponsorshipTarget = Math.max(0, totalRAB - totalTargetIuran);
 
-                  // Calculate RT iuran collection data
-                  const rtTableData = (useMockData
-                    ? [
-                        { name: "RT 01 Ngabean", target: 4500000, collected: 4500000, percent: 100, natura: 1200000, total: 5700000 },
-                        { name: "RT 02 Ngabean", target: 4500000, collected: 4500000, percent: 100, natura: 850000, total: 5350000 },
-                        { name: "RT 03 Ngabean", target: 4500000, collected: 3000000, percent: 80, natura: 900000, total: 3900000 },
-                        { name: "RT 04 Ngabean", target: 4500000, collected: 4500000, percent: 100, natura: 500000, total: 5000000 },
-                      ]
-                    : rtCollections.map(rt => ({
-                        name: `${rt.name} ${namaRW.replace(/RW\s*\d+\s*/i, "")}`,
-                        target: safeSettings.targetIuranPerRT,
-                        collected: rt.collected,
-                        percent: rt.percent,
-                        natura: 0,
-                        total: rt.collected
-                      }))
-                  );
-
-                  const totalTargetRT = useMockData ? 18000000 : safeSettings.targetIuranPerRT * safeSettings.rtList.length;
-                  const totalCollectedRT = useMockData ? 16500000 : rtCollections.reduce((s, r) => s + r.collected, 0);
-                  const totalNaturaRT = totalNatura;
-                  const totalSinergiRT = totalCollectedRT + totalNaturaRT;
-                  const avgPercentRT = totalTargetRT > 0 ? Math.round((totalCollectedRT / totalTargetRT) * 100) : 0;
-
-                  // Custom themed cover page for HUT RI
-                  const renderFormalCover = () => {
-                    return (
-                      <div className="flex-1 flex flex-col justify-between py-6 px-4 relative min-h-[900px] border-4 border-double border-red-600 rounded-lg p-6 bg-white shadow-3xs">
-                        {/* Decorative Red & White Corner Ribbon on top right */}
-                        <div className="absolute top-0 right-0 w-28 h-28 overflow-hidden pointer-events-none z-20">
-                          <div className="absolute top-6 -right-10 w-36 py-1 bg-gradient-to-r from-red-600 to-red-700 text-white text-[9px] font-black uppercase tracking-widest text-center rotate-45 border-b-2 border-white/40 shadow-md">
-                            HUT RI 81
-                          </div>
-                        </div>
-
-                        {/* Top Accent: Merah Putih Bar */}
-                        <div className="flex items-center justify-between border-b border-slate-200 pb-4">
-                          <div className="flex items-center gap-1.5">
-                            <span className="w-2.5 h-2.5 rounded-full bg-red-600" />
-                            <span className="w-2.5 h-2.5 rounded-full bg-slate-200 border border-slate-300" />
-                            <span className="text-[9px] font-mono font-bold tracking-widest text-slate-400 uppercase">DOKUMEN PERTANGGUNGJAWABAN</span>
-                          </div>
-                          <span className="text-[8px] font-mono font-black text-red-600 uppercase border border-red-200 bg-red-50 px-2 py-0.5 rounded shadow-3xs">OFFICIAL LPJ</span>
-                        </div>
-
-                        {/* Main Center Block */}
-                        <div className="my-auto space-y-6 text-center">
-                          {/* Large Emblem */}
-                          <div className="flex justify-center">
-                            <div className="relative w-28 h-28 flex items-center justify-center rounded-full bg-gradient-to-br from-red-50 to-white border-4 border-red-600 shadow-md overflow-hidden p-1">
-                              {eventLogo ? (
-                                <img src={eventLogo} alt="Logo HUT RI" className="w-full h-full object-contain" />
-                              ) : (
-                                <div className="absolute inset-1.5 rounded-full border-2 border-dashed border-red-500/50 flex flex-col items-center justify-center">
-                                  <span className="text-[9.5px] font-sans font-black tracking-widest text-red-600 uppercase">HUT RI</span>
-                                  <span className="text-3xl font-serif font-black tracking-tight text-red-700 leading-none my-1">81</span>
-                                  <span className="text-[7.5px] font-sans font-extrabold text-slate-500 tracking-widest uppercase">INDONESIA</span>
-                                </div>
-                              )}
-                              <div className="absolute -top-1 -right-1 text-amber-500">
-                                <Sparkles className="w-5 h-5 animate-pulse" />
-                              </div>
-                            </div>
-                          </div>
-
-                          {/* Titles */}
-                          <div className="space-y-3">
-                            <h1 className="text-xl sm:text-2xl font-black tracking-tight text-slate-900 leading-tight">
-                              LAPORAN <br />
-                              <span className="text-red-600 bg-red-50 border border-red-100 px-3 py-1 rounded inline-block mt-1">PERTANGGUNGJAWABAN (LPJ)</span>
-                            </h1>
-                            
-                            <div className="w-16 h-1 bg-red-600 mx-auto rounded-full" />
-
-                            <p className="text-xs font-bold text-slate-600 uppercase tracking-widest leading-relaxed max-w-md mx-auto">
-                              PELAKSANAAN KEGIATAN PERINGATAN HARI ULANG TAHUN KEMERDEKAAN REPUBLIK INDONESIA KE-81
-                            </p>
-                          </div>
-
-                          {/* Specific Event/RW Display */}
-                          <div className="bg-slate-50 border border-slate-200/60 rounded-xl p-4 max-w-sm mx-auto space-y-1.5 shadow-3xs">
-                            <h2 className="text-[11px] font-bold text-slate-400 uppercase tracking-wider font-sans">DILAKSANAKAN DI WILAYAH:</h2>
-                            <p className="text-sm font-black text-slate-800 uppercase font-sans tracking-tight">
-                              {namaRW} KELURAHAN NGABEAN
-                            </p>
-                            <p className="text-[9px] font-bold text-slate-500 font-sans tracking-wide">
-                              Kecamatan Gunungpati, Kota Semarang, Jawa Tengah
-                            </p>
-                          </div>
-                        </div>
-
-                        {/* Bottom Metadata block */}
-                        <div className="border-t border-slate-200 pt-5 mt-auto text-center space-y-3">
-                          <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">DIAJUKAN OLEH:</p>
-                          <div className="grid grid-cols-2 gap-2 text-left max-w-md mx-auto text-[10px] font-sans bg-slate-50/50 p-3 rounded-lg border border-slate-100">
-                            <div>
-                              <span className="text-slate-400 block uppercase text-[7.5px] font-bold tracking-wider">Organisasi:</span>
-                              <strong className="text-slate-700 block font-bold leading-tight">Panitia Pelaksana HUT RI 81</strong>
-                            </div>
-                            <div>
-                              <span className="text-slate-400 block uppercase text-[7.5px] font-bold tracking-wider">Pimpinan:</span>
-                              <strong className="text-slate-700 block font-bold leading-tight">{namaKetua} (Ketua)</strong>
-                            </div>
-                            <div className="mt-1">
-                              <span className="text-slate-400 block uppercase text-[7.5px] font-bold tracking-wider">Tanggal Laporan:</span>
-                              <strong className="text-slate-700 block font-bold leading-tight">{tanggalLPJ}</strong>
-                            </div>
-                            <div className="mt-1">
-                              <span className="text-slate-400 block uppercase text-[7.5px] font-bold tracking-wider">Sifat Dokumen:</span>
-                              <strong className="text-emerald-700 block font-bold leading-tight uppercase text-[8px] tracking-wide">✔ Transparan & Akuntabel</strong>
-                            </div>
-                          </div>
-                          
-                          <div className="text-[8px] text-slate-400 font-mono">
-                            Sistem Pengelolaan Acara & Keuangan Waktu Nyata (SEMS) • 2026
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  };
-
-                  // Custom themed title page for HUT RI
-                  const renderFormalTitlePage = () => {
-                    return (
-                      <div className="flex-1 flex flex-col justify-between py-6 px-4 relative min-h-[900px] border-2 border-slate-300 rounded-lg p-6 bg-white shadow-3xs">
-                        {/* Elegant minimalist ribbon at top left */}
-                        <div className="absolute top-0 left-0 w-2.5 h-full bg-red-600/10 flex flex-col">
-                          <div className="h-1/2 bg-red-600" />
-                          <div className="h-1/2 bg-slate-200" />
-                        </div>
-
-                        <div className="pl-6 flex-1 flex flex-col justify-between">
-                          {/* Header title marker */}
-                          <div className="flex justify-between items-center border-b border-slate-100 pb-3">
-                            <span className="text-[8.5px] font-mono font-black text-slate-400 tracking-widest uppercase">HALAMAN JUDUL UTAMA LPJ</span>
-                            <span className="text-[8px] font-mono font-semibold bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded">Dokumen Resmi No. HUT81/LPJ/04</span>
-                          </div>
-
-                          {/* Body Content */}
-                          <div className="my-auto space-y-8">
-                            <div className="space-y-2">
-                              <div className="text-[9.5px] font-extrabold text-red-600 uppercase tracking-widest">DOKUMEN PERTANGGUNGJAWABAN</div>
-                              <h1 className="text-lg sm:text-xl font-black text-slate-900 uppercase tracking-wide leading-snug">
-                                PELAKSANAAN KEGIATAN PERINGATAN HARI ULANG TAHUN KEMERDEKAAN REPUBLIK INDONESIA KE-81
-                              </h1>
-                              <p className="text-[11px] text-slate-500 font-sans italic">
-                                Dilengkapi dengan konsolidasi real-time keuangan, swadaya natura, laporan kerja per seksi fungsional, dan bagan alur struktur kepanitiaan.
-                              </p>
-                            </div>
-
-                            <hr className="border-t border-slate-200/80 w-1/3" />
-
-                            {/* Detailed Metadata Grid */}
-                            <div className="space-y-4 text-xs">
-                              <h3 className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">IDENTITAS PENGAJUAN LAPORAN</h3>
-                              <div className="grid grid-cols-1 gap-3 font-sans bg-slate-50 p-4 rounded-xl border border-slate-200/60 shadow-3xs">
-                                <div className="grid grid-cols-3 gap-2">
-                                  <span className="text-slate-400 font-medium">Judul Laporan</span>
-                                  <span className="col-span-2 font-bold text-slate-800">Laporan Pertanggungjawaban (LPJ) HUT RI Ke-81</span>
-                                </div>
-                                <div className="grid grid-cols-3 gap-2 border-t border-slate-100 pt-2">
-                                  <span className="text-slate-400 font-medium">Nama Kegiatan</span>
-                                  <span className="col-span-2 font-semibold text-slate-700">{namaKegiatan}</span>
-                                </div>
-                                <div className="grid grid-cols-3 gap-2 border-t border-slate-100 pt-2">
-                                  <span className="text-slate-400 font-medium">Wilayah Kerja</span>
-                                  <span className="col-span-2 font-semibold text-slate-700">{namaRW} Kelurahan Ngabean, Kecamatan Gunungpati, Kota Semarang</span>
-                                </div>
-                                <div className="grid grid-cols-3 gap-2 border-t border-slate-100 pt-2">
-                                  <span className="text-slate-400 font-medium">Penyusun Laporan</span>
-                                  <span className="col-span-2 font-semibold text-slate-700">Panitia Pelaksana Peringatan HUT RI Ke-81 {namaRW}</span>
-                                </div>
-                              </div>
-                            </div>
-
-                            {/* Short paragraph of purpose */}
-                            <div className="bg-red-50/30 border-l-2 border-red-600/70 p-3 text-[10px] sm:text-[11px] text-slate-600 rounded-r-lg">
-                              <strong>Tujuan Dokumen:</strong> Dokumen ini diajukan oleh panitia pelaksana sebagai laporan resmi, bukti pertanggungjawaban pengelolaan dana, inventarisasi aset, serta menjadi warisan sejarah (legacy) dokumentasi warga demi kelangsungan gotong royong di masa depan.
-                            </div>
-                          </div>
-
-                          {/* Footer and seal stamp reference */}
-                          <div className="border-t border-slate-100 pt-4 mt-auto text-[8.5px] text-slate-400 flex justify-between items-center font-mono">
-                            <span>SEMS DIGITAL ARCHIVE • NGABEAN</span>
-                            <span className="uppercase text-[7.5px] font-black text-red-600 bg-red-50 px-2 py-0.5 border border-red-100 rounded">SALINAN ASLI DRAF</span>
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  };
+                  const rincianPendanaan = [
+                    { nama: "Proyeksi Kas Iuran Warga (" + (safeSettings.rtList || []).length + " RT)", jumlah: totalTargetIuran },
+                    { nama: "Proyeksi Sponsorship / Donatur Eksternal", jumlah: totalSponsorshipTarget }
+                  ];
+                  const totalPendanaan = totalTargetIuran + totalSponsorshipTarget;
 
                   // Render multi-page document layout
                   const pages = mainBodyText.split("---").map(p => p.trim()).filter(p => p.length > 0);
 
+                  // Set up tracking variables to prevent duplicate component injections
+                  let hasInjectedBabII = false;
+                  let hasInjectedBabIII = false;
+                  let hasInjectedBabIV = false;
+                  let hasInjectedSponsorship = false;
+
                   return pages.map((pageText, pageIndex) => {
                     const isCoverPage = pageIndex === 0;
                     const isLastPage = pageIndex === pages.length - 1;
-                    const isFormalCover = selectedTemplate === "formal" && pageIndex === 0;
-                    const isFormalTitlePage = selectedTemplate === "formal" && pageIndex === 1;
-                    const isLembarPengesahan = selectedTemplate === "formal" && (pageText.includes("### LEMBAR PENGESAHAN") || pageIndex === 2);
-                    const isBabIIPerencanaan = selectedTemplate === "formal" && (pageText.includes("### BAB II. PERENCANAAN KEGIATAN") || pageIndex === 6);
-                    const isBabIVKeuangan = selectedTemplate === "formal" && (pageText.includes("### BAB IV. PERTANGGUNGJAWABAN KEUANGAN") || pageIndex === 8);
-                    const isBabVIPenutup = selectedTemplate === "formal" && (pageText.includes("### BAB VI. PENUTUP") || pageIndex === 10);
+                    
+                    const isBabIPage = (selectedTemplate === "formal" || selectedTemplate === "sponsor") && /^[\s#*]*BAB I[.:\s]+PENDAHULUAN/im.test(pageText);
+                    
+                    let isBabIIPage = false;
+                    if (!hasInjectedBabII && (selectedTemplate === "formal" || selectedTemplate === "sponsor") && (
+                      /^[\s#*]*BAB II[.:\s]+SUSUNAN PANITIA/im.test(pageText) || (pageIndex === 3 && pages.length >= 8)
+                    )) {
+                      isBabIIPage = true;
+                      hasInjectedBabII = true;
+                    }
+                    
+                    let isBabIIIPage = false;
+                    if (!hasInjectedBabIII && (selectedTemplate === "formal" || selectedTemplate === "sponsor") && (
+                      /^[\s#*]*BAB III[.:\s]+RENCANA PROGRAM KERJA/im.test(pageText) || (pageIndex === 4 && pages.length >= 8)
+                    )) {
+                      isBabIIIPage = true;
+                      hasInjectedBabIII = true;
+                    }
+                    
+                    let isBabIVPage = false;
+                    if (!hasInjectedBabIV && (selectedTemplate === "formal" || selectedTemplate === "sponsor") && (
+                      /^[\s#*]*BAB IV[.:\s]+RENCANA ANGGARAN BIAYA/im.test(pageText) || (pageIndex === 5 && pages.length >= 8)
+                    )) {
+                      isBabIVPage = true;
+                      hasInjectedBabIV = true;
+                    }
+                    
+                    let isSponsorshipPage = false;
+                    if (!hasInjectedSponsorship && (selectedTemplate === "sponsor" || selectedTemplate === "formal") && (
+                      /^[\s#*]*(?:BAB V[.:\s]+)?PENAWARAN KERJASAMA SPONSORSHIP/im.test(pageText) || 
+                      /^[\s#*]*PAKET SPONSORSHIP/im.test(pageText) ||
+                      /^[\s#*]*KERJASAMA SPONSOR/im.test(pageText) ||
+                      (pageIndex === 6 && pages.length >= 8)
+                    )) {
+                      isSponsorshipPage = true;
+                      hasInjectedSponsorship = true;
+                    }
 
                     return (
                       <div key={`page-${pageIndex}`} className={getPaperClass()}>
@@ -1547,30 +1393,121 @@ Laporan Pertanggungjawaban ini dibuat rangkap sebagai dokumentasi resmi dan arsi
                         )}
 
                         <div className="relative z-10 flex-1 flex flex-col">
-                          {isCoverPage && !isFormalCover && (
-                            <div className="mb-8">
-                              {renderLetterhead()}
-                            </div>
-                          )}
+                          {isCoverPage ? (
+                            <div className="flex-1 flex flex-col justify-between p-6 sm:p-10 border-4 border-red-600/20 rounded-xl relative overflow-hidden bg-gradient-to-b from-red-50/20 via-white to-red-50/10 h-full min-h-[680px]">
+                              {/* Patriotic red & white top bar */}
+                              <div className="absolute top-0 left-0 right-0 h-2 bg-gradient-to-r from-red-600 via-white to-red-600" />
+                              
+                              {/* Top Emblem and Title */}
+                              <div className="text-center space-y-4 pt-4">
+                                <div className="inline-flex items-center gap-2 px-3 py-1 bg-red-600 text-white rounded-full text-[9px] font-black tracking-widest uppercase shadow-sm">
+                                  <Sparkles className="w-3 h-3 text-amber-300 fill-amber-300 animate-pulse" />
+                                  PROPOSAL KEGIATAN RESMI
+                                </div>
+                                <div className="mt-2 text-[10px] font-mono uppercase tracking-[0.3em] text-slate-500 font-extrabold">
+                                  {namaRW.toUpperCase()} KELURAHAN NGABEAN
+                                </div>
+                              </div>
 
-                          <div className="leading-relaxed flex-1">
-                            {isFormalCover ? (
-                              renderFormalCover()
-                            ) : isFormalTitlePage ? (
-                              renderFormalTitlePage()
-                            ) : (
-                              renderMarkdownCleanly(pageText)
-                            )}
-                             
-                            {/* Appended Content on Lembar Pengesahan */}
-                            {isLembarPengesahan && (
-                              <div className="mt-6">
-                                {renderSignatureGrid()}
+                              {/* Big Elegant Center Title Card */}
+                              <div className="text-center my-auto py-8 space-y-6 relative">
+                                {/* Decorative circular sunburst / glow behind */}
+                                <div className="absolute inset-0 flex items-center justify-center -z-10 pointer-events-none opacity-[0.08]">
+                                  <div className="w-56 h-56 rounded-full bg-red-600 blur-3xl animate-pulse" />
+                                </div>
+
+                                {/* Custom HUT RI 81 Emblem */}
+                                <div className="mx-auto w-24 h-24 sm:w-28 sm:h-28 rounded-full bg-gradient-to-br from-red-600 to-red-700 p-1.5 shadow-xl border-4 border-white flex items-center justify-center relative animate-bounce-slow overflow-hidden">
+                                  {/* Outer decorative ring */}
+                                  <div className="absolute inset-0 rounded-full border border-dashed border-white/40 animate-spin-slow z-0" />
+                                  {eventLogo ? (
+                                    <div className="w-full h-full rounded-full bg-white flex items-center justify-center p-1.5 relative z-10">
+                                      <img src={eventLogo} alt="Logo HUT RI" className="w-full h-full object-contain" />
+                                    </div>
+                                  ) : (
+                                    <div className="w-full h-full rounded-full bg-white flex flex-col items-center justify-center relative z-10">
+                                      <span className="text-[10px] font-black text-red-600 leading-none tracking-widest uppercase">HUT RI</span>
+                                      <span className="text-3xl sm:text-4xl font-serif font-black text-red-700 leading-none my-1">81</span>
+                                      <span className="text-[8px] font-bold text-slate-600 leading-none tracking-wider">1945-2026</span>
+                                    </div>
+                                  )}
+                                </div>
+
+                                <div className="space-y-3">
+                                  <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-slate-900 leading-tight uppercase font-serif">
+                                    {namaKegiatan}
+                                  </h1>
+                                  <div className="w-24 h-1 bg-gradient-to-r from-transparent via-red-600 to-transparent mx-auto" />
+                                  <p className="text-xs text-slate-600 font-medium italic max-w-md mx-auto">
+                                    "Menjalin Kebersamaan, Memupuk Gotong Royong, Mewujudkan Lingkungan Mandiri"
+                                  </p>
+                                </div>
+                              </div>
+
+                              {/* Bottom Metadata Block */}
+                              <div className="space-y-6 border-t border-slate-200/60 pt-6">
+                                <div className="grid grid-cols-2 gap-4 text-left text-[10px] text-slate-600">
+                                  <div className="p-3 bg-slate-50/80 rounded-lg border border-slate-100 shadow-3xs">
+                                    <div className="font-bold text-slate-400 uppercase tracking-widest text-[8px] mb-1">Diusulkan Oleh:</div>
+                                    <div className="font-extrabold text-slate-800 leading-tight">{namaRW} Ngabean</div>
+                                    <div className="text-[9px] text-slate-500">Panitia Pelaksana Kemerdekaan</div>
+                                  </div>
+                                  <div className="p-3 bg-slate-50/80 rounded-lg border border-slate-100 shadow-3xs">
+                                    <div className="font-bold text-slate-400 uppercase tracking-widest text-[8px] mb-1">Tanggal Pengajuan:</div>
+                                    <div className="font-extrabold text-slate-800 leading-tight">{tanggalLPJ}</div>
+                                    <div className="text-[9px] text-slate-500">Kota Semarang, Jawa Tengah</div>
+                                  </div>
+                                </div>
+
+                                {/* Custom generated subtitle text from model */}
+                                <div className="text-center text-[9px] text-slate-400 font-mono tracking-widest uppercase flex items-center justify-center gap-1.5">
+                                  <span>INDONESIA MAJU</span>
+                                  <span className="text-red-500 font-sans">•</span>
+                                  <span>NUSANTARA BARU</span>
+                                </div>
+                              </div>
+                            </div>
+                          ) : (
+                            <>
+                              <div className="mb-8">
+                                {renderLetterhead()}
+                              </div>
+
+                              <div className="leading-relaxed flex-1">
+                                {renderMarkdownCleanly(pageText.replace(/[\n\r]*{{SPONSORSHIP_TABLE}}[\n\r]*/g, ""))}
+
+                            {/* Inject Sponsorship Packages in Sponsorship Page */}
+                            {isSponsorshipPage && (
+                              <div className="mt-6 space-y-4">
+                                <div className="flex items-center justify-between border-b border-slate-200 pb-2">
+                                  <h4 className={`text-xs font-black tracking-wider uppercase ${theme.textAccent} font-sans flex items-center gap-1.5`}>
+                                    <Award className="w-4 h-4 shrink-0" />
+                                    DAFTAR PILIHAN PAKET KERJASAMA SPONSORSHIP
+                                  </h4>
+                                </div>
+                                <div className="grid grid-cols-1 gap-3">
+                                  {safeSponsorshipPackages.map((pkg, idx) => (
+                                    <div key={`pkg-${idx}`} className="p-3 border border-slate-200 rounded-lg bg-slate-50/50 flex flex-col gap-1.5 shadow-3xs">
+                                      <div className="flex items-center justify-between">
+                                        <span className="font-black text-xs uppercase tracking-widest text-red-700">{(pkg?.name || "Paket " + (idx + 1))} Package</span>
+                                        <div className="flex gap-0.5">
+                                          {[...Array(Math.max(1, Math.min(3, 3-idx)))].map((_, i) => <Sparkles key={i} className="w-2.5 h-2.5 text-amber-500 fill-amber-500" />)}
+                                        </div>
+                                      </div>
+                                      <p className="text-[10px] text-slate-600 leading-relaxed italic">
+                                        "{pkg?.benefit || "-"}"
+                                      </p>
+                                    </div>
+                                  ))}
+                                </div>
+                                <div className="p-3 bg-red-50 border border-red-100 rounded text-[9.5px] text-red-800 leading-relaxed italic">
+                                  * Keterangan: Rincian teknis penempatan logo dan benefit lainnya akan dibahas lebih lanjut dalam kontrak kerjasama terpisah. Panitia juga menerima bentuk sponsorship natura (produk/barang/jasa) yang nilainya dikonversikan setara dengan paket di atas.
+                                </div>
                               </div>
                             )}
 
-                            {/* Appended Content on BAB II Perencanaan */}
-                            {isBabIIPerencanaan && (
+                            {/* Inject Bagan Struktur Organisasi in BAB II Page (Susunan Panitia) */}
+                            {isBabIIPage && (
                               <div className="mt-5 space-y-3 border-t border-slate-200/40 pt-4 break-inside-avoid">
                                 <div className="flex items-center justify-between border-b border-slate-200/50 pb-1.5">
                                   <h4 className={`text-[10px] font-black tracking-wider uppercase ${theme.textAccent} font-sans flex items-center gap-1.5`}>
@@ -1582,62 +1519,93 @@ Laporan Pertanggungjawaban ini dibuat rangkap sebagai dokumentasi resmi dan arsi
                                   </span>
                                 </div>
                                 <div className="p-1 border border-slate-100 rounded-lg">
-                                  <OrgChart panitia={panitia} settings={settings} printMode={true} />
+                                  <OrgChart panitia={safePanitia} settings={safeSettings} printMode={true} />
                                 </div>
                               </div>
                             )}
+                            
+                            {/* Inject Tables in BAB III Page (Program Kerja) */}
+                            {isBabIIIPage && (
+                                <div className="mt-8 space-y-8">
+                                  <div className="space-y-2">
+                                    <div className="flex items-center justify-between border-b border-slate-200/50 pb-2">
+                                      <h4 className={`text-xs font-black tracking-wider uppercase ${theme.textAccent} font-sans flex items-center gap-1.5`}>
+                                        <TrendingUp className="w-4 h-4 shrink-0" />
+                                        DAFTAR RENCANA PROGRAM KERJA PANITIA
+                                      </h4>
+                                      <span className="text-[8px] font-mono font-bold uppercase bg-slate-900 text-amber-400 px-2 py-0.5 rounded">
+                                        Perencanaan Terpadu
+                                      </span>
+                                    </div>
 
-                            {/* Appended Content on BAB IV Keuangan */}
-                            {isBabIVKeuangan && (
-                              <div className="mt-4 space-y-5">
+                                    <div className={`overflow-x-auto rounded-lg border ${theme.tableBorder} bg-white shadow-3xs`}>
+                                      <table className="w-full text-left border-collapse text-[10.5px] sm:text-[11px]">
+                                        <thead>
+                                          <tr className={`${theme.thBg} border-b ${theme.thBorder} font-bold uppercase tracking-wider text-[9px]`}>
+                                            <th className="px-3 py-2.5 text-inherit w-10 text-center">No</th>
+                                            <th className="px-3 py-2.5 text-inherit">Nama Program Kegiatan</th>
+                                            <th className="px-3 py-2.5 text-center text-inherit">Seksi Penanggungjawab</th>
+                                          </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-slate-100 font-sans">
+                                          {activeTasks.map((t, idx) => (
+                                            <tr key={t.id} className={`${theme.stripeBg} hover:bg-slate-50/50 transition-colors`}>
+                                              <td className="px-3 py-2 font-medium text-slate-500 text-center">{idx + 1}</td>
+                                              <td className="px-3 py-2 font-medium text-slate-800">{t.taskName}</td>
+                                              <td className="px-3 py-2 text-center">
+                                                <span className="px-2 py-0.5 rounded bg-slate-100 border border-slate-200 text-slate-700 font-bold text-[9px] uppercase">
+                                                  Seksi {t.seksi}
+                                                </span>
+                                              </td>
+                                            </tr>
+                                          ))}
+                                          <tr className="bg-slate-50/60 font-bold text-slate-800">
+                                            <td className="px-3 py-2.5 text-center">Σ</td>
+                                            <td className="px-3 py-2.5">Total Keseluruhan Agenda Kegiatan</td>
+                                            <td className="px-3 py-2.5 text-center font-mono text-indigo-800">
+                                              {activeTasks.length} Program
+                                            </td>
+                                          </tr>
+                                        </tbody>
+                                      </table>
+                                    </div>
+                                  </div>
+                                </div>
+                            )}
+
+                            {/* Inject Tables in BAB IV Page (RAB) */}
+                            {isBabIVPage && (
+                              <div className="mt-8 space-y-8">
                                 {/* Section A Table */}
-                                <div className="space-y-1">
-                                  <h4 className="text-[10px] font-bold text-slate-800 font-sans uppercase tracking-wider">
-                                    A. Laporan Realisasi Anggaran Seksi (Belanja Kegiatan)
+                                <div className="space-y-2">
+                                  <h4 className="text-[10.5px] sm:text-[11.5px] font-bold text-slate-800 font-sans uppercase tracking-wider">
+                                    A. Rekapitulasi Rencana Anggaran Biaya (RAB) per Seksi
                                   </h4>
                                   
                                   <div className={`overflow-x-auto rounded border ${theme.tableBorder} bg-white shadow-3xs`}>
-                                    <table className="w-full text-left border-collapse text-[10px] sm:text-[10.5px]">
+                                    <table className="w-full text-left border-collapse text-[11px] sm:text-[12px]">
                                       <thead>
-                                        <tr className={`${theme.thBg} border-b ${theme.thBorder} font-bold uppercase tracking-wider text-[8px]`}>
-                                          <th className="px-2 py-1.5 text-center text-inherit">No</th>
-                                          <th className="px-2 py-1.5 text-inherit">Seksi / Pos Anggaran</th>
-                                          <th className="px-2 py-1.5 text-right text-inherit">Alokasi Pagu</th>
-                                          <th className="px-2 py-1.5 text-right text-inherit">Realisasi Belanja</th>
-                                          <th className="px-2 py-1.5 text-right text-inherit">Sisa Anggaran</th>
-                                          <th className="px-2 py-1.5 text-center text-inherit">Penyerapan (%)</th>
+                                        <tr className={`${theme.thBg} border-b ${theme.thBorder} font-bold uppercase tracking-wider text-[9px]`}>
+                                          <th className="px-3 py-2.5 text-center text-inherit w-12">No</th>
+                                          <th className="px-3 py-2.5 text-inherit">Seksi Pelaksana</th>
+                                          <th className="px-3 py-2.5 text-center text-inherit">Total Item</th>
+                                          <th className="px-3 py-2.5 text-right text-inherit">Estimasi Biaya (Rp)</th>
                                         </tr>
                                       </thead>
                                       <tbody className="divide-y divide-slate-100 font-sans">
-                                        {seksiTableData.map((row) => (
+                                        {totalRABBySeksi.map((row) => (
                                           <tr key={row.idx} className={`hover:bg-slate-50/50 transition-colors ${theme.stripeBg}`}>
-                                            <td className="px-2 py-1 text-center text-slate-400 font-medium">{row.idx}</td>
-                                            <td className="px-2 py-1 font-semibold text-slate-800">Seksi {row.seksi}</td>
-                                            <td className="px-2 py-1 text-right font-mono text-slate-600">{formatRp(row.pagu)}</td>
-                                            <td className="px-2 py-1 text-right font-mono font-bold text-slate-800">{formatRp(row.spent)}</td>
-                                            <td className="px-2 py-1 text-right font-mono text-slate-600">{formatRp(row.sisa)}</td>
-                                            <td className="px-2 py-1 text-center">
-                                              <span className={`px-1 py-0.2 rounded font-bold text-[8px] ${
-                                                row.percent >= 90 ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' :
-                                                row.percent >= 50 ? 'bg-amber-50 text-amber-700 border border-amber-100' :
-                                                'bg-slate-50 text-slate-600 border border-slate-100'
-                                              }`}>
-                                                {row.percent}%
-                                              </span>
-                                            </td>
+                                            <td className="px-3 py-2 text-center text-slate-400 font-medium">{row.idx}</td>
+                                            <td className="px-3 py-2 font-semibold text-slate-800">Seksi {row.seksi}</td>
+                                            <td className="px-3 py-2 text-center font-mono text-slate-600">{row.itemCount} item</td>
+                                            <td className="px-3 py-2 text-right font-mono font-bold text-slate-800">{formatRp(row.total)}</td>
                                           </tr>
                                         ))}
-                                        <tr className={`${theme.sumBg} font-extrabold ${theme.sumBorder} text-[10px]`}>
-                                          <td className="px-2 py-2 text-center">Σ</td>
-                                          <td className="px-2 py-2 uppercase tracking-wide text-[8px]">Total Belanja</td>
-                                          <td className="px-2 py-2 text-right font-mono">{formatRp(totalPaguSeksi)}</td>
-                                          <td className="px-2 py-2 text-right font-mono text-emerald-700">{formatRp(totalSpentSeksi)}</td>
-                                          <td className="px-2 py-2 text-right font-mono">{formatRp(totalSisaSeksi)}</td>
-                                          <td className="px-2 py-2 text-center">
-                                            <span className="px-1 py-0.2 rounded bg-slate-900 text-amber-400 text-[8px] font-bold">
-                                              {totalPercentSeksi}%
-                                            </span>
-                                          </td>
+                                        <tr className={`${theme.sumBg} font-extrabold ${theme.sumBorder}`}>
+                                          <td className="px-3 py-2.5 text-center">Σ</td>
+                                          <td className="px-3 py-2.5 uppercase tracking-wide text-[9px]">Total Rencana Anggaran Biaya (RAB)</td>
+                                          <td className="px-3 py-2.5 text-center font-mono">{activeRKBA.length} item</td>
+                                          <td className="px-3 py-2.5 text-right font-mono text-emerald-700">{formatRp(totalRAB)}</td>
                                         </tr>
                                       </tbody>
                                     </table>
@@ -1645,134 +1613,32 @@ Laporan Pertanggungjawaban ini dibuat rangkap sebagai dokumentasi resmi dan arsi
                                 </div>
 
                                 {/* Section B Table */}
-                                <div className="space-y-1">
-                                  <h4 className="text-[10px] font-bold text-slate-800 font-sans uppercase tracking-wider">
-                                    B. Rekapitulasi Iuran & Swadaya Gotong Royong RT
+                                <div className="space-y-2 pt-2">
+                                  <h4 className="text-[10.5px] sm:text-[11.5px] font-bold text-slate-800 font-sans uppercase tracking-wider">
+                                    B. Rencana Proyeksi Pendanaan
                                   </h4>
                                   
                                   <div className={`overflow-x-auto rounded border ${theme.tableBorder} bg-white shadow-3xs`}>
-                                    <table className="w-full text-left border-collapse text-[10px] sm:text-[10.5px]">
+                                    <table className="w-full text-left border-collapse text-[11px] sm:text-[12px]">
                                       <thead>
-                                        <tr className={`${theme.thBg} border-b ${theme.thBorder} font-bold uppercase tracking-wider text-[8px]`}>
-                                          <th className="px-2 py-1.5 text-center text-inherit">No</th>
-                                          <th className="px-2 py-1.5 text-inherit">Wilayah RT</th>
-                                          <th className="px-2 py-1.5 text-right text-inherit">Target Pokok</th>
-                                          <th className="px-2 py-1.5 text-right text-inherit">Iuran Tunai</th>
-                                          <th className="px-2 py-1.5 text-center text-inherit">Capaian (%)</th>
-                                          <th className="px-2 py-1.5 text-right text-inherit">Swadaya Natura</th>
-                                          <th className="px-2 py-1.5 text-right text-inherit">Sinergi Total</th>
+                                        <tr className={`${theme.thBg} border-b ${theme.thBorder} font-bold uppercase tracking-wider text-[9px]`}>
+                                          <th className="px-3 py-2.5 text-center text-inherit w-12">No</th>
+                                          <th className="px-3 py-2.5 text-inherit">Sumber Dana</th>
+                                          <th className="px-3 py-2.5 text-right text-inherit">Target Rupiah (Rp)</th>
                                         </tr>
                                       </thead>
                                       <tbody className="divide-y divide-slate-100 font-sans">
-                                        {rtTableData.map((row, idx) => (
+                                        {rincianPendanaan.map((row, idx) => (
                                           <tr key={idx} className={`hover:bg-slate-50/50 transition-colors ${theme.stripeBg}`}>
-                                            <td className="px-2 py-1 text-center text-slate-400 font-medium">{idx + 1}</td>
-                                            <td className="px-2 py-1 font-semibold text-slate-800">{row.name}</td>
-                                            <td className="px-2 py-1 text-right font-mono text-slate-600">{formatRp(row.target)}</td>
-                                            <td className="px-2 py-1 text-right font-mono font-bold text-slate-800">{formatRp(row.collected)}</td>
-                                            <td className="px-2 py-1 text-center">
-                                              <span className={`px-1 py-0.2 rounded font-bold text-[8px] ${
-                                                row.percent >= 100 ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' :
-                                                'bg-amber-50 text-amber-700 border border-amber-100'
-                                              }`}>
-                                                {row.percent}%
-                                              </span>
-                                            </td>
-                                            <td className="px-2 py-1 text-right font-mono text-amber-700">{formatRp(row.natura)}</td>
-                                            <td className="px-2 py-1 text-right font-mono text-indigo-700 font-semibold">{formatRp(row.total)}</td>
+                                            <td className="px-3 py-2 text-center text-slate-400 font-medium">{idx + 1}</td>
+                                            <td className="px-3 py-2 font-semibold text-slate-800">{row.nama}</td>
+                                            <td className="px-3 py-2 text-right font-mono font-bold text-slate-800">{formatRp(row.jumlah)}</td>
                                           </tr>
                                         ))}
-                                        <tr className={`${theme.sumBg} font-extrabold ${theme.sumBorder} text-[10px]`}>
-                                          <td className="px-2 py-2 text-center">Σ</td>
-                                          <td className="px-2 py-2 uppercase tracking-wide text-[8px]">Total Sinergi RT</td>
-                                          <td className="px-2 py-2 text-right font-mono">{formatRp(totalTargetRT)}</td>
-                                          <td className="px-2 py-2 text-right font-mono text-emerald-700">{formatRp(totalCollectedRT)}</td>
-                                          <td className="px-2 py-2 text-center">
-                                            <span className="px-1 py-0.2 rounded bg-slate-900 text-amber-400 text-[8px] font-bold">
-                                              {avgPercentRT}%
-                                            </span>
-                                          </td>
-                                          <td className="px-2 py-2 text-right font-mono text-amber-800">{formatRp(totalNaturaRT)}</td>
-                                          <td className="px-2 py-2 text-right font-mono text-indigo-800">{formatRp(totalSinergiRT)}</td>
-                                        </tr>
-                                      </tbody>
-                                    </table>
-                                  </div>
-                                </div>
-
-                                {/* Section C: Realisasi & Neraca Saldo */}
-                                <div className={`border rounded-lg p-3 ${theme.bg} space-y-2`}>
-                                  <div className="flex items-center justify-between border-b border-slate-200/50 pb-1">
-                                    <h4 className={`text-[10px] font-black tracking-wider uppercase ${theme.textAccent} font-sans flex items-center gap-1`}>
-                                      <TrendingUp className="w-3.5 h-3.5 shrink-0" />
-                                      C. TABEL REALISASI & NERACA SALDO KEUANGAN (AUDIT TRANSPARAN)
-                                    </h4>
-                                  </div>
-
-                                  <div className={`overflow-x-auto rounded border ${theme.tableBorder} bg-white shadow-3xs`}>
-                                    <table className="w-full text-left border-collapse text-[10px] sm:text-[10.5px]">
-                                      <thead>
-                                        <tr className={`${theme.thBg} border-b ${theme.thBorder} font-bold uppercase tracking-wider text-[8px]`}>
-                                          <th className="px-2 py-1.5 text-inherit">Rincian Pos Posisi Keuangan</th>
-                                          <th className="px-2 py-1.5 text-center text-inherit">Jenis Aliran</th>
-                                          <th className="px-2 py-1.5 text-right text-inherit">Jumlah Rupiah (Rp)</th>
-                                        </tr>
-                                      </thead>
-                                      <tbody className="divide-y divide-slate-100 font-sans">
-                                        <tr className={`${theme.stripeBg} hover:bg-slate-50/50 transition-colors`}>
-                                          <td className="px-2 py-1 font-medium text-slate-800">1. Penerimaan Dana Tunai (Kas Bersih Warga & Donatur)</td>
-                                          <td className="px-2 py-1 text-center">
-                                            <span className="px-1 py-0.2 rounded-full bg-emerald-50 border border-emerald-100 text-emerald-700 font-extrabold text-[7.5px] uppercase">
-                                              Kas Masuk
-                                            </span>
-                                          </td>
-                                          <td className="px-2 py-1 text-right font-mono font-bold text-emerald-600">
-                                            {formatRp(totalPemasukan)}
-                                          </td>
-                                        </tr>
-                                        <tr className="hover:bg-slate-50/50 transition-colors">
-                                          <td className="px-2 py-1 font-medium text-slate-800">2. Kontribusi Gotong Royong RT (Swadaya Natura/Barang)</td>
-                                          <td className="px-2 py-1 text-center">
-                                            <span className="px-1 py-0.2 rounded-full bg-amber-50 border border-amber-100 text-amber-700 font-extrabold text-[7.5px] uppercase">
-                                              Natura RT
-                                            </span>
-                                          </td>
-                                          <td className="px-2 py-1 text-right font-mono font-bold text-amber-700">
-                                            {formatRp(totalNatura)}
-                                          </td>
-                                        </tr>
-                                        <tr className="bg-slate-50/60 font-bold text-slate-800">
-                                          <td className="px-2 py-1">Total Kekuatan Sinergi Swadaya Warga (Kas + Natura)</td>
-                                          <td className="px-2 py-1 text-center">
-                                            <span className="px-1 py-0.2 rounded-full bg-indigo-50 border border-indigo-100 text-indigo-700 font-extrabold text-[7.5px] uppercase">
-                                              Sinergi Total
-                                            </span>
-                                          </td>
-                                          <td className="px-2 py-1 text-right font-mono text-indigo-800">
-                                            {formatRp(totalCombinedValue)}
-                                          </td>
-                                        </tr>
-                                        <tr className={`${theme.stripeBg} hover:bg-slate-50/50 transition-colors`}>
-                                          <td className="px-2 py-1 font-medium text-slate-800">3. Realisasi Belanja & Pengeluaran Operasional</td>
-                                          <td className="px-2 py-1 text-center">
-                                            <span className="px-1 py-0.2 rounded-full bg-red-50 border border-red-100 text-red-700 font-extrabold text-[7.5px] uppercase">
-                                              Kas Keluar
-                                            </span>
-                                          </td>
-                                          <td className="px-2 py-1 text-right font-mono font-bold text-red-600">
-                                            {formatRp(totalPengeluaran)}
-                                          </td>
-                                        </tr>
-                                        <tr className={`${theme.sumBg} font-black text-[10px] ${theme.sumBorder}`}>
-                                          <td className="px-2 py-1.5">Sisa Saldo Kas Riil (Diserahkan Kembali Ke Kas RW)</td>
-                                          <td className="px-2 py-1.5 text-center">
-                                            <span className="px-1 py-0.2 rounded-full bg-slate-900 text-amber-400 font-bold text-[7.5px] uppercase">
-                                              Kas Sisa
-                                            </span>
-                                          </td>
-                                          <td className="px-2 py-1.5 text-right font-mono text-slate-950">
-                                            {formatRp(saldoSisa)}
-                                          </td>
+                                        <tr className={`${theme.sumBg} font-extrabold ${theme.sumBorder}`}>
+                                          <td className="px-3 py-2.5 text-center">Σ</td>
+                                          <td className="px-3 py-2.5 uppercase tracking-wide text-[9px]">Total Proyeksi Pendanaan</td>
+                                          <td className="px-3 py-2.5 text-right font-mono text-indigo-700">{formatRp(totalPendanaan)}</td>
                                         </tr>
                                       </tbody>
                                     </table>
@@ -1782,9 +1648,11 @@ Laporan Pertanggungjawaban ini dibuat rangkap sebagai dokumentasi resmi dan arsi
                             )}
 
                           </div>
+                        </>
+                      )}
 
-                          {/* Appended Content on Penutup (Formal) or Last Page (Ringkas) */}
-                          {((selectedTemplate === "ringkas" && isLastPage) || isBabVIPenutup) && (
+                          {/* Appended Content on Last Page */}
+                          {isLastPage && (
                             <div className="mt-8">
                               {renderSignatureGrid()}
                             </div>
@@ -1800,16 +1668,26 @@ Laporan Pertanggungjawaban ini dibuat rangkap sebagai dokumentasi resmi dan arsi
                       </div>
                     );
                   });
-                };
+                } catch (error) {
+                  console.error("Proposal Render Error:", error);
+                  return (
+                    <div className="p-10 bg-white border-2 border-dashed border-red-200 rounded-xl text-center">
+                      <AlertCircle className="w-10 h-10 text-red-500 mx-auto mb-3" />
+                      <h3 className="text-sm font-bold text-slate-800 uppercase">Gagal Merender Preview</h3>
+                      <p className="text-xs text-slate-500 mt-1">Terjadi kesalahan teknis saat menyusun tampilan dokumen. Mohon periksa kembali data input Anda atau coba generate ulang.</p>
+                    </div>
+                  );
+                }
+              };
 
                 return (
                   <div className="border border-slate-200 rounded-lg overflow-hidden shadow-sm print:border-none print:shadow-none print:rounded-none">
                     
-                    {/* LPJ Toolbar controls */}
+                    {/* Proposal Toolbar controls */}
                     <div className="bg-slate-50 border-b border-slate-200 px-3 py-2.5 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 text-[11px] print:hidden">
                       <span className="font-bold text-slate-700 font-sans flex items-center gap-1.5">
                         <ClipboardCheck className="w-4 h-4 text-emerald-600" />
-                        Preview Dokumen Hasil Rumusan LPJ
+                        Preview Dokumen Hasil Rumusan Proposal
                       </span>
                       <div className="flex gap-2 w-full sm:w-auto">
                         <button
@@ -1821,11 +1699,13 @@ Laporan Pertanggungjawaban ini dibuat rangkap sebagai dokumentasi resmi dan arsi
                         </button>
                         <button
                           onClick={() => {
-                            if (!lpjMarkdown) return;
+                            if (!proposalMarkdown) return;
+                            const sponsorshipTable = `| Paket | Harga | Benefit |\n| :--- | :--- | :--- |\n${(sponsorshipPackages || []).map(p => `| **${p.name}** | Rp ${p.price ? p.price.toLocaleString('id-ID') : 0} | ${p.benefit} |`).join('\n')}`;
+                            const textToDownload = proposalMarkdown.replace("{{SPONSORSHIP_TABLE}}", sponsorshipTable);
                             const element = document.createElement("a");
-                            const file = new Blob([lpjMarkdown], {type: 'text/plain;charset=utf-8'});
+                            const file = new Blob([textToDownload], {type: 'text/plain;charset=utf-8'});
                             element.href = URL.createObjectURL(file);
-                            element.download = `LPJ-${namaKegiatan.replace(/\s+/g, "-")}.txt`;
+                            element.download = `Proposal-${namaKegiatan.replace(/\s+/g, "-")}.txt`;
                             document.body.appendChild(element);
                             element.click();
                             document.body.removeChild(element);
@@ -1973,13 +1853,13 @@ Laporan Pertanggungjawaban ini dibuat rangkap sebagai dokumentasi resmi dan arsi
                     </div>
 
                     <div className="bg-red-50 p-2 text-[9px] text-red-800 border-t border-slate-200 font-bold tracking-wide uppercase text-center print:hidden">
-                      *LPJ Konsolidasi Real-time: Kas Masuk {formatRp(keuangan.filter(t => t.type === 'Masuk').reduce((s,t) => s+t.amount, 0))} | Kas Keluar {formatRp(keuangan.filter(t => t.type === 'Keluar').reduce((s,t) => s+t.amount,0))}
+                      *Proposal Konsolidasi Real-time: Estimasi Total RAB {formatRp((rkba || []).reduce((sum, r) => sum + r.total, 0))} | Proyeksi Swadaya RT ({(settings?.rtList || []).length} RT) {formatRp((settings?.targetIuranPerRT || 0) * (settings?.rtList || []).length)} | Target Sponsorship {formatRp(Math.max(0, (rkba || []).reduce((sum, r) => sum + r.total, 0) - ((settings?.targetIuranPerRT || 0) * (settings?.rtList || []).length)))}
                     </div>
 
                   </div>
                 );
               })()
-            }}
+            )}
 
           </div>
         )}

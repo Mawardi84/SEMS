@@ -14,6 +14,7 @@ import {
   Layers 
 } from "lucide-react";
 import { Panitia, Kegiatan, SystemSetting } from "../types";
+import OrgChart from "./OrgChart";
 
 interface MasterDataViewProps {
   panitia: Panitia[];
@@ -30,7 +31,13 @@ export default function MasterDataView({
   onSavePanitia,
   onSaveKegiatan
 }: MasterDataViewProps) {
-  const [activeSubTab, setActiveSubTab] = useState<'panitia' | 'kegiatan'>('panitia');
+  // Safety checks
+  const safeSettings = {
+    rtList: settings?.rtList || [],
+    seksiList: settings?.seksiList || []
+  };
+
+  const [activeSubTab, setActiveSubTab] = useState<'panitia' | 'kegiatan' | 'bagan'>('panitia');
   
   // Modals / Form States
   const [showPanitiaModal, setShowPanitiaModal] = useState(false);
@@ -39,8 +46,8 @@ export default function MasterDataView({
     name: "",
     role: "",
     phone: "",
-    rt: settings.rtList[0] || "RT 01",
-    seksi: settings.seksiList[0] || "Acara"
+    rt: safeSettings.rtList[0] || "RT 01",
+    seksi: safeSettings.seksiList[0] || "Acara"
   });
 
   const [showKegiatanModal, setShowKegiatanModal] = useState(false);
@@ -61,8 +68,8 @@ export default function MasterDataView({
       name: "",
       role: "",
       phone: "",
-      rt: settings.rtList[0] || "RT 01",
-      seksi: settings.seksiList[0] || "Acara"
+      rt: safeSettings.rtList[0] || "RT 01",
+      seksi: safeSettings.seksiList[0] || "Acara"
     });
     setShowPanitiaModal(true);
   };
@@ -183,6 +190,17 @@ export default function MasterDataView({
           >
             <Calendar className="w-3.5 h-3.5" />
             Agenda Kegiatan ({kegiatan.length})
+          </button>
+          <button
+            onClick={() => setActiveSubTab('bagan')}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded text-[11px] font-bold font-sans transition-all duration-150 ${
+              activeSubTab === 'bagan'
+                ? "bg-white text-slate-800 shadow-xs"
+                : "text-slate-500 hover:text-slate-800"
+            }`}
+          >
+            <Layers className="w-3.5 h-3.5 text-emerald-600" />
+            Bagan Organisasi (Chart)
           </button>
         </div>
       </div>
@@ -348,6 +366,12 @@ export default function MasterDataView({
           </div>
         )}
 
+        {activeSubTab === 'bagan' && (
+          <div className="bg-slate-50/50 p-2 sm:p-4 rounded-lg border border-slate-200">
+            <OrgChart panitia={panitia} settings={settings} />
+          </div>
+        )}
+
       </div>
 
       {/* MODAL 1: ADD/EDIT PANITIA */}
@@ -418,7 +442,7 @@ export default function MasterDataView({
                       className="w-full text-xs border border-slate-200 focus:border-red-500 focus:outline-none rounded p-1.5 bg-slate-50"
                     >
                       <option value="-">Non-Seksi</option>
-                      {settings.seksiList.map(s => (
+                      {safeSettings.seksiList.map(s => (
                         <option key={s} value={s}>{s}</option>
                       ))}
                     </select>
@@ -431,7 +455,7 @@ export default function MasterDataView({
                     onChange={(e) => setPanitiaForm({ ...panitiaForm, rt: e.target.value })}
                     className="w-full text-xs border border-slate-200 focus:border-red-500 focus:outline-none rounded p-1.5 bg-slate-50"
                   >
-                    {settings.rtList.map(rt => (
+                    {safeSettings.rtList.map(rt => (
                       <option key={rt} value={rt}>{rt}</option>
                     ))}
                   </select>

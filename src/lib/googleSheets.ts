@@ -8,7 +8,7 @@ import {
   signOut
 } from "firebase/auth";
 import firebaseConfig from "../../firebase-applet-config.json";
-import { SEMSData, Panitia, Kegiatan, RKBAItem, NaturaItem, KeuanganTransaction, SeksiTask, SystemSetting } from "../types";
+import { SEMSData, Panitia, Kegiatan, RKBAItem, KeuanganTransaction, SeksiTask, SystemSetting } from "../types";
 
 // Safe initialization
 const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
@@ -107,7 +107,6 @@ export const createGoogleSpreadsheet = async (title: string): Promise<{ id: stri
       { properties: { title: "Panitia" } },
       { properties: { title: "Kegiatan" } },
       { properties: { title: "RKBA" } },
-      { properties: { title: "Natura" } },
       { properties: { title: "Keuangan" } },
       { properties: { title: "Tasks" } }
     ]
@@ -160,12 +159,6 @@ export const exportDataToGoogleSheet = async (spreadsheetId: string, semsData: S
     ...semsData.rkba.map(r => [r.id, r.name, r.seksi, r.qty, r.unit, r.price, r.total, r.fundingSource, r.status, r.notes, r.dateAdded])
   ];
 
-  // E. Natura Sheet
-  const naturaRows = [
-    ["ID", "Nama Penyumbang", "RT", "Nama Barang", "Qty", "Satuan", "Estimasi Nilai", "Alokasi", "Tanggal", "Catatan"],
-    ...semsData.natura.map(n => [n.id, n.donorName, n.rt, n.item, n.qty, n.unit, n.estimatedValue, n.allocation, n.date, n.notes])
-  ];
-
   // F. Keuangan Sheet
   const keuanganRows = [
     ["ID", "Jenis (Masuk/Keluar)", "Tanggal", "Kategori", "Jumlah", "Catatan", "Ref ID"],
@@ -183,7 +176,6 @@ export const exportDataToGoogleSheet = async (spreadsheetId: string, semsData: S
     { range: "Panitia!A1:F1000", values: panitiaRows },
     { range: "Kegiatan!A1:G1000", values: kegiatanRows },
     { range: "RKBA!A1:K2000", values: rkbaRows },
-    { range: "Natura!A1:J1000", values: naturaRows },
     { range: "Keuangan!A1:G3000", values: keuanganRows },
     { range: "Tasks!A1:F1000", values: tasksRows }
   ];
@@ -194,7 +186,6 @@ export const exportDataToGoogleSheet = async (spreadsheetId: string, semsData: S
     "Panitia!A1:Z2000",
     "Kegiatan!A1:Z2000",
     "RKBA!A1:Z3000",
-    "Natura!A1:Z2000",
     "Keuangan!A1:Z5000",
     "Tasks!A1:Z2000"
   ].map(range => {
@@ -218,7 +209,7 @@ export const exportDataToGoogleSheet = async (spreadsheetId: string, semsData: S
 
 // 3. Import SEMS Data from Google Sheet
 export const importDataFromGoogleSheet = async (spreadsheetId: string): Promise<SEMSData> => {
-  const endpoint = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values:batchGet?ranges=Pengaturan!A1:B100&ranges=Panitia!A1:F1000&ranges=Kegiatan!A1:G1000&ranges=RKBA!A1:K2000&ranges=Natura!A1:J1000&ranges=Keuangan!A1:G3000&ranges=Tasks!A1:F1000`;
+  const endpoint = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values:batchGet?ranges=Pengaturan!A1:B100&ranges=Panitia!A1:F1000&ranges=Kegiatan!A1:G1000&ranges=RKBA!A1:K2000&ranges=Keuangan!A1:G3000&ranges=Tasks!A1:F1000`;
   
   const response = await googleApiFetch(endpoint);
   const valueRanges = response.valueRanges;
@@ -328,30 +319,8 @@ export const importDataFromGoogleSheet = async (spreadsheetId: string): Promise<
     }
   }
 
-  // E. Parse Natura
-  const naturaRows = getValues(4);
-  const natura: NaturaItem[] = [];
-  if (naturaRows.length > 1) {
-    for (let i = 1; i < naturaRows.length; i++) {
-      const row = naturaRows[i];
-      if (!row || row.length < 2 || !row[1]) continue;
-      natura.push({
-        id: row[0] || `natura_${Date.now()}_${i}`,
-        donorName: row[1] || "",
-        rt: row[2] || "",
-        item: row[3] || "",
-        qty: Number(row[4]) || 0,
-        unit: row[5] || "Pcs",
-        estimatedValue: Number(row[6]) || 0,
-        allocation: row[7] || "",
-        date: row[8] || new Date().toISOString().split('T')[0],
-        notes: row[9] || ""
-      });
-    }
-  }
-
   // F. Parse Keuangan
-  const keuanganRows = getValues(5);
+  const keuanganRows = getValues(4);
   const keuangan: KeuanganTransaction[] = [];
   if (keuanganRows.length > 1) {
     for (let i = 1; i < keuanganRows.length; i++) {
@@ -370,7 +339,7 @@ export const importDataFromGoogleSheet = async (spreadsheetId: string): Promise<
   }
 
   // G. Parse Tasks
-  const tasksRows = getValues(6);
+  const tasksRows = getValues(5);
   const tasks: SeksiTask[] = [];
   if (tasksRows.length > 1) {
     for (let i = 1; i < tasksRows.length; i++) {
@@ -392,8 +361,8 @@ export const importDataFromGoogleSheet = async (spreadsheetId: string): Promise<
     panitia,
     kegiatan,
     rkba,
-    natura,
     keuangan,
-    tasks
+    tasks,
+    notulensi: []
   };
 };

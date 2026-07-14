@@ -1,21 +1,48 @@
 import React, { useState, useEffect } from "react";
+import { motion, AnimatePresence } from "motion/react";
+import LandingPage from "./components/LandingPage";
 import Sidebar from "./components/Sidebar";
 import DashboardView from "./components/DashboardView";
 import RKBAView from "./components/RKBAView";
-import NaturaView from "./components/NaturaView";
 import KeuanganView from "./components/KeuanganView";
 import MonitoringView from "./components/MonitoringView";
+import ProposalView from "./components/ProposalView";
 import MasterDataView from "./components/MasterDataView";
 import SettingView from "./components/SettingView";
 import GoogleSheetsView from "./components/GoogleSheetsView";
 import GuideBookView from "./components/GuideBookView";
-import { SEMSData, SystemSetting, Panitia, Kegiatan, RKBAItem, NaturaItem, KeuanganTransaction } from "./types";
-import { Award, AlertTriangle, RefreshCw, Menu } from "lucide-react";
+import NotulensiView from "./components/NotulensiView";
+import DigitalDocumentsView from "./components/DigitalDocumentsView";
+import UndanganRapatView from "./components/UndanganRapatView";
+import FestiveEventView from "./components/FestiveEventView";
+import { SEMSData, SystemSetting, Panitia, Kegiatan, RKBAItem, KeuanganTransaction, Notulensi, DigitalDocument, UndanganRapat } from "./types";
+import { Award, AlertTriangle, RefreshCw, Menu, Clock } from "lucide-react";
 
 export default function App() {
   const [currentView, setCurrentView] = useState<string>(() => {
     try {
-      return localStorage.getItem("sems_current_view") || "dashboard";
+      const saved = localStorage.getItem("sems_current_view");
+      const validViews = [
+        "dashboard",
+        "proposal",
+        "undangan",
+        "notulensi",
+        "documents",
+        "rkba",
+        "keuangan",
+        "monitoring",
+        "master",
+        "sheets",
+        "panduan",
+        "setting",
+        "coupon",
+        "idcard",
+        "doorprize"
+      ];
+      if (saved && validViews.includes(saved)) {
+        return saved;
+      }
+      return "dashboard";
     } catch (e) {
       return "dashboard";
     }
@@ -33,9 +60,37 @@ export default function App() {
   const [isResetting, setIsResetting] = useState<boolean>(false);
   const [errorMessage, setErrorMessage] = useState<string>("");
   const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(false);
+  const [isLandingPage, setIsLandingPage] = useState<boolean>(true);
+
+  // Live Countdown to 17 Agustus 2026 (WIB)
+  const [countdown, setCountdown] = useState({ days: 0, hours: 0, mins: 0, secs: 0 });
+
+  useEffect(() => {
+    const target = new Date("2026-08-17T00:00:00+07:00").getTime();
+    const updateTimer = () => {
+      const now = new Date().getTime();
+      const difference = target - now;
+      if (difference <= 0) {
+        setCountdown({ days: 0, hours: 0, mins: 0, secs: 0 });
+      } else {
+        const days = Math.floor(difference / (1000 * 60 * 60 * 24));
+        const hours = Math.floor((difference % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+        const mins = Math.floor((difference % (1000 * 60 * 60)) / (1000 * 60));
+        const secs = Math.floor((difference % (1000 * 60)) / 1000);
+        setCountdown({ days, hours, mins, secs });
+      }
+    };
+    updateTimer();
+    const interval = setInterval(updateTimer, 1000);
+    return () => clearInterval(interval);
+  }, []);
 
   // Auditing & action loading states
   const [isRecordingBelanjaId, setIsRecordingBelanjaId] = useState<string | null>(null);
+
+  // Local storage backup/restore states
+  const [showRestoreBanner, setShowRestoreBanner] = useState<boolean>(false);
+  const [localBackup, setLocalBackup] = useState<SEMSData | null>(null);
 
   // Fetch initial SEMS data
   const fetchSemsData = async () => {
@@ -59,6 +114,88 @@ export default function App() {
     fetchSemsData();
   }, []);
 
+  // Auto-save data to localStorage when semsData changes and has content
+  useEffect(() => {
+    if (semsData) {
+      const hasContent = (
+        (semsData.panitia && semsData.panitia.length > 0) ||
+        (semsData.rkba && semsData.rkba.length > 0) ||
+        (semsData.keuangan && semsData.keuangan.length > 0) ||
+        (semsData.tasks && semsData.tasks.length > 0)
+      );
+      if (hasContent) {
+        try {
+          localStorage.setItem("sems_data_backup", JSON.stringify(semsData));
+        } catch (e) {
+          console.error("Gagal menyimpan backup ke browser:", e);
+        }
+      }
+    }
+  }, [semsData]);
+
+  // Check for local browser backup on initial load after server fetch completes
+  useEffect(() => {
+    if (semsData && !isLoading) {
+      try {
+        const backupStr = localStorage.getItem("sems_data_backup");
+        if (backupStr) {
+          const parsed = JSON.parse(backupStr) as SEMSData;
+          const hasLocalContent = (
+            (parsed.panitia && parsed.panitia.length > 0) ||
+            (parsed.rkba && parsed.rkba.length > 0) ||
+            (parsed.keuangan && parsed.keuangan.length > 0) ||
+            (parsed.tasks && parsed.tasks.length > 0)
+          );
+          const hasServerContent = (
+            (semsData.panitia && semsData.panitia.length > 0) ||
+            (semsData.rkba && semsData.rkba.length > 0) ||
+            (semsData.keuangan && semsData.keuangan.length > 0) ||
+            (semsData.tasks && semsData.tasks.length > 0)
+          );
+
+          if (hasLocalContent && !hasServerContent) {
+            setLocalBackup(parsed);
+            setShowRestoreBanner(true);
+          }
+        }
+      } catch (err) {
+        console.error("Gagal memeriksa data cadangan browser:", err);
+      }
+    }
+  }, [isLoading, semsData]);
+
+  // Restore backup to server and client
+  const handleRestoreBackup = async () => {
+    if (!localBackup) return;
+    setIsLoading(true);
+    try {
+      const response = await fetch("/api/sems/sync-import", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(localBackup)
+      });
+      if (!response.ok) {
+        throw new Error("Gagal menyinkronkan data cadangan ke server Cloud Run.");
+      }
+      const result = await response.json();
+      if (result.success) {
+        setSemsData(localBackup);
+        setShowRestoreBanner(false);
+        alert("Berhasil memulihkan seluruh data Anda dari penyimpanan browser!");
+      } else {
+        throw new Error(result.error || "Gagal memulihkan.");
+      }
+    } catch (error: any) {
+      alert("Gagal memulihkan data: " + error.message);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleDismissRestoreBanner = () => {
+    setShowRestoreBanner(false);
+  };
+
   // Reset database back to seed initial data
   const handleResetData = async () => {
     if (!confirm("Apakah Anda yakin ingin mereset database ke draf awal kepanitiaan HUT RI Ke-81 RW 04 Ngabean Semarang?")) {
@@ -70,6 +207,10 @@ export default function App() {
       if (!response.ok) {
         throw new Error("Gagal mereset database.");
       }
+      try {
+        localStorage.removeItem("sems_data_backup");
+      } catch (e) {}
+      setShowRestoreBanner(false);
       await fetchSemsData();
     } catch (error: any) {
       alert(error.message || "Gagal melakukan reset.");
@@ -161,28 +302,10 @@ export default function App() {
     }
   };
 
-  // 5. NATURA CRUD
-  const handleSaveNatura = async (action: 'add' | 'edit' | 'delete', data: NaturaItem) => {
-    try {
-      const response = await fetch("/api/sems/natura", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action, data })
-      });
-      if (!response.ok) throw new Error("Gagal sinkronisasi data Natura.");
-      const result = await response.json();
-      if (result.success && semsData) {
-        setSemsData({ ...semsData, natura: result.natura });
-      } else {
-        throw new Error(result.error);
-      }
-    } catch (error: any) {
-      alert(error.message);
-    }
-  };
+  // 5. NATURA CRUD removed
 
   // 6. KEUANGAN MANUAL LEDGER CRUD
-  const handleSaveKeuangan = async (action: 'add' | 'delete', data: KeuanganTransaction) => {
+  const handleSaveKeuangan = async (action: 'add' | 'edit' | 'delete', data: KeuanganTransaction) => {
     try {
       const response = await fetch("/api/sems/keuangan", {
         method: "POST",
@@ -249,6 +372,66 @@ export default function App() {
     }
   };
 
+  // 9. NOTULENSI CRUD
+  const handleSaveNotulensi = async (action: 'add' | 'edit' | 'delete', data: Notulensi) => {
+    try {
+      const response = await fetch("/api/sems/notulensi", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action, data })
+      });
+      if (!response.ok) throw new Error("Gagal sinkronisasi data Notulensi.");
+      const result = await response.json();
+      if (result.success && semsData) {
+        setSemsData({ ...semsData, notulensi: result.notulensi });
+      } else {
+        throw new Error(result.error);
+      }
+    } catch (error: any) {
+      alert(error.message);
+    }
+  };
+
+  // 10. DIGITAL DOCUMENTS CRUD
+  const handleSaveDocument = async (action: 'add' | 'edit' | 'delete', data: DigitalDocument) => {
+    try {
+      const response = await fetch("/api/sems/documents", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action, data })
+      });
+      if (!response.ok) throw new Error("Gagal sinkronisasi data Dokumen Digital.");
+      const result = await response.json();
+      if (result.success && semsData) {
+        setSemsData({ ...semsData, documents: result.documents });
+      } else {
+        throw new Error(result.error);
+      }
+    } catch (error: any) {
+      alert(error.message);
+    }
+  };
+
+  // 11. UNDANGAN RAPAT CRUD
+  const handleSaveUndangan = async (action: 'add' | 'edit' | 'delete', data: UndanganRapat) => {
+    try {
+      const response = await fetch("/api/sems/undangan", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action, data })
+      });
+      if (!response.ok) throw new Error("Gagal sinkronisasi data Undangan Rapat.");
+      const result = await response.json();
+      if (result.success && semsData) {
+        setSemsData({ ...semsData, undangan: result.undangan });
+      } else {
+        throw new Error(result.error);
+      }
+    } catch (error: any) {
+      alert(error.message);
+    }
+  };
+
   // Loading Screen with National Pride Theme
   if (isLoading) {
     return (
@@ -299,126 +482,258 @@ export default function App() {
     );
   }
 
+  if (isLandingPage) {
+    return <LandingPage onEnter={() => setIsLandingPage(false)} />;
+  }
+
   return (
-    <div className="h-screen bg-[#f4f7f6] flex font-sans selection:bg-red-600 selection:text-white overflow-hidden">
+    <div className="h-screen bg-slate-50 flex font-sans selection:bg-red-600 selection:text-white overflow-hidden print:h-auto print:overflow-visible text-slate-800">
       {/* Sidebar Navigation */}
-      <Sidebar 
-        currentView={currentView} 
-        onViewChange={(view) => {
-          setCurrentView(view);
-          setIsSidebarOpen(false);
-        }} 
-        onResetData={handleResetData}
-        isResetting={isResetting}
-        isOpen={isSidebarOpen}
-        onClose={() => setIsSidebarOpen(false)}
-      />
+      <div className="print:hidden">
+        <Sidebar 
+          currentView={currentView} 
+          onViewChange={(view) => {
+            setCurrentView(view);
+            setIsSidebarOpen(false);
+          }} 
+          onResetData={handleResetData}
+          isResetting={isResetting}
+          isOpen={isSidebarOpen}
+          onClose={() => setIsSidebarOpen(false)}
+        />
+      </div>
 
       {/* Main Container */}
-      <div className="flex-1 flex flex-col min-w-0 h-screen overflow-hidden">
-        {/* Top Header */}
-        <header className="h-14 bg-white border-b border-slate-200 flex items-center justify-between px-4 lg:px-6 shrink-0">
+      <div className="flex-1 flex flex-col min-w-0 h-screen overflow-hidden print:h-auto print:overflow-visible">
+        {/* Top Header - Premium Design with Live Countdown */}
+        <header className="h-16 bg-white border-b border-slate-200/80 flex items-center justify-between px-4 lg:px-6 shrink-0 print:hidden shadow-xs relative z-30">
           <div className="flex items-center gap-3">
             {/* Hamburger Menu Trigger for Mobile */}
             <button
               onClick={() => setIsSidebarOpen(true)}
-              className="lg:hidden p-1.5 hover:bg-slate-100 rounded text-slate-500 hover:text-slate-700 transition-colors"
+              className="lg:hidden p-2 hover:bg-slate-100 rounded-lg text-slate-600 hover:text-red-600 transition-all cursor-pointer"
             >
               <Menu className="w-5 h-5" />
             </button>
             <div className="flex items-center gap-2">
-              <span className="text-[10px] font-bold text-slate-400 tracking-wider hidden sm:inline">PROJECT:</span>
-              <span className="px-2 py-0.5 bg-slate-100 text-slate-700 text-[10px] font-bold rounded uppercase">
+              <span className="text-[10px] font-black text-slate-400 tracking-wider hidden sm:inline">PROJECT:</span>
+              <span className="px-2.5 py-1 bg-red-50 text-red-600 text-[10px] font-black rounded-lg uppercase tracking-wide border border-red-100 shadow-3xs">
                 HUT RI KE-81 RW 04 NGABEAN
               </span>
             </div>
           </div>
-          <div className="flex items-center gap-4">
-            <div className="text-right">
-              <p className="text-[9px] text-slate-400 font-bold uppercase tracking-wider leading-none mb-0.5">System Mode</p>
-              <p className="text-[11px] text-emerald-600 font-bold flex items-center gap-1 justify-end">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                Fully Synced
-              </p>
+
+          {/* Center-Right Live Countdown and Sync Indicators */}
+          <div className="flex items-center gap-3">
+            {/* Beautiful Countdown Pill */}
+            <div className="hidden md:flex items-center gap-2 px-3 py-1.5 bg-gradient-to-r from-red-600/5 to-amber-500/5 hover:from-red-600/10 hover:to-amber-500/10 rounded-full border border-red-200/50 text-[11px] font-bold text-slate-700 shadow-3xs transition-all">
+              <span className="flex h-2 w-2 relative">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-red-600"></span>
+              </span>
+              <span className="uppercase text-[9px] text-red-600 font-extrabold tracking-wider">HUT-RI 81:</span>
+              <span className="font-mono text-slate-800 tracking-tight flex items-center gap-1 font-extrabold">
+                <span className="text-red-600">{countdown.days}</span> Hari
+                <span className="text-slate-400 font-normal">|</span>
+                <span className="bg-slate-900 text-white text-[10px] font-bold font-mono px-1.5 py-0.5 rounded shadow-inner">
+                  {String(countdown.hours).padStart(2, '0')}
+                </span>:
+                <span className="bg-slate-900 text-white text-[10px] font-bold font-mono px-1.5 py-0.5 rounded shadow-inner">
+                  {String(countdown.mins).padStart(2, '0')}
+                </span>:
+                <span className="bg-slate-900 text-white text-[10px] font-bold font-mono px-1.5 py-0.5 rounded shadow-inner">
+                  {String(countdown.secs).padStart(2, '0')}
+                </span>
+              </span>
+            </div>
+
+            {/* Sync Badge */}
+            <div className="flex items-center gap-2.5 bg-slate-50 border border-slate-200 px-3 py-1.5 rounded-full shadow-3xs">
+              <div className="text-right leading-none">
+                <p className="text-[10px] text-emerald-600 font-extrabold flex items-center gap-1 justify-end">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                  Synced
+                </p>
+              </div>
             </div>
           </div>
         </header>
 
-        {/* Main Panel Content Container */}
-        <main className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 sm:space-y-6">
-          {currentView === "dashboard" && (
-            <DashboardView data={semsData} />
+        {/* Main Panel Content Container with AnimatePresence transitions */}
+        <main className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 sm:space-y-6 print:overflow-visible print:h-auto print:p-0 print:space-y-0 print:block bg-slate-50/50 relative">
+          
+          {/* Mobile-only countdown bar */}
+          <div className="md:hidden flex items-center justify-between p-3 bg-white rounded-xl border border-slate-200 shadow-2xs mb-2">
+            <span className="text-[10px] font-extrabold text-red-600 uppercase tracking-widest flex items-center gap-1.5">
+              <Clock className="w-3.5 h-3.5 text-red-600 animate-pulse" />
+              <span>HUT RI 81 Countdown</span>
+            </span>
+            <div className="font-mono text-xs font-black text-slate-800 tracking-tight">
+              {countdown.days} Hari {String(countdown.hours).padStart(2, '0')}:{String(countdown.mins).padStart(2, '0')}:{String(countdown.secs).padStart(2, '0')}
+            </div>
+          </div>
+
+          {showRestoreBanner && (
+            <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 shadow-sm animate-fade-in shrink-0">
+              <div className="flex gap-3">
+                <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+                <div>
+                  <h4 className="text-xs font-bold text-amber-900 uppercase tracking-wider">Data Cadangan Browser Ditemukan</h4>
+                  <p className="text-xs text-amber-700 mt-1 leading-relaxed">
+                    Aplikasi ini dijalankan pada server **Google Cloud (Cloud Run)** yang bersifat sementara (*stateless*). 
+                    Server baru saja di-restart (kembali ke draf awal), namun kami menemukan cadangan data masukan Anda sebelumnya tersimpan dengan aman di browser ini.
+                  </p>
+                </div>
+              </div>
+              <div className="flex gap-2 w-full md:w-auto shrink-0">
+                <button
+                  onClick={handleRestoreBackup}
+                  className="flex-1 md:flex-none bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs px-4 py-2 rounded-lg transition-colors cursor-pointer"
+                >
+                  Pulihkan Data Saya
+                </button>
+                <button
+                  onClick={handleDismissRestoreBanner}
+                  className="bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold text-xs px-3 py-2 rounded-lg transition-colors cursor-pointer"
+                >
+                  Abaikan
+                </button>
+              </div>
+            </div>
           )}
 
-          {currentView === "rkba" && (
-            <RKBAView 
-              rkba={semsData.rkba} 
-              settings={semsData.settings} 
-              keuangan={semsData.keuangan}
-              onSaveRKBA={handleSaveRKBA}
-              onBelanjaItem={handleBelanjaItem}
-              isRecordingBelanjaId={isRecordingBelanjaId}
-            />
-          )}
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={currentView}
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -12 }}
+              transition={{ duration: 0.22, ease: "easeOut" }}
+              className="space-y-4 sm:space-y-6 print:space-y-0"
+            >
+              {currentView === "dashboard" && (
+                <DashboardView data={semsData} />
+              )}
 
-          {currentView === "natura" && (
-            <NaturaView 
-              natura={semsData.natura} 
-              settings={semsData.settings} 
-              onSaveNatura={handleSaveNatura} 
-            />
-          )}
+              {currentView === "rkba" && (
+                <RKBAView 
+                  rkba={semsData.rkba || []}
+                  kegiatan={semsData.kegiatan || []}
+                  settings={semsData.settings} 
+                  keuangan={semsData.keuangan || []}
+                  onSaveRKBA={handleSaveRKBA}
+                  onBelanjaItem={handleBelanjaItem}
+                  isRecordingBelanjaId={isRecordingBelanjaId}
+                />
+              )}
 
-          {currentView === "keuangan" && (
-            <KeuanganView 
-              keuangan={semsData.keuangan} 
-              settings={semsData.settings} 
-              onSaveKeuangan={handleSaveKeuangan} 
-            />
-          )}
+              {currentView === "keuangan" && (
+                <KeuanganView 
+                  keuangan={semsData.keuangan}
+                  settings={semsData.settings} 
+                  onSaveKeuangan={handleSaveKeuangan} 
+                />
+              )}
 
-          {currentView === "monitoring" && (
-            <MonitoringView 
-              tasks={semsData.tasks} 
-              settings={semsData.settings} 
-              keuangan={semsData.keuangan}
-              natura={semsData.natura}
-              onToggleTaskStatus={handleToggleTaskStatus}
-            />
-          )}
+              {currentView === "proposal" && (
+                <ProposalView 
+                  rkba={semsData.rkba || []}
+                  tasks={semsData.tasks || []} 
+                  settings={semsData.settings} 
+                  keuangan={semsData.keuangan || []}
+                  panitia={semsData.panitia || []}
+                  onToggleTaskStatus={handleToggleTaskStatus}
+                />
+              )}
 
-          {currentView === "master" && (
-            <MasterDataView 
-              panitia={semsData.panitia} 
-              kegiatan={semsData.kegiatan} 
-              settings={semsData.settings}
-              onSavePanitia={handleSavePanitia}
-              onSaveKegiatan={handleSaveKegiatan}
-            />
-          )}
+              {currentView === "notulensi" && (
+                <NotulensiView 
+                  notulensi={semsData.notulensi || []}
+                  settings={semsData.settings}
+                  panitia={semsData.panitia || []}
+                  kegiatan={semsData.kegiatan || []}
+                  onSaveNotulensi={handleSaveNotulensi}
+                />
+              )}
 
-          {currentView === "sheets" && (
-            <GoogleSheetsView 
-              settings={semsData.settings} 
-              semsData={semsData}
-              onSaveSettings={handleSaveSettings}
-              onRefreshData={fetchSemsData}
-              onImportSuccess={async (importedData) => {
-                setSemsData(importedData);
-              }}
-            />
-          )}
+              {currentView === "undangan" && (
+                <UndanganRapatView 
+                  undangan={semsData.undangan || []}
+                  panitia={semsData.panitia || []}
+                  kegiatan={semsData.kegiatan || []}
+                  settings={semsData.settings}
+                  onSaveUndangan={handleSaveUndangan}
+                />
+              )}
 
-          {currentView === "panduan" && (
-            <GuideBookView />
-          )}
+              {currentView === "documents" && (
+                <DigitalDocumentsView 
+                  documents={semsData.documents || []}
+                  panitia={semsData.panitia || []}
+                  onSaveDocument={handleSaveDocument}
+                />
+              )}
 
-          {currentView === "setting" && (
-            <SettingView 
-              settings={semsData.settings} 
-              onSaveSettings={handleSaveSettings} 
-            />
-          )}
+              {currentView === "monitoring" && (
+                <MonitoringView 
+                  tasks={semsData.tasks || []} 
+                  settings={semsData.settings} 
+                  keuangan={semsData.keuangan || []}
+                  panitia={semsData.panitia || []}
+                  onToggleTaskStatus={handleToggleTaskStatus}
+                />
+              )}
+
+              {currentView === "master" && (
+                <MasterDataView 
+                  panitia={semsData.panitia || []} 
+                  kegiatan={semsData.kegiatan || []} 
+                  settings={semsData.settings}
+                  onSavePanitia={handleSavePanitia}
+                  onSaveKegiatan={handleSaveKegiatan}
+                />
+              )}
+
+              {currentView === "sheets" && (
+                <GoogleSheetsView 
+                  settings={semsData.settings} 
+                  semsData={semsData}
+                  onSaveSettings={handleSaveSettings}
+                  onRefreshData={fetchSemsData}
+                  onImportSuccess={async (importedData) => {
+                    setSemsData(importedData);
+                  }}
+                />
+              )}
+
+              {currentView === "panduan" && (
+                <GuideBookView />
+              )}
+
+               {currentView === "coupon" && (
+                <FestiveEventView data={semsData} defaultTab="coupon" />
+              )}
+
+              {currentView === "idcard" && (
+                <FestiveEventView data={semsData} defaultTab="idcard" />
+              )}
+
+              {currentView === "doorprize" && (
+                <FestiveEventView data={semsData} defaultTab="doorprize" />
+              )}
+
+              {currentView === "setting" && (
+                <SettingView 
+                  settings={semsData.settings} 
+                  onSaveSettings={handleSaveSettings} 
+                  semsData={semsData}
+                  onImportSuccess={async (importedData) => {
+                    setSemsData(importedData);
+                  }}
+                />
+              )}
+            </motion.div>
+          </AnimatePresence>
         </main>
       </div>
     </div>

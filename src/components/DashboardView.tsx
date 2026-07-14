@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { motion } from "motion/react";
 import { 
   TrendingUp, 
   TrendingDown, 
@@ -23,7 +24,8 @@ import {
   PieChart as LucidePieChart,
   LineChart as LucideLineChart,
   Activity,
-  Download
+  Download,
+  Sparkles
 } from "lucide-react";
 import {
   BarChart,
@@ -48,7 +50,24 @@ interface DashboardViewProps {
 }
 
 export default function DashboardView({ data }: DashboardViewProps) {
-  const { settings, keuangan, rkba, natura, panitia, kegiatan, tasks } = data;
+  const settings = data?.settings;
+  const keuangan = data?.keuangan || [];
+  const rkba = data?.rkba || [];
+  const panitia = data?.panitia || [];
+  const kegiatan = data?.kegiatan || [];
+  const tasks = data?.tasks || [];
+
+  // Safety checks for settings
+  const safeSettings = {
+    id: settings?.id || "default",
+    sheetId: settings?.sheetId || "",
+    sheetApiKey: settings?.sheetApiKey || "",
+    targetIuranPerRT: settings?.targetIuranPerRT || 0,
+    rtList: settings?.rtList || [],
+    seksiList: settings?.seksiList || [],
+    paguAnggaranSeksi: settings?.paguAnggaranSeksi || {},
+    themeColor: settings?.themeColor || "#cc0000"
+  };
 
   // Multi-view states
   const [dashboardLayout, setDashboardLayout] = useState<"bento" | "analytical" | "projector">("bento");
@@ -80,9 +99,6 @@ export default function DashboardView({ data }: DashboardViewProps) {
 
   const netBalance = totalIncome - totalExpense;
 
-  const totalNaturaValue = natura.reduce((sum, n) => sum + n.estimatedValue, 0);
-  const totalCombinedSwarayaValue = totalIncome + totalNaturaValue;
-
   // 2. Budget RKBA Calculations
   const rkbaTotalProposed = rkba.reduce((sum, r) => sum + r.total, 0);
   const rkbaTotalApproved = rkba
@@ -90,36 +106,28 @@ export default function DashboardView({ data }: DashboardViewProps) {
     .reduce((sum, r) => sum + r.total, 0);
 
   // 3. RT Collection Tracker
-  const rtCollections = settings.rtList.map((rtName) => {
+  const rtCollections = (settings?.rtList || []).map((rtName) => {
     // Find all income transactions of type "Iuran RT" matching this RT name in description/notes
     const collected = keuangan
-      .filter((t) => t.type === "Masuk" && t.category === "Iuran RT" && t.notes.toLowerCase().includes(rtName.toLowerCase()))
+      .filter((t) => t.type === "Masuk" && t.category === "Iuran RT" && (t.notes || "").toLowerCase().includes(rtName.toLowerCase()))
       .reduce((sum, t) => sum + t.amount, 0);
 
-    // Also parse Natura from this RT
-    const naturaFromRT = natura
-      .filter((n) => n.rt.toLowerCase().includes(rtName.toLowerCase()))
-      .reduce((sum, n) => sum + n.estimatedValue, 0);
-
-    const totalContribution = collected + naturaFromRT;
-    const percentCash = Math.min(100, Math.round((collected / settings.targetIuranPerRT) * 100));
+    const percentCash = Math.min(100, Math.round((collected / (settings?.targetIuranPerRT || 1)) * 100));
 
     return {
       name: rtName,
       collected,
-      naturaValue: naturaFromRT,
-      totalValue: totalContribution,
       percent: percentCash,
     };
   });
 
-  const totalRTTarget = settings.targetIuranPerRT * settings.rtList.length;
+  const totalRTTarget = (settings?.targetIuranPerRT || 0) * (settings?.rtList || []).length;
   const totalRTCashCollected = rtCollections.reduce((sum, r) => sum + r.collected, 0);
-  const totalRTPercent = Math.round((totalRTCashCollected / totalRTTarget) * 100);
+  const totalRTPercent = totalRTTarget > 0 ? Math.round((totalRTCashCollected / totalRTTarget) * 100) : 0;
 
   // 4. Seksi Budget Utilization
-  const seksiBudgets = settings.seksiList.map((seksi) => {
-    const pagu = settings.paguAnggaranSeksi[seksi] || 0;
+  const seksiBudgets = (settings?.seksiList || []).map((seksi) => {
+    const pagu = settings?.paguAnggaranSeksi?.[seksi] || 0;
     
     // Sum of approved RKBA for this seksi
     const approved = rkba
@@ -301,68 +309,110 @@ export default function DashboardView({ data }: DashboardViewProps) {
       {/* ==================== VIEW 1: BENTO EXECUTIVE GRID (DEFAULT) ==================== */}
       {dashboardLayout === "bento" && (
         <div className="space-y-5 animate-fade-in">
-          {/* Primary KPI Metrics Row */}
+          {/* Stunning National Pride & Event Readiness Banner */}
+          <div className="bg-gradient-to-r from-red-600 to-red-700 rounded-2xl p-5 text-white shadow-md border border-red-500/30 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-6 relative overflow-hidden mb-5">
+            {/* Background design elements */}
+            <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full blur-3xl -translate-y-12 translate-x-12 pointer-events-none"></div>
+            
+            <div className="space-y-3 relative z-10 flex-1">
+              <div className="flex items-center gap-2">
+                <span className="px-2.5 py-0.5 bg-white/20 text-white rounded-full text-[9px] font-black uppercase tracking-widest border border-white/20 flex items-center gap-1">
+                  <Sparkles className="w-3 h-3 text-amber-300 animate-pulse" />
+                  <span>RW 04 Ngabean Semarang</span>
+                </span>
+              </div>
+              <h3 className="text-lg font-black uppercase tracking-wide leading-tight">
+                🇮🇩 Gelora Kemerdekaan RI Ke-81
+              </h3>
+              <p className="text-xs text-red-50 leading-relaxed max-w-xl">
+                Semangat kemerdekaan berkobar dalam kebersamaan warga. Seluruh data swadaya, program kerja seksi, dan rancangan belanja dikelola secara transparan dan akuntabel di portal SEMS.
+              </p>
+            </div>
+
+            {/* Dynamic Event Readiness Widget */}
+            <div className="bg-white/10 backdrop-blur-md rounded-xl p-4 border border-white/15 md:w-80 shrink-0 relative z-10 space-y-3 flex flex-col justify-center">
+              <div className="flex justify-between items-end">
+                <span className="text-[10px] font-extrabold uppercase tracking-widest text-red-100">Kesiapan Acara</span>
+                <span className="text-2xl font-black font-mono leading-none text-white">
+                  {Math.round((taskPercent + totalRTPercent) / 2)}%
+                </span>
+              </div>
+              {/* Custom High-Fidelity Progress Track */}
+              <div className="w-full bg-red-950/40 rounded-full h-2.5 overflow-hidden border border-red-900/20">
+                <div 
+                  className="bg-gradient-to-r from-amber-400 to-emerald-400 h-full rounded-full transition-all duration-1000"
+                  style={{ width: `${Math.round((taskPercent + totalRTPercent) / 2)}%` }}
+                />
+              </div>
+              <div className="flex justify-between text-[9px] text-red-100 font-mono">
+                <span>Task: {taskPercent}% Selesai</span>
+                <span>Swadaya: {totalRTPercent}% Terkumpul</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Primary KPI Metrics Row - Perfect Balanced 4-Column Grid */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {/* KPI 1: Kas Utama */}
-            <div id="card-bento-kpi-kas" className="bg-white p-4 rounded-lg shadow-sm border border-slate-200 border-l-4 border-[#e61d1d] flex items-center justify-between">
-              <div className="space-y-0.5">
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Saldo Kas Utama RW</span>
-                <span className="text-xl font-mono font-bold text-slate-800 tracking-tight block">
+            <div id="card-bento-kpi-kas" className="bg-white p-4 rounded-xl shadow-sm border border-slate-200/80 border-l-4 border-red-600 flex items-center justify-between hover:shadow-md transition-all duration-200 group">
+              <div className="space-y-1">
+                <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest block">Saldo Kas Utama RW</span>
+                <span className="text-xl font-mono font-extrabold text-slate-800 tracking-tight block group-hover:text-red-600 transition-colors">
                   {formatRp(netBalance)}
                 </span>
-                <div className="flex items-center gap-1 text-[10px] font-mono">
-                  <span className="text-emerald-600 font-semibold">In: {formatRp(totalIncome)}</span>
+                <div className="flex items-center gap-1 text-[9px] font-mono text-slate-500">
+                  <span className="text-emerald-600 font-bold">Masuk: {formatRp(totalIncome)}</span>
                 </div>
               </div>
-              <div className="bg-red-50 p-2 rounded border border-red-100 shrink-0">
+              <div className="bg-red-50 p-2.5 rounded-xl border border-red-100 shrink-0 group-hover:scale-105 transition-transform">
                 <Wallet className="w-5 h-5 text-red-600" />
               </div>
             </div>
 
-            {/* KPI 2: Total Natura */}
-            <div id="card-bento-kpi-natura" className="bg-white p-4 rounded-lg shadow-sm border border-slate-200 border-l-4 border-amber-500 flex items-center justify-between">
-              <div className="space-y-0.5">
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Sumbangan Natura Warga</span>
-                <span className="text-xl font-mono font-bold text-slate-800 tracking-tight block">
-                  {formatRp(totalNaturaValue)}
+            {/* KPI 2: Swadaya Warga (The Missing 4th Card to balance grid) */}
+            <div id="card-bento-kpi-swadaya" className="bg-white p-4 rounded-xl shadow-sm border border-slate-200/80 border-l-4 border-amber-500 flex items-center justify-between hover:shadow-md transition-all duration-200 group">
+              <div className="space-y-1">
+                <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest block">Swadaya & Iuran RT</span>
+                <span className="text-xl font-mono font-extrabold text-slate-800 tracking-tight block group-hover:text-amber-600 transition-colors">
+                  {totalRTPercent}% Terkumpul
                 </span>
-                <span className="text-[10px] font-mono text-slate-500 block">
-                  {natura.length} Donatur In-Kind
-                </span>
+                <div className="flex items-center gap-1 text-[9px] font-mono text-slate-500">
+                  <span className="text-amber-600 font-semibold">{formatRp(totalRTCashCollected)} dari {formatShortRp(totalRTTarget)}</span>
+                </div>
               </div>
-              <div className="bg-amber-50 p-2 rounded border border-amber-100 shrink-0">
+              <div className="bg-amber-50 p-2.5 rounded-xl border border-amber-100 shrink-0 group-hover:scale-105 transition-transform">
                 <Gift className="w-5 h-5 text-amber-600" />
               </div>
             </div>
 
             {/* KPI 3: Anggaran Disetujui (RKBA) */}
-            <div id="card-bento-kpi-rkba" className="bg-white p-4 rounded-lg shadow-sm border border-slate-200 border-l-4 border-indigo-500 flex items-center justify-between">
-              <div className="space-y-0.5">
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Realisasi Anggaran RKBA</span>
-                <span className="text-xl font-mono font-bold text-slate-800 tracking-tight block">
+            <div id="card-bento-kpi-rkba" className="bg-white p-4 rounded-xl shadow-sm border border-slate-200/80 border-l-4 border-indigo-500 flex items-center justify-between hover:shadow-md transition-all duration-200 group">
+              <div className="space-y-1">
+                <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest block">Rencana Belanja RKBA</span>
+                <span className="text-xl font-mono font-extrabold text-slate-800 tracking-tight block group-hover:text-indigo-600 transition-colors">
                   {formatRp(rkbaTotalApproved)}
                 </span>
-                <span className="text-[10px] font-mono text-slate-500 block">
-                  Proposed: {formatRp(rkbaTotalProposed)}
+                <span className="text-[9px] font-mono text-slate-500 block">
+                  Diusulkan: {formatRp(rkbaTotalProposed)}
                 </span>
               </div>
-              <div className="bg-indigo-50 p-2 rounded border border-indigo-100 shrink-0">
+              <div className="bg-indigo-50 p-2.5 rounded-xl border border-indigo-100 shrink-0 group-hover:scale-105 transition-transform">
                 <FileSpreadsheet className="w-5 h-5 text-indigo-600" />
               </div>
             </div>
 
             {/* KPI 4: Kinerja Panitia */}
-            <div id="card-bento-kpi-tasks" className="bg-white p-4 rounded-lg shadow-sm border border-slate-200 border-l-4 border-emerald-500 flex items-center justify-between">
-              <div className="space-y-0.5">
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Penyelesaian Tugas</span>
-                <span className="text-xl font-mono font-bold text-slate-800 tracking-tight block">
+            <div id="card-bento-kpi-tasks" className="bg-white p-4 rounded-xl shadow-sm border border-slate-200/80 border-l-4 border-emerald-500 flex items-center justify-between hover:shadow-md transition-all duration-200 group">
+              <div className="space-y-1">
+                <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest block">Progres Program Kerja</span>
+                <span className="text-xl font-mono font-extrabold text-slate-800 tracking-tight block group-hover:text-emerald-600 transition-colors">
                   {taskPercent}% Selesai
                 </span>
-                <span className="text-[10px] font-mono text-slate-500 block">
-                  {completedTasks} dari {totalTasks} program kerja
+                <span className="text-[9px] font-mono text-slate-500 block">
+                  {completedTasks} dari {totalTasks} selesai
                 </span>
               </div>
-              <div className="bg-emerald-50 p-2 rounded border border-emerald-100 shrink-0">
+              <div className="bg-emerald-50 p-2.5 rounded-xl border border-emerald-100 shrink-0 group-hover:scale-105 transition-transform">
                 <CheckCircle2 className="w-5 h-5 text-emerald-600" />
               </div>
             </div>
@@ -642,7 +692,7 @@ export default function DashboardView({ data }: DashboardViewProps) {
                 <div className="px-4 py-3 bg-slate-50 border-b border-slate-200 flex justify-between items-center">
                   <div>
                     <h3 className="font-sans font-bold text-slate-800 text-xs uppercase tracking-wider">Monitoring Iuran RT (Kas Riil)</h3>
-                    <p className="text-[10px] text-slate-500">Iuran pokok warga per RT (Target: {formatRp(settings.targetIuranPerRT)})</p>
+                    <p className="text-[10px] text-slate-500">Iuran pokok warga per RT (Target: {formatRp(safeSettings.targetIuranPerRT)})</p>
                   </div>
                   <div className="text-right">
                     <span className="text-[9px] font-mono font-extrabold bg-emerald-50 border border-emerald-200 text-emerald-700 px-2.5 py-0.5 rounded uppercase">
@@ -670,20 +720,15 @@ export default function DashboardView({ data }: DashboardViewProps) {
                       </div>
 
                       <div className="flex justify-between items-center text-[9px] text-slate-400">
-                        <span>Target: {formatRp(settings.targetIuranPerRT)}</span>
-                        {rt.naturaValue > 0 && (
-                          <span className="text-amber-600 font-semibold font-mono">
-                            + Natura: {formatRp(rt.naturaValue)}
-                          </span>
-                        )}
+                        <span>Target: {formatRp(safeSettings.targetIuranPerRT)}</span>
                       </div>
                     </div>
                   ))}
                 </div>
               </div>
 
-              {/* Sub Grid: Agenda & Natura */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+              {/* Sub Grid: Agenda Only */}
+              <div className="grid grid-cols-1 md:grid-cols-1 gap-5">
                 <div className="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
                   <div className="px-4 py-2.5 bg-slate-50 border-b border-slate-200">
                     <h3 className="font-sans font-bold text-slate-800 text-xs uppercase tracking-wider">Agenda Utama HUT RI Ke-81</h3>
@@ -711,36 +756,6 @@ export default function DashboardView({ data }: DashboardViewProps) {
                         </div>
                       );
                     })}
-                  </div>
-                </div>
-
-                <div className="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
-                  <div className="px-4 py-2.5 bg-slate-50 border-b border-slate-200">
-                    <h3 className="font-sans font-bold text-slate-800 text-xs uppercase tracking-wider">Sumbangan Natura Terakhir</h3>
-                  </div>
-                  <div className="p-3 space-y-2">
-                    {natura.slice(0, 4).map((n) => (
-                      <div key={n.id} className="p-2 bg-amber-50/40 rounded border border-amber-100/60 flex flex-col gap-0.5">
-                        <div className="flex justify-between items-start">
-                          <span className="text-[11px] font-bold text-slate-800">{n.item}</span>
-                          <span className="text-[9px] font-mono text-amber-700 bg-amber-100 border border-amber-200 px-1 py-0.2 rounded font-bold">
-                            {n.qty} {n.unit}
-                          </span>
-                        </div>
-                        <div className="flex justify-between text-[9px] text-slate-500">
-                          <span>Dari: {n.donorName}</span>
-                          <span className="font-bold text-slate-700">{formatRp(n.estimatedValue)}</span>
-                        </div>
-                        <span className="text-[8px] text-slate-400 font-mono mt-0.5 uppercase tracking-wide">
-                          Tujuan: {n.allocation}
-                        </span>
-                      </div>
-                    ))}
-                    {natura.length === 0 && (
-                      <div className="py-6 text-center text-slate-400 text-[11px]">
-                        Belum ada kontribusi natura warga yang tercatat.
-                      </div>
-                    )}
                   </div>
                 </div>
               </div>
@@ -808,13 +823,9 @@ export default function DashboardView({ data }: DashboardViewProps) {
                     <span className="text-slate-500">Target Koleksi Iuran RT</span>
                     <span className="font-mono font-bold text-slate-800">{formatRp(totalRTTarget)}</span>
                   </div>
-                  <div className="flex justify-between text-xs border-b border-slate-100 pb-1.5">
+                  <div className="flex justify-between text-xs">
                     <span className="text-slate-500">Item Kebutuhan Terencana</span>
                     <span className="font-mono font-bold text-slate-800">{rkba.length} Barang</span>
-                  </div>
-                  <div className="flex justify-between text-xs">
-                    <span className="text-slate-500">Sumbangan In-Kind Warga</span>
-                    <span className="font-mono font-bold text-slate-800">{natura.length} Donasi</span>
                   </div>
 
                   <div className="mt-3 p-2 bg-slate-50 rounded border border-slate-100 text-[10px] text-slate-500 leading-normal text-center">
@@ -852,7 +863,7 @@ export default function DashboardView({ data }: DashboardViewProps) {
                     : "text-slate-500 hover:text-slate-800"
                 }`}
               >
-                Penyerapan Seksi ({settings.seksiList.length})
+                Penyerapan Seksi ({safeSettings.seksiList.length})
               </button>
               <button
                 onClick={() => setAnalyticalTab("rt")}
@@ -862,7 +873,7 @@ export default function DashboardView({ data }: DashboardViewProps) {
                     : "text-slate-500 hover:text-slate-800"
                 }`}
               >
-                Kolektivitas RT ({settings.rtList.length})
+                Kolektivitas RT ({safeSettings.rtList.length})
               </button>
             </div>
 
@@ -903,9 +914,9 @@ export default function DashboardView({ data }: DashboardViewProps) {
                   <tbody className="divide-y divide-slate-100 text-xs text-slate-700">
                     {keuangan
                       .filter(t => 
-                        t.category.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                        t.notes.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                        t.id.toLowerCase().includes(searchQuery.toLowerCase())
+                        (t.category || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
+                        (t.notes || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
+                        (t.id || "").toLowerCase().includes(searchQuery.toLowerCase())
                       )
                       .map((t) => (
                         <tr key={t.id} className="hover:bg-slate-50/50 transition-colors">
@@ -1005,8 +1016,6 @@ export default function DashboardView({ data }: DashboardViewProps) {
                     <tr className="bg-slate-50 text-slate-500 font-sans text-[10px] uppercase tracking-wider border-b border-slate-200 font-bold">
                       <th className="px-4 py-2.5">Rukun Tetangga (RT)</th>
                       <th className="px-4 py-2.5 text-right">Kas Tunai Masuk</th>
-                      <th className="px-4 py-2.5 text-right">Swadaya Natura Warga</th>
-                      <th className="px-4 py-2.5 text-right">Sinergi Swadaya Total</th>
                       <th className="px-4 py-2.5 text-right">Target Iuran RT</th>
                       <th className="px-4 py-2.5">Progres Kas Riil</th>
                     </tr>
@@ -1018,9 +1027,7 @@ export default function DashboardView({ data }: DashboardViewProps) {
                         <tr key={r.name} className="hover:bg-slate-50/50 transition-colors">
                           <td className="px-4 py-3 font-bold text-slate-800">{r.name} Ngabean</td>
                           <td className="px-4 py-3 text-right font-mono font-bold text-slate-700">{formatRp(r.collected)}</td>
-                          <td className="px-4 py-3 text-right font-mono text-slate-500">{formatRp(r.naturaValue)}</td>
-                          <td className="px-4 py-3 text-right font-mono font-bold text-emerald-600">{formatRp(r.totalValue)}</td>
-                          <td className="px-4 py-3 text-right font-mono text-slate-400">{formatRp(settings.targetIuranPerRT)}</td>
+                          <td className="px-4 py-3 text-right font-mono text-slate-400">{formatRp(safeSettings.targetIuranPerRT)}</td>
                           <td className="px-4 py-3">
                             <div className="flex items-center gap-2">
                               <span className="font-mono text-[10px] font-bold w-8">{r.percent}%</span>
@@ -1071,12 +1078,12 @@ export default function DashboardView({ data }: DashboardViewProps) {
             
             {/* Massive Card 1: Combined swadaya value */}
             <div id="projector-card-combined" className="bg-slate-800 p-5 rounded-lg border-2 border-amber-500/30 text-center space-y-1">
-              <span className="text-[10px] text-amber-400 font-bold uppercase tracking-widest block">Total Sinergi Swadaya Warga</span>
+              <span className="text-[10px] text-amber-400 font-bold uppercase tracking-widest block">Total Iuran Tunai Warga</span>
               <span className="text-3xl font-mono font-extrabold text-amber-400 tracking-tight block">
-                {formatRp(totalCombinedSwarayaValue)}
+                {formatRp(totalRTCashCollected)}
               </span>
               <span className="text-[9px] text-slate-400 block uppercase tracking-wide">
-                Kas Tunai + Valuasi Natura Gotong Royong
+                Total Akumulasi Iuran Seluruh RT
               </span>
             </div>
 
@@ -1218,7 +1225,7 @@ export default function DashboardView({ data }: DashboardViewProps) {
                         <div>
                           <span className="text-sm font-bold text-white block leading-tight">{rt.name} Ngabean</span>
                           <span className="text-[10px] text-slate-400 font-mono">
-                            Swadaya Natura: {formatRp(rt.naturaValue)}
+                            Target: {formatRp(safeSettings.targetIuranPerRT)}
                           </span>
                         </div>
                       </div>

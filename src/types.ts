@@ -7,6 +7,20 @@ export interface SystemSetting {
   sheetId: string;
   sheetApiKey: string;
   themeColor: string;
+  kopLine1?: string;
+  kopLine2?: string;
+  kopLine3?: string;
+  kopLine4?: string;
+  logoStyle?: string;
+  logoUrl?: string;
+  kopStyle?: string;
+  stempelUrl?: string;
+  signatureKetuaUrl?: string;
+  signatureKetuaName?: string;
+  signatureBendaharaUrl?: string;
+  signatureBendaharaName?: string;
+  signatureSekretarisUrl?: string;
+  signatureSekretarisName?: string;
 }
 
 export interface Panitia {
@@ -42,24 +56,11 @@ export interface RKBAItem {
   dateAdded: string;
 }
 
-export interface NaturaItem {
-  id: string;
-  donorName: string;
-  rt: string;
-  item: string;
-  qty: number;
-  unit: string;
-  estimatedValue: number;
-  allocation: string; // Target Seksi or Kegiatan
-  date: string;
-  notes: string;
-}
-
 export interface KeuanganTransaction {
   id: string;
   type: 'Masuk' | 'Keluar';
   date: string;
-  category: 'Iuran RT' | 'Donasi Tunai' | 'Sponsorship' | 'RKBA Belanja' | 'Operasional';
+  category: string;
   amount: number;
   notes: string;
   refId?: string; // Links to RKBA ID or Natura ID if any
@@ -78,8 +79,77 @@ export interface RTContribution {
   rt: string;
   iuranCollected: number;
   targetIuran: number;
-  naturaCount: number;
   wargaCount: number;
+}
+
+export interface ActionItem {
+  id: string;
+  task: string;
+  pic: string;
+  deadline: string;
+}
+
+export interface Notulensi {
+  id: string;
+  title: string;
+  date: string;
+  time: string;
+  location: string;
+  leader: string;
+  attendeesCount: number;
+  attendeesList: string;
+  agenda: string;
+  notesRaw: string;
+  contentMarkdown: string;
+  decisions: string;
+  actionItems: ActionItem[];
+  createdAt: string;
+}
+
+export interface DigitalDocument {
+  id: string;
+  title: string;
+  category: 'Surat' | 'Proposal' | 'Kuitansi' | 'SK Panitia' | 'Dokumentasi' | 'Lainnya';
+  description: string;
+  fileUrl?: string;
+  fileName: string;
+  fileSize?: string;
+  fileType: string;
+  uploadDate: string;
+  uploadedBy: string;
+  notes?: string;
+}
+
+export interface UndanganRapat {
+  id: string;
+  letterNumber: string;
+  subject: string;
+  date: string;
+  time: string;
+  location: string;
+  agenda: string;
+  notes?: string;
+  recipients: string[];
+  signatoryName: string;
+  signatoryRole: string;
+  signatoryName2?: string;
+  signatoryRole2?: string;
+  signatoryName3?: string;
+  signatoryRole3?: string;
+  createdAt: string;
+  contentMarkdown?: string;
+  kopLine1?: string;
+  kopLine2?: string;
+  kopLine3?: string;
+  kopLine4?: string;
+  logoStyle?: string;
+  logoUrl?: string;
+  kopStyle?: string;
+  useMasterKop?: boolean;
+  showKetuaSignature?: boolean;
+  showBendaharaSignature?: boolean;
+  showSekretarisSignature?: boolean;
+  showStempel?: boolean;
 }
 
 export interface SEMSData {
@@ -87,7 +157,9 @@ export interface SEMSData {
   panitia: Panitia[];
   kegiatan: Kegiatan[];
   rkba: RKBAItem[];
-  natura: NaturaItem[];
   keuangan: KeuanganTransaction[];
   tasks: SeksiTask[];
+  notulensi: Notulensi[];
+  documents?: DigitalDocument[];
+  undangan?: UndanganRapat[];
 }

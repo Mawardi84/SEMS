@@ -62,7 +62,7 @@ export default function GuideBookView() {
               <strong>Persetujuan & Kontrol Pagu:</strong> Bendahara/Ketua menyetujui anggaran belanja sesuai pagu batas anggaran yang ditentukan di Pengaturan Sistem.
             </li>
             <li>
-              <strong>Penerimaan Dana (Natura & Kas):</strong> Sistem mencatat iuran warga per RT, sponsor, donatur tunai, serta sumbangan non-tunai (Natura) seperti air mineral, beras, dll.
+              <strong>Penerimaan Dana (Kas):</strong> Sistem mencatat iuran warga per RT, sponsor, donatur tunai.
             </li>
             <li>
               <strong>Realisasi Belanja & Pembukuan:</strong> Panitia merealisasikan belanja dari draf RKBA yang disetujui. Pembukuan arus kas keluar (debet) tercatat otomatis tanpa harus input ulang di menu Keuangan.
@@ -155,32 +155,6 @@ export default function GuideBookView() {
               <li>Menghubungkan transaksi kas dengan ID RKBA terkait (<em>Ref ID</em>) demi kebutuhan audit yang transparan.</li>
             </ul>
           </div>
-        </div>
-      )
-    },
-    {
-      id: "natura",
-      title: "4. Manajemen Kontribusi Natura",
-      icon: Gift,
-      category: "fitur",
-      content: (
-        <div className="space-y-4 text-xs text-slate-600 leading-relaxed">
-          <p>
-            <strong>Natura</strong> adalah sumbangan non-tunai (barang/jasa) yang diterima dari warga, tokoh masyarakat, atau unit usaha lokal. Contoh sumbangan berupa dus air mineral, beras tumpeng, minyak goreng panggung, atau peminjaman tenda gratis.
-          </p>
-
-          <h4 className="font-extrabold text-slate-800 uppercase tracking-wider text-[11px]">Mengapa Penting Mencatat Natura?</h4>
-          <ul className="list-disc list-inside space-y-1.5 pl-1 text-[11px]">
-            <li>
-              <strong>Transparansi Laporan Akhir:</strong> Menunjukkan bahwa partisipasi warga tidak hanya berupa iuran tunai, melainkan gotong royong barang fisik.
-            </li>
-            <li>
-              <strong>Estimasi Nilai Rupiah:</strong> Setiap sumbangan Natura diberikan "Estimasi Nilai (Rp)" agar panitia tahu berapa besar pengeluaran riil yang berhasil dihemat berkat kebaikan donatur.
-            </li>
-            <li>
-              <strong>Alokasi yang Tepat:</strong> Pastikan kolom alokasi diisi dengan jelas (misal: "Konsumsi Dapur Umum RT" atau "Humas Hadiah Dorprize") agar panitia logistik tahu ke mana barang tersebut harus didistribusikan.
-            </li>
-          </ul>
         </div>
       )
     },
@@ -320,7 +294,6 @@ export default function GuideBookView() {
             <li>Rangkuman Neraca Saldo Keuangan (Total Masuk, Total Keluar, Sisa Saldo Riil).</li>
             <li>Lampiran Rincian Buku Kas Masuk dan Buku Kas Keluar secara kronologis.</li>
             <li>Lampiran Rincian Belanja Barang RKBA yang telah terealisasi.</li>
-            <li>Lampiran Kontribusi Natura warga yang berhasil dihimpun beserta estimasi nilainya.</li>
           </ul>
         </div>
       )
@@ -367,6 +340,57 @@ export default function GuideBookView() {
               <p className="text-[10.5px] text-slate-600">
                 A: Masalah tersebut telah kami perbaiki sepenuhnya! Sekarang, aplikasi SEMS dilengkapi fitur <strong>Sesi Navigasi Mandiri</strong> menggunakan <code>localStorage</code> browser. Sistem akan selalu mengingat halaman aktif terakhir Anda, sehingga ketika Anda merefresh halaman atau memperbarui draf data, Anda akan tetap berada di halaman/menu yang sedang dikerjakan tanpa terlempar kembali ke dashboard.
               </p>
+            </div>
+
+            <div className="p-4 bg-red-50/50 border border-red-200 rounded-lg space-y-3.5">
+              <h5 className="font-extrabold text-red-800 text-[11px] uppercase tracking-wide flex items-center gap-1.5">
+                <Sparkles className="w-4 h-4 text-red-600 animate-pulse" />
+                Q: Bagaimana Alur Pengembalian Dana Talangan Pamsimas?
+              </h5>
+              <div className="space-y-3 text-[11px] text-slate-600 leading-relaxed">
+                <p>
+                  Mengingat saldo kas awal kepanitiaan adalah <strong>Rp 0</strong> saat pembentukan, panitia mengandalkan pinjaman lunak awal dari pihak <strong>Pamsimas RW 04 Ngabean</strong> sebagai jembatan pembiayaan mendesak (pembelian ATK, panjar panggung, DP perlengkapan). Berikut adalah alur pertanggungjawaban & pelunasan dana talangan secara tertib di sistem:
+                </p>
+                
+                <div className="relative pl-4 border-l-2 border-red-500 space-y-3">
+                  <div>
+                    <span className="font-bold text-slate-800 block">1. Pencatatan Pinjaman Masuk (Awal)</span>
+                    <p className="text-slate-500 text-[10.5px]">
+                      Saat dana diterima dari kas Pamsimas, bendahara menginput pemasukan kas dengan nominal pinjaman tersebut (misal Rp 1.500.000) menggunakan kategori <strong className="text-slate-700">"Dana Talangan / Pinjaman"</strong>. Ini merefleksikan posisi kewajiban hutang aktif panitia.
+                    </p>
+                  </div>
+                  <div>
+                    <span className="font-bold text-slate-800 block">2. Realisasi Pengeluaran Awal</span>
+                    <p className="text-slate-500 text-[10.5px]">
+                      Dana tersebut dibelanjakan untuk urusan persiapan awal. Seluruh transaksi dicatat rapi melalui RKBA atau langsung di menu Buku Kas Pengeluaran.
+                    </p>
+                  </div>
+                  <div>
+                    <span className="font-bold text-slate-800 block">3. Akumulasi Iuran Swadaya Warga (RT 01 - RT 04)</span>
+                    <p className="text-slate-500 text-[10.5px]">
+                      Iuran sukarela/wajib per RT mulai ditarik dan disetor oleh masing-masing Koordinator RT ke Bendahara. Begitu terkumpul, posisi kas utama panitia meningkat dan memiliki sisa saldo aman (net surplus).
+                    </p>
+                  </div>
+                  <div>
+                    <span className="font-bold text-slate-800 block">4. Pembayaran Balik ke Pamsimas (Reimbursement)</span>
+                    <p className="text-slate-500 text-[10.5px]">
+                      Bendahara menarik tunai dari saldo kas utama sebesar nominal pinjaman awal untuk diserahkan kembali secara resmi kepada pengelola Pamsimas.
+                    </p>
+                  </div>
+                  <div>
+                    <span className="font-bold text-slate-800 block">5. Pencatatan Pelunasan di Menu Keuangan SEMS</span>
+                    <p className="text-slate-500 text-[10.5px]">
+                      Untuk menyeimbangkan saldo akhir, bendahara wajib mencatat satu baris transaksi <strong className="text-rose-600 font-semibold">Kas Keluar</strong> sebesar nominal talangan tersebut dengan kategori <strong className="text-slate-700">"Pengembalian Dana Talangan"</strong> dan keterangan <em className="text-slate-500">"Pelunasan dana talangan awal Pamsimas RW 04"</em>.
+                    </p>
+                  </div>
+                  <div>
+                    <span className="font-bold text-slate-800 block">6. Verifikasi Rekonsiliasi Otomatis pada LPJ</span>
+                    <p className="text-slate-500 text-[10.5px]">
+                      Sistem monitoring akan mendeteksi transaksi pengeluaran tersebut dan secara otomatis menetapkan status hutang talangan menjadi <strong className="text-emerald-600 uppercase font-extrabold text-[10px]">LUNAS (Rp 0)</strong> di BAB IV (Pertanggungjawaban Keuangan) Laporan Pertanggungjawaban (LPJ).
+                    </p>
+                  </div>
+                </div>
+              </div>
             </div>
 
             <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg space-y-1">

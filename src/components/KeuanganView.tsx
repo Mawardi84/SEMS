@@ -13,15 +13,19 @@ import {
   ArrowUpRight,
   ArrowDownLeft,
   FileText,
-  Download
+  Download,
+  Eye
 } from "lucide-react";
 import { KeuanganTransaction, SystemSetting } from "../types";
 import { exportToPDF } from "../utils/pdfExport";
+import { exportToWord } from "../utils/wordExport";
+import { PDFPreviewModal } from "./PDFPreviewModal";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, AreaChart, Area } from 'recharts';
 
 interface KeuanganViewProps {
   keuangan: KeuanganTransaction[];
   settings: SystemSetting;
-  onSaveKeuangan: (action: 'add' | 'delete', data: KeuanganTransaction) => Promise<void>;
+  onSaveKeuangan: (action: 'add' | 'edit' | 'delete', data: KeuanganTransaction) => Promise<void>;
 }
 
 export default function KeuanganView({
@@ -32,124 +36,23 @@ export default function KeuanganView({
   const [filterType, setFilterType] = useState<string>("Semua");
   const [filterCategory, setFilterCategory] = useState<string>("Semua");
   const [isExportingPDF, setIsExportingPDF] = useState(false);
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+  const [editingTransaction, setEditingTransaction] = useState<KeuanganTransaction | null>(null);
+
+  const handleExportWord = async () => {
+    await exportToWord("printable-keuangan-area", `Buku-Kas-${new Date().toISOString().split('T')[0]}`);
+    setIsPreviewOpen(false);
+  };
 
   const handleExportPDF = async () => {
     setIsExportingPDF(true);
     await exportToPDF("printable-keuangan-area", `Buku-Kas-${new Date().toISOString().split('T')[0]}.pdf`);
     setIsExportingPDF(false);
-  };
-  
-  // Modal states
-  const [showModal, setShowModal] = useState(false);
-  const [form, setForm] = useState<Omit<KeuanganTransaction, 'id'>>({
-    type: "Masuk",
-    date: new Date().toISOString().split('T')[0],
-    category: "Donasi Tunai",
-    amount: 100000,
-    notes: "",
-    refId: ""
-  });
-
-  // Calculate stats
-  const totalIncome = keuangan
-    .filter(t => t.type === "Masuk")
-    .reduce((sum, t) => sum + t.amount, 0);
-
-  const totalExpense = keuangan
-    .filter(t => t.type === "Keluar")
-    .reduce((sum, t) => sum + t.amount, 0);
-
-  const currentBalance = totalIncome - totalExpense;
-
-  // Categories list based on type
-  const incomeCategories = ["Iuran RT", "Donasi Tunai", "Sponsorship", "Bantuan RW", "Lain-lain"];
-  const expenseCategories = ["RKBA Belanja", "Operasional Lomba", "Konsumsi Panitia", "Sewa Perlengkapan", "Lain-lain"];
-  const allCategories = [...new Set([...incomeCategories, ...expenseCategories])];
-
-  // Adjust category when type changes in form
-  const handleTypeChange = (type: "Masuk" | "Keluar") => {
-    setForm(prev => ({
-      ...prev,
-      type,
-      category: type === "Masuk" ? "Donasi Tunai" : "Operasional Lomba"
-    }));
+    setIsPreviewOpen(false);
   };
 
-  const handleOpenAdd = () => {
-    setForm({
-      type: "Masuk",
-      date: new Date().toISOString().split('T')[0],
-      category: "Donasi Tunai",
-      amount: 100000,
-      notes: "",
-      refId: ""
-    });
-    setShowModal(true);
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const payload: KeuanganTransaction = {
-      ...form,
-      id: "" // backend will auto generate
-    };
-    await onSaveKeuangan('add', payload);
-    setShowModal(false);
-  };
-
-  const handleDelete = async (t: KeuanganTransaction) => {
-    if (confirm(`Apakah Anda yakin ingin menghapus pencatatan transaksi senilai ${formatRp(t.amount)} ini?`)) {
-      await onSaveKeuangan('delete', t);
-    }
-  };
-
-  // Filter list
-  const filteredTransactions = keuangan.filter(t => {
-    const matchType = filterType === "Semua" || t.type === filterType;
-    const matchCategory = filterCategory === "Semua" || t.category === filterCategory;
-    return matchType && matchCategory;
-  });
-
-  const formatRp = (num: number) => {
-    return "Rp " + num.toLocaleString("id-ID");
-  };
-
-  return (
-    <div className="space-y-5">
-      
-      {/* 1. Header with Stats */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white p-4 rounded-lg shadow-sm border border-slate-200">
-        <div>
-          <h2 className="text-sm font-extrabold text-slate-800 flex items-center gap-2 uppercase tracking-wide">
-            <Wallet className="w-4 h-4 text-red-600" />
-            Buku Kas & Arus Keuangan (Tunai)
-          </h2>
-          <p className="text-[11px] text-slate-500 mt-0.5">
-            Buku besar digital perbendaharaan RW 04 Ngabean. Catat seluruh pemasukan kas riil dan pengeluaran belanja panitia.
-          </p>
-        </div>
-        <div className="flex items-center gap-2 self-start md:self-auto">
-          <button
-            onClick={handleExportPDF}
-            disabled={isExportingPDF}
-            className="flex items-center gap-1 bg-white hover:bg-slate-50 text-slate-700 text-[11px] font-bold px-3 py-1.5 rounded border border-slate-200 shadow-xs transition-all duration-150 uppercase tracking-wide cursor-pointer disabled:opacity-50"
-          >
-            <Download className="w-3.5 h-3.5 text-slate-500" />
-            {isExportingPDF ? "Mengekspor..." : "Ekspor PDF"}
-          </button>
-          <button
-            id="btn-add-keuangan"
-            onClick={handleOpenAdd}
-            className="flex items-center gap-1 bg-red-700 hover:bg-red-800 text-white text-[11px] font-bold px-3 py-1.5 rounded shadow-xs transition-all duration-150 uppercase tracking-wide cursor-pointer"
-          >
-            <Plus className="w-3.5 h-3.5" />
-            Pencatatan Transaksi Manual
-          </button>
-        </div>
-      </div>
-
-      {/* Printable Wrapper for High-Fidelity PDF Export */}
-      <div id="printable-keuangan-area" className="space-y-4 bg-white p-6 rounded-lg border border-slate-200">
+  const renderPrintableContent = () => (
+    <div id="printable-keuangan-area" className="space-y-4 bg-white p-6 rounded-lg border border-slate-200">
         
         {/* Printable Document Title Header */}
         <div className="border-b-[3px] border-double border-slate-900 pb-3 mb-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
@@ -218,51 +121,55 @@ export default function KeuanganView({
 
       </div>
 
-      {/* 3. Filter Toolbar */}
-      <div className="bg-white p-3 rounded-lg border border-slate-200 flex flex-wrap items-center gap-3 shadow-xs no-print">
-        <div className="flex items-center gap-1.5 text-[11px] font-bold text-slate-600">
-          <Filter className="w-3.5 h-3.5 text-slate-400" />
-          <span>Saring Arus Kas:</span>
+      {/* 3. Visualisasi Arus Kas */}
+      <div className="bg-white border border-slate-200 rounded-lg p-4 shadow-sm">
+        <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider mb-4 border-b border-slate-100 pb-2">
+          Tren Arus Kas (Pemasukan vs Pengeluaran)
+        </h3>
+        <div className="h-64 w-full">
+          <ResponsiveContainer width="100%" height="100%">
+            <AreaChart
+              data={cashflowData}
+              margin={{ top: 10, right: 10, left: 0, bottom: 20 }}
+            >
+              <defs>
+                <linearGradient id="colorMasuk" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#10b981" stopOpacity={0.3}/>
+                  <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
+                </linearGradient>
+                <linearGradient id="colorKeluar" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#ef4444" stopOpacity={0.3}/>
+                  <stop offset="95%" stopColor="#ef4444" stopOpacity={0}/>
+                </linearGradient>
+              </defs>
+              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+              <XAxis 
+                dataKey="date" 
+                tick={{ fontSize: 10, fill: '#64748b' }} 
+                axisLine={false} 
+                tickLine={false}
+                tickFormatter={(val) => {
+                  const d = new Date(val);
+                  return `${d.getDate()}/${d.getMonth()+1}`;
+                }}
+              />
+              <YAxis 
+                tickFormatter={(value) => `Rp ${(value / 1000000).toFixed(1)}Jt`} 
+                tick={{ fontSize: 10, fill: '#64748b' }}
+                axisLine={false}
+                tickLine={false}
+              />
+              <Tooltip 
+                formatter={(value: number) => formatRp(value)}
+                labelFormatter={(label) => `Tanggal: ${label}`}
+                contentStyle={{ borderRadius: '8px', fontSize: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)' }}
+              />
+              <Legend wrapperStyle={{ fontSize: '11px', paddingTop: '10px' }} />
+              <Area type="monotone" dataKey="masuk" name="Arus Masuk" stroke="#10b981" fillOpacity={1} fill="url(#colorMasuk)" strokeWidth={2} />
+              <Area type="monotone" dataKey="keluar" name="Arus Keluar" stroke="#ef4444" fillOpacity={1} fill="url(#colorKeluar)" strokeWidth={2} />
+            </AreaChart>
+          </ResponsiveContainer>
         </div>
-
-        <div className="flex items-center gap-1">
-          <span className="text-[9px] text-slate-400 font-bold uppercase tracking-wider">Tipe:</span>
-          <select
-            value={filterType}
-            onChange={(e) => setFilterType(e.target.value)}
-            className="text-[11px] bg-slate-50 border border-slate-200 focus:outline-none rounded p-1 text-slate-700 font-semibold"
-          >
-            <option value="Semua">Semua Tipe</option>
-            <option value="Masuk">Masuk (Pemasukan)</option>
-            <option value="Keluar">Keluar (Pengeluaran)</option>
-          </select>
-        </div>
-
-        <div className="flex items-center gap-1">
-          <span className="text-[9px] text-slate-400 font-bold uppercase tracking-wider">Kategori:</span>
-          <select
-            value={filterCategory}
-            onChange={(e) => setFilterCategory(e.target.value)}
-            className="text-[11px] bg-slate-50 border border-slate-200 focus:outline-none rounded p-1 text-slate-700 font-semibold"
-          >
-            <option value="Semua">Semua Kategori</option>
-            {allCategories.map(cat => (
-              <option key={cat} value={cat}>{cat}</option>
-            ))}
-          </select>
-        </div>
-
-        {(filterType !== "Semua" || filterCategory !== "Semua") && (
-          <button
-            onClick={() => {
-              setFilterType("Semua");
-              setFilterCategory("Semua");
-            }}
-            className="text-[11px] text-red-600 hover:text-red-800 font-bold ml-auto font-sans"
-          >
-            Bersihkan Filter
-          </button>
-        )}
       </div>
 
       {/* 4. Ledger Table List */}
@@ -275,7 +182,7 @@ export default function KeuanganView({
               <th className="px-4 py-2 font-bold text-slate-600">Keterangan / Deskripsi</th>
               <th className="px-4 py-2 font-bold text-slate-600">Ref RKBA</th>
               <th className="px-4 py-2 font-bold text-slate-600 text-right">Nominal (Rp)</th>
-              <th className="px-4 py-2 font-bold text-slate-600 text-right no-print">Aksi</th>
+              <th className="px-4 py-2 font-bold text-slate-600 text-center">Aksi</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100 text-xs text-slate-700">
@@ -312,34 +219,187 @@ export default function KeuanganView({
                   }`}>
                     {isIncome ? "+" : "-"} {formatRp(t.amount)}
                   </td>
-                  <td className="px-4 py-2 text-right no-print">
-                    {t.category === 'RKBA Belanja' && t.refId ? (
-                      <span className="text-[9px] text-slate-400 italic" title="Terhubung dengan RKBA, hapus dari RKBA">Auto</span>
-                    ) : (
-                      <button
-                        id={`delete-keuangan-${t.id}`}
-                        onClick={() => handleDelete(t)}
-                        className="p-1 text-red-500 hover:text-red-700 hover:bg-red-50 rounded transition-colors"
-                      >
-                        <Trash className="w-3.5 h-3.5" />
-                      </button>
-                    )}
+                  <td className="px-4 py-2 text-center">
+                    <div className="flex gap-2 justify-center">
+                      <button onClick={() => handleOpenEdit(t)} className="text-[10px] text-blue-600 font-bold hover:underline">Edit</button>
+                      <button onClick={() => handleDelete(t)} className="text-[10px] text-red-600 font-bold hover:underline">Hapus</button>
+                    </div>
                   </td>
                 </tr>
               );
             })}
-            {filteredTransactions.length === 0 && (
-              <tr>
-                <td colSpan={6} className="text-center py-6 text-slate-400 font-sans">
-                  Tidak ada data pencatatan transaksi yang sesuai.
-                </td>
-              </tr>
-            )}
           </tbody>
         </table>
       </div>
+    </div>
+  );
+  
+  // Modal states
+  const [showModal, setShowModal] = useState(false);
+  const [form, setForm] = useState<Omit<KeuanganTransaction, 'id'>>({
+    type: "Masuk",
+    date: new Date().toISOString().split('T')[0],
+    category: "Donasi Tunai",
+    amount: 100000,
+    notes: "",
+    refId: ""
+  });
 
-</div>
+  // Calculate stats
+  const totalIncome = keuangan
+    .filter(t => t.type === "Masuk")
+    .reduce((sum, t) => sum + t.amount, 0);
+
+  const totalExpense = keuangan
+    .filter(t => t.type === "Keluar")
+    .reduce((sum, t) => sum + t.amount, 0);
+
+  const currentBalance = totalIncome - totalExpense;
+
+  // Categories list based on type
+  const incomeCategories = ["Iuran RT", "Donasi Tunai", "Sponsorship", "Bantuan RW", "Dana Talangan / Pinjaman", "Lain-lain"];
+  const expenseCategories = ["RKBA Belanja", "Operasional Lomba", "Konsumsi Panitia", "Sewa Perlengkapan", "Pengembalian Dana Talangan", "Lain-lain"];
+  const allCategories = [...new Set([...incomeCategories, ...expenseCategories])];
+
+  // Adjust category when type changes in form
+  const handleTypeChange = (type: "Masuk" | "Keluar") => {
+    setForm(prev => ({
+      ...prev,
+      type,
+      category: type === "Masuk" ? "Donasi Tunai" : "Operasional Lomba"
+    }));
+  };
+
+  const handleOpenAdd = () => {
+    setEditingTransaction(null);
+    setForm({
+      type: "Masuk",
+      date: new Date().toISOString().split('T')[0],
+      category: "Donasi Tunai",
+      amount: 100000,
+      notes: "",
+      refId: ""
+    });
+    setShowModal(true);
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const action = editingTransaction ? 'edit' : 'add';
+    const payload: KeuanganTransaction = {
+      ...form,
+      id: editingTransaction ? editingTransaction.id : ""
+    };
+    await onSaveKeuangan(action, payload);
+    setShowModal(false);
+    setEditingTransaction(null);
+  };
+
+  const handleOpenEdit = (t: KeuanganTransaction) => {
+    setEditingTransaction(t);
+    setForm({
+      type: t.type,
+      date: t.date,
+      category: t.category,
+      amount: t.amount,
+      notes: t.notes,
+      refId: t.refId
+    });
+    setShowModal(true);
+  };
+
+  const handleDelete = async (t: KeuanganTransaction) => {
+    if (confirm(`Apakah Anda yakin ingin menghapus pencatatan transaksi senilai ${formatRp(t.amount)} ini?`)) {
+      await onSaveKeuangan('delete', t);
+    }
+  };
+
+  // Filter list
+  const filteredTransactions = keuangan.filter(t => {
+    const matchType = filterType === "Semua" || t.type === filterType;
+    const matchCategory = filterCategory === "Semua" || t.category === filterCategory;
+    return matchType && matchCategory;
+  });
+
+  // Chart data: Cashflow over time
+  const cashflowData = React.useMemo(() => {
+    // Group by date
+    const dateMap = new Map<string, { date: string, masuk: number, keluar: number }>();
+    
+    // Sort transactions by date ascending first
+    const sorted = [...keuangan].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+    
+    sorted.forEach(t => {
+      const d = t.date;
+      if (!dateMap.has(d)) {
+        dateMap.set(d, { date: d, masuk: 0, keluar: 0 });
+      }
+      const current = dateMap.get(d)!;
+      if (t.type === 'Masuk') {
+        current.masuk += t.amount;
+      } else {
+        current.keluar += t.amount;
+      }
+    });
+
+    return Array.from(dateMap.values());
+  }, [keuangan]);
+
+  const formatRp = (num: number) => {
+    return "Rp " + num.toLocaleString("id-ID");
+  };
+
+  return (
+    <div className="space-y-5">
+      
+      {/* 1. Header with Stats */}
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white p-4 rounded-lg shadow-sm border border-slate-200">
+        <div>
+          <h2 className="text-sm font-extrabold text-slate-800 flex items-center gap-2 uppercase tracking-wide">
+            <Wallet className="w-4 h-4 text-red-600" />
+            Buku Kas & Arus Keuangan (Tunai)
+          </h2>
+          <p className="text-[11px] text-slate-500 mt-0.5">
+            Buku besar digital perbendaharaan RW 04 Ngabean. Catat seluruh pemasukan kas riil dan pengeluaran belanja panitia.
+          </p>
+        </div>
+        <div className="flex flex-wrap items-center gap-2 self-start md:self-auto">
+          <button
+            onClick={() => setIsPreviewOpen(true)}
+            className="flex items-center gap-1 bg-indigo-600 hover:bg-indigo-700 text-white text-[11px] font-bold px-3 py-1.5 rounded shadow-xs transition-all duration-150 uppercase tracking-wide cursor-pointer"
+          >
+            <Eye className="w-3.5 h-3.5" />
+            Pratinjau Cetak
+          </button>
+          <button
+            onClick={handleExportWord}
+            className="flex items-center gap-1 bg-blue-600 hover:bg-blue-700 text-white text-[11px] font-bold px-3 py-1.5 rounded shadow-xs transition-all duration-150 uppercase tracking-wide cursor-pointer"
+          >
+            <Download className="w-3.5 h-3.5" />
+            Unduh DOC
+          </button>
+          <button
+            id="btn-add-keuangan"
+            onClick={handleOpenAdd}
+            className="flex items-center gap-1 bg-red-700 hover:bg-red-800 text-white text-[11px] font-bold px-3 py-1.5 rounded shadow-xs transition-all duration-150 uppercase tracking-wide cursor-pointer"
+          >
+            <Plus className="w-3.5 h-3.5" />
+            Pencatatan Transaksi Manual
+          </button>
+        </div>
+      </div>
+
+      <PDFPreviewModal 
+        isOpen={isPreviewOpen} 
+        onClose={() => setIsPreviewOpen(false)} 
+        title="Pratinjau Laporan Keuangan" 
+        onDownload={handleExportPDF}
+        onExportWord={handleExportWord}
+      >
+        {renderPrintableContent()}
+      </PDFPreviewModal>
+
+      {renderPrintableContent()}
 
       {/* 5. MANUAL TRANSACTION MODAL */}
       {showModal && (
@@ -347,7 +407,7 @@ export default function KeuanganView({
           <div className="bg-white rounded-lg w-full max-w-md shadow-2xl overflow-hidden border border-slate-200 animate-in fade-in zoom-in-95 duration-200">
             <div className="bg-red-750 text-white px-4 py-3 border-b border-red-850 flex justify-between items-center">
               <h3 className="font-sans font-bold text-xs uppercase tracking-wider">
-                Catat Transaksi Keuangan Baru
+                {editingTransaction ? "Edit Transaksi Keuangan" : "Catat Transaksi Keuangan Baru"}
               </h3>
               <button 
                 id="close-keuangan-modal"
@@ -458,7 +518,6 @@ export default function KeuanganView({
           </div>
         </div>
       )}
-
     </div>
   );
 }
