@@ -1,5 +1,7 @@
  import React, { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "motion/react";
+import { QRCodeCanvas } from "qrcode.react";
+import { toPng } from "html-to-image";
 import { 
   Ticket, 
   IdCard, 
@@ -31,6 +33,7 @@ import {
   X
 } from "lucide-react";
 import { SEMSData, Panitia } from "../types";
+import IdCardCanvasEditor from "./IdCardCanvasEditor";
 
 interface FestiveEventViewProps {
   data: SEMSData;
@@ -81,11 +84,46 @@ export default function FestiveEventView({ data, defaultTab = "coupon" }: Festiv
   const [couponLocation, setCouponLocation] = useState("Start-Finish: Balai RW 04 Ngabean");
   const [startNum, setStartNum] = useState(1);
   const [couponCount, setCouponCount] = useState(24);
-  const [couponTheme, setCouponTheme] = useState<"red-white" | "luxury-gold" | "cyber-festive" | "emerald-green">("red-white");
+  const [couponTheme, setCouponTheme] = useState<"red-white" | "luxury-gold" | "cyber-festive" | "emerald-green" | "sporty-orange" | "ocean-blue" | "sunset-purple" | "fresh-lime">("red-white");
   const [customPrizeEnabled, setCustomPrizeEnabled] = useState(false);
 
+  // --- STAMP CUSTOMIZATION STATES ---
+  const [couponStampEnabled, setCouponStampEnabled] = useState(true);
+  const [couponStampText, setCouponStampText] = useState("RW 04 NGABEAN");
+  const [couponStampColor, setCouponStampColor] = useState<"red" | "blue" | "purple" | "green" | "orange">("red");
+  const [couponStampStyle, setCouponStampStyle] = useState<"circular" | "oval" | "rectangular">("circular");
+
+  // --- REVISI KUPON 2-SISI & EKSPOR IMAGES STATES ---
+  const [couponLayoutMode, setCouponLayoutMode] = useState<"single" | "double-fold" | "double-duplex">("single");
+  const [duplexView, setDuplexView] = useState<"front" | "back">("front");
+  const [couponBackTnC, setCouponBackTnC] = useState<string>(
+    "1. Kupon wajib dibawa saat pelaksanaan jalan sehat.\n2. Sobekan kupon (STUB) dimasukkan ke kotak undian resmi paling lambat pukul 07.30 WIB.\n3. Pengundian menggunakan sistem digital SEMS yang transparan.\n4. Pemenang wajib menunjukkan kupon berpasangan dengan nomor seri yang cocok."
+  );
+  const [couponBackSponsors, setCouponBackSponsors] = useState<string>(
+    "Toko Kelontong Bu RT • Usaha Bersama RW 04 • Donatur Peduli Kemerdekaan • Karang Taruna Ngabean"
+  );
+  const [couponBackRundown, setCouponBackRundown] = useState<string>(
+    "06:00 - Senam Kemerdekaan Massal\n06:30 - Pelepasan Jalan Sehat RW 04\n08:00 - Hiburan Musik & Pentas Seni\n09:30 - Undian Doorprize & Hadiah Utama"
+  );
+  const [isExportingSheet, setIsExportingSheet] = useState<boolean>(false);
+  const [exportingCardId, setExportingCardId] = useState<string | null>(null);
+  const [couponPage, setCouponPage] = useState<number>(1);
+  const [useCouponPagination, setUseCouponPagination] = useState<boolean>(true);
+
+  // Auto-bound couponPage based on couponCount and itemsPerPage
+  useEffect(() => {
+    const itemsPerPage = couponLayoutMode === "double-fold" ? 5 : 10;
+    const totalCouponPages = Math.ceil(couponCount / itemsPerPage);
+    if (couponPage > totalCouponPages && totalCouponPages > 0) {
+      setCouponPage(totalCouponPages);
+    }
+  }, [couponCount, couponLayoutMode, couponPage]);
+
   // --- ID CARD STATES ---
-  const [idCardTheme, setIdCardTheme] = useState<"classic-red" | "modern-dark" | "patriotic-blue">("classic-red");
+  const [idCardTheme, setIdCardTheme] = useState<"classic-red" | "modern-dark" | "patriotic-blue" | "custom-canva">("classic-red");
+  const [isCanvaEditorOpen, setIsCanvaEditorOpen] = useState(false);
+  const [customCanvaElements, setCustomCanvaElements] = useState<any[]>([]);
+  const [customCanvaBackground, setCustomCanvaBackground] = useState("#ffffff");
   const [selectedPanitiaIds, setSelectedPanitiaIds] = useState<string[]>([]);
   const [customAttendeesRaw, setCustomAttendeesRaw] = useState("");
   const [showQrCode, setShowQrCode] = useState(true);
@@ -510,6 +548,15 @@ export default function FestiveEventView({ data, defaultTab = "coupon" }: Festiv
     return list;
   };
 
+  const getPaginatedCouponList = () => {
+    const fullList = getCouponList();
+    if (printMode === "coupon" || !useCouponPagination) return fullList;
+    
+    const itemsPerPage = couponLayoutMode === "double-fold" ? 5 : 10;
+    const startIndex = (couponPage - 1) * itemsPerPage;
+    return fullList.slice(startIndex, startIndex + itemsPerPage);
+  };
+
   // QR mock generator styling helper
   const getBarcodeLines = (num: number) => {
     const seed = num % 7;
@@ -524,6 +571,52 @@ export default function FestiveEventView({ data, defaultTab = "coupon" }: Festiv
       );
     }
     return lines;
+  };
+
+  // Export a specific element (like a single coupon or the whole coupon sheet) to PNG
+  const handleExportAsImage = async (elementId: string, fileName: string, isSheet: boolean) => {
+    const element = document.getElementById(elementId);
+    if (!element) {
+      return;
+    }
+    
+    if (isSheet) {
+      setIsExportingSheet(true);
+    } else {
+      setExportingCardId(elementId);
+    }
+
+    try {
+      // Small delay to ensure rendering is settled
+      await new Promise((resolve) => setTimeout(resolve, 300));
+      
+      const imgData = await toPng(element, {
+        cacheBust: true,
+        pixelRatio: 2.5, // Beautiful clean print quality
+        backgroundColor: "#ffffff",
+        filter: (node: any) => {
+          if (node.classList && node.classList.contains("export-btn-exclude")) {
+            return false;
+          }
+          return true;
+        }
+      });
+      
+      const link = document.createElement("a");
+      link.href = imgData;
+      link.download = `${fileName}.png`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch (err) {
+      console.error("Gagal mengekspor gambar:", err);
+    } finally {
+      if (isSheet) {
+        setIsExportingSheet(false);
+      } else {
+        setExportingCardId(null);
+      }
+    }
   };
 
   // Print Handler
@@ -576,29 +669,17 @@ export default function FestiveEventView({ data, defaultTab = "coupon" }: Festiv
         <div className="space-y-1">
           <div className="flex items-center gap-2">
             <span className="px-2.5 py-0.5 bg-red-100 text-red-700 text-[10px] font-black uppercase tracking-wider rounded-full border border-red-200">
-              {activeSubTab === "coupon"
-                ? "CETAK ATRIBUT • KUPON"
-                : activeSubTab === "idcard"
-                ? "CETAK ATRIBUT • ID CARD"
-                : "PERAYAAN • UNDIAN"}
+              CETAK ATRIBUT • KUPON
             </span>
             <div className="flex items-center gap-1.5 text-amber-500 animate-pulse">
               <Sparkles className="w-4 h-4" />
             </div>
           </div>
           <h1 className="text-xl sm:text-2xl font-black text-slate-800 uppercase tracking-tight">
-            {activeSubTab === "coupon"
-              ? "Cetak Kupon Jalan Sehat"
-              : activeSubTab === "idcard"
-              ? "Cetak ID Card Panitia"
-              : "Undian Doorprize Digital"}
+            Cetak Kupon Jalan Sehat
           </h1>
           <p className="text-xs text-slate-500 leading-relaxed max-w-xl">
-            {activeSubTab === "coupon"
-              ? "Sistem pembuatan dan pencetakan kupon jalan sehat massal otomatis dengan format layout siap print, nomor urut seri, dan barcode pengaman."
-              : activeSubTab === "idcard"
-              ? "Format desain ID Card resmi panitia pelaksana HUT RI Ke-81 Ngabean Semarang yang siap dicetak masal lengkap dengan barcode QR."
-              : "Mesin pengundian doorprize warga dan panitia yang aman dan bebas bias, didukung algoritma kriptografis acak riil, musik pendukung, dan log pemenang."}
+            Sistem pembuatan dan pencetakan kupon jalan sehat massal otomatis dengan format layout siap print, nomor urut seri, dan barcode pengaman.
           </p>
         </div>
 
@@ -733,11 +814,16 @@ export default function FestiveEventView({ data, defaultTab = "coupon" }: Festiv
                   {[
                     { id: "red-white", label: "Classic Red", color: "bg-red-600" },
                     { id: "luxury-gold", label: "Lux Gold", color: "bg-amber-500" },
-                    { id: "cyber-festive", label: "Cyber Modern", color: "bg-slate-900" },
-                    { id: "emerald-green", label: "Emerald Green", color: "bg-emerald-600" }
+                    { id: "cyber-festive", label: "Cyber Modern", color: "bg-indigo-500" },
+                    { id: "emerald-green", label: "Emerald Green", color: "bg-emerald-600" },
+                    { id: "sporty-orange", label: "Sporty Orange", color: "bg-orange-500" },
+                    { id: "ocean-blue", label: "Ocean Blue", color: "bg-sky-500" },
+                    { id: "sunset-purple", label: "Sunset Purple", color: "bg-indigo-600" },
+                    { id: "fresh-lime", label: "Fresh Lime", color: "bg-lime-500" }
                   ].map((t) => (
                     <button
                       key={t.id}
+                      type="button"
                       onClick={() => setCouponTheme(t.id as any)}
                       className={`p-2 rounded-xl border text-[11px] font-bold flex items-center gap-2 cursor-pointer transition-all ${
                         couponTheme === t.id
@@ -752,14 +838,227 @@ export default function FestiveEventView({ data, defaultTab = "coupon" }: Festiv
                 </div>
               </div>
 
-              <div className="pt-2">
+              {/* Format Sisi Kupon */}
+              <div>
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">Format Sisi Kupon</label>
+                <div className="grid grid-cols-3 gap-1">
+                  {[
+                    { id: "single", label: "1 Sisi (Depan)" },
+                    { id: "double-fold", label: "2 Sisi (Lipat & Lem)" },
+                    { id: "double-duplex", label: "2 Sisi (Duplex)" }
+                  ].map((m) => (
+                    <button
+                      key={m.id}
+                      type="button"
+                      onClick={() => setCouponLayoutMode(m.id as any)}
+                      className={`py-2 px-1 rounded-xl border text-[9px] font-black text-center cursor-pointer transition-all leading-tight ${
+                        couponLayoutMode === m.id
+                          ? "border-red-600 bg-red-50 text-red-700 ring-1 ring-red-500"
+                          : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
+                      }`}
+                    >
+                      {m.label}
+                    </button>
+                  ))}
+                </div>
+                <p className="text-[9px] text-slate-400 font-semibold mt-1 leading-snug">
+                  {couponLayoutMode === "single" && "Hanya mencetak sisi depan kupon."}
+                  {couponLayoutMode === "double-fold" && "Sisi depan & belakang diletakkan berdampingan (tinggal potong, lipat & rekat). Sangat disarankan!"}
+                  {couponLayoutMode === "double-duplex" && "Mencetak sisi depan dan belakang secara terpisah untuk opsi cetak duplex (bolak-balik kertas)."}
+                </p>
+              </div>
+
+              {/* Tampilan Duplex Selector */}
+              {couponLayoutMode === "double-duplex" && (
+                <div className="p-3 bg-red-50/50 rounded-2xl border border-red-100 space-y-1.5">
+                  <label className="text-[9px] font-black text-red-800 uppercase tracking-wider block">Tampilan Cetak Duplex</label>
+                  <div className="grid grid-cols-2 gap-1.5">
+                    <button
+                      type="button"
+                      onClick={() => setDuplexView("front")}
+                      className={`py-1.5 rounded-lg text-xs font-bold border transition-all cursor-pointer ${
+                        duplexView === "front"
+                          ? "bg-red-600 text-white border-red-700 shadow-3xs"
+                          : "bg-white text-slate-600 border-slate-200 hover:bg-slate-100"
+                      }`}
+                    >
+                      Sisi Depan
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setDuplexView("back")}
+                      className={`py-1.5 rounded-lg text-xs font-bold border transition-all cursor-pointer ${
+                        duplexView === "back"
+                          ? "bg-red-600 text-white border-red-700 shadow-3xs"
+                          : "bg-white text-slate-600 border-slate-200 hover:bg-slate-100"
+                      }`}
+                    >
+                      Sisi Belakang
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Editor Sisi Belakang */}
+              {couponLayoutMode !== "single" && (
+                <div className="p-4 bg-slate-50/50 rounded-2xl border border-slate-200/60 space-y-3.5">
+                  <h4 className="text-[10px] font-black text-slate-700 uppercase tracking-wider pb-1.5 border-b border-slate-200 flex items-center gap-1.5">
+                    <Layers className="w-3.5 h-3.5 text-slate-500" />
+                    <span>Konfigurasi Sisi Belakang</span>
+                  </h4>
+
+                  <div>
+                    <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">Syarat & Ketentuan (T&C)</label>
+                    <textarea
+                      rows={3}
+                      value={couponBackTnC}
+                      onChange={(e) => setCouponBackTnC(e.target.value)}
+                      className="w-full text-[11px] font-bold text-slate-700 px-3 py-2 border border-slate-200 rounded-xl focus:border-red-500 focus:outline-none resize-none"
+                      placeholder="Masukkan S&K kupon..."
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">Rundown Utama Singkat</label>
+                    <textarea
+                      rows={3}
+                      value={couponBackRundown}
+                      onChange={(e) => setCouponBackRundown(e.target.value)}
+                      className="w-full text-[11px] font-bold text-slate-700 px-3 py-2 border border-slate-200 rounded-xl focus:border-red-500 focus:outline-none resize-none"
+                      placeholder="Format: Jam - Acara..."
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">Daftar Sponsor (Pemisah Titik •)</label>
+                    <input
+                      type="text"
+                      value={couponBackSponsors}
+                      onChange={(e) => setCouponBackSponsors(e.target.value)}
+                      className="w-full text-[11px] font-bold text-slate-700 px-3 py-1.5 border border-slate-200 rounded-xl focus:border-red-500 focus:outline-none"
+                      placeholder="Contoh: Sponsor A • Sponsor B • Sponsor C"
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* Pengaturan Stempel Panitia */}
+              <div className="p-4 bg-slate-50/50 rounded-2xl border border-slate-200/60 space-y-3.5">
+                <div className="flex items-center justify-between pb-1.5 border-b border-slate-200">
+                  <h4 className="text-[10px] font-black text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
+                    <Award className="w-3.5 h-3.5 text-red-500" />
+                    <span>Stempel Panitia (Cap)</span>
+                  </h4>
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input 
+                      type="checkbox" 
+                      checked={couponStampEnabled}
+                      onChange={(e) => setCouponStampEnabled(e.target.checked)}
+                      className="sr-only peer"
+                    />
+                    <div className="w-8 h-4.5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-3.5 after:w-3.5 after:transition-all peer-checked:bg-red-600"></div>
+                  </label>
+                </div>
+
+                {couponStampEnabled && (
+                  <div className="space-y-3">
+                    <div>
+                      <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">Teks Stempel</label>
+                      <input
+                        type="text"
+                        value={couponStampText}
+                        onChange={(e) => setCouponStampText(e.target.value.toUpperCase())}
+                        className="w-full text-[11px] font-bold text-slate-700 px-3 py-1.5 border border-slate-200 rounded-xl focus:border-red-500 focus:outline-none"
+                        placeholder="Contoh: PANITIA RW 04"
+                      />
+                    </div>
+
+                    <div className="space-y-3">
+                      <div>
+                        <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">Bentuk Cap (Stempel)</label>
+                        <div className="grid grid-cols-3 gap-1">
+                          {[
+                            { id: "circular", label: "Bulat" },
+                            { id: "oval", label: "Oval" },
+                            { id: "rectangular", label: "Kotak" }
+                          ].map((style) => (
+                            <button
+                              key={style.id}
+                              type="button"
+                              onClick={() => setCouponStampStyle(style.id as any)}
+                              className={`py-1.5 px-1 rounded-lg border text-[10px] font-bold text-center cursor-pointer transition-all ${
+                                couponStampStyle === style.id
+                                  ? "border-red-600 bg-red-50 text-red-700 ring-1 ring-red-500"
+                                  : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
+                              }`}
+                            >
+                              {style.label}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">Warna Tinta Stempel</label>
+                        <div className="grid grid-cols-5 gap-1">
+                          {[
+                            { id: "red", label: "Merah", bg: "bg-red-500", border: "border-red-600" },
+                            { id: "blue", label: "Biru", bg: "bg-blue-600", border: "border-blue-700" },
+                            { id: "purple", label: "Ungu", bg: "bg-purple-600", border: "border-purple-700" },
+                            { id: "green", label: "Hijau", bg: "bg-emerald-600", border: "border-emerald-700" },
+                            { id: "orange", label: "Jingga", bg: "bg-orange-500", border: "border-orange-600" }
+                          ].map((color) => (
+                            <button
+                              key={color.id}
+                              type="button"
+                              onClick={() => setCouponStampColor(color.id as any)}
+                              title={color.label}
+                              className={`py-2 rounded-lg border flex flex-col items-center justify-center gap-1 cursor-pointer transition-all ${
+                                couponStampColor === color.id
+                                  ? "border-slate-800 bg-slate-50 ring-2 ring-slate-800"
+                                  : "border-slate-200 bg-white hover:bg-slate-50"
+                              }`}
+                            >
+                              <span className={`w-3.5 h-3.5 rounded-full ${color.bg} shadow-3xs`} />
+                              <span className="text-[8px] font-semibold text-slate-500">{color.label}</span>
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <div className="pt-2 space-y-2">
                 <button
+                  type="button"
                   onClick={() => handleTriggerPrint("coupon")}
                   className="w-full bg-red-600 hover:bg-red-700 text-white py-3 rounded-xl font-black text-xs uppercase tracking-wider shadow-md shadow-red-900/10 flex items-center justify-center gap-2 transition-colors cursor-pointer"
                 >
                   <Printer className="w-4 h-4" />
                   <span>Cetak Lembar Kupon</span>
                 </button>
+
+                <button
+                  type="button"
+                  onClick={() => handleExportAsImage("print-area-coupon", `KUPON_JALAN_SEHAT_${couponOrganizer.replace(/\s+/g, "_")}${useCouponPagination ? `_Lembar_${couponPage}` : ""}`, true)}
+                  disabled={isExportingSheet}
+                  className="w-full bg-slate-900 hover:bg-slate-800 disabled:bg-slate-400 text-white py-3 rounded-xl font-black text-xs uppercase tracking-wider shadow-md flex items-center justify-center gap-2 transition-colors cursor-pointer"
+                >
+                  {isExportingSheet ? (
+                    <>
+                      <RefreshCw className="w-4 h-4 animate-spin" />
+                      <span>Mengekspor Gambar...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Download className="w-4 h-4" />
+                      <span>Ekspor Lembar Kupon (PNG)</span>
+                    </>
+                  )}
+                </button>
+
                 <span className="text-[10px] text-slate-400 font-medium leading-tight mt-1 text-center block">
                   Optimalkan cetak menggunakan kertas F4 / Folio dengan grid kupon teratur.
                 </span>
@@ -786,12 +1085,61 @@ export default function FestiveEventView({ data, defaultTab = "coupon" }: Festiv
               </span>
             </div>
 
+            {/* Pagination Controls - Print Hidden */}
+            <div className="bg-white p-4 rounded-3xl border border-slate-200/80 shadow-3xs flex flex-col sm:flex-row items-center justify-between gap-3.5 print:hidden">
+              <div className="flex items-center gap-2.5">
+                <input
+                  type="checkbox"
+                  id="use_coupon_pagination"
+                  checked={useCouponPagination}
+                  onChange={(e) => setUseCouponPagination(e.target.checked)}
+                  className="rounded text-red-600 focus:ring-red-500 h-4.5 w-4.5 cursor-pointer"
+                />
+                <div className="leading-none">
+                  <label htmlFor="use_coupon_pagination" className="text-xs font-bold text-slate-800 cursor-pointer select-none block mb-0.5">
+                    Mode Lembar Terbatas ({couponLayoutMode === "double-fold" ? 5 : 10} Kupon per PNG)
+                  </label>
+                  <span className="text-[10px] text-slate-400 font-medium">
+                    Batasi jumlah kupon per lembar pratinjau agar pas dicetak / diekspor ke PNG.
+                  </span>
+                </div>
+              </div>
+
+              {useCouponPagination && (
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    disabled={couponPage === 1}
+                    onClick={() => setCouponPage(prev => Math.max(1, prev - 1))}
+                    className="px-3 py-1.5 bg-slate-50 border border-slate-200 hover:bg-slate-100 disabled:opacity-50 disabled:hover:bg-slate-50 text-slate-700 rounded-lg text-xs font-bold transition-all cursor-pointer"
+                  >
+                    Sebelumnya
+                  </button>
+                  <span className="text-xs font-black text-slate-700 bg-slate-100/80 px-2.5 py-1.5 rounded-lg border border-slate-200">
+                    Lembar {couponPage} dari {Math.max(1, Math.ceil(couponCount / (couponLayoutMode === "double-fold" ? 5 : 10)))}
+                  </span>
+                  <button
+                    type="button"
+                    disabled={couponPage >= Math.ceil(couponCount / (couponLayoutMode === "double-fold" ? 5 : 10))}
+                    onClick={() => setCouponPage(prev => Math.min(Math.ceil(couponCount / (couponLayoutMode === "double-fold" ? 5 : 10)), prev + 1))}
+                    className="px-3 py-1.5 bg-slate-50 border border-slate-200 hover:bg-slate-100 disabled:opacity-50 disabled:hover:bg-slate-50 text-slate-700 rounded-lg text-xs font-bold transition-all cursor-pointer"
+                  >
+                    Selanjutnya
+                  </button>
+                </div>
+              )}
+            </div>
+
             {/* Coupons container */}
             <div 
-              id="print-area"
-              className={`grid grid-cols-1 md:grid-cols-2 gap-4 ${printMode === "coupon" ? "print-coupon-grid" : ""}`}
+              id="print-area-coupon"
+              className={`grid gap-6 ${
+                couponLayoutMode === "double-fold" 
+                  ? "grid-cols-1 print-coupon-grid-fold" 
+                  : "grid-cols-1 md:grid-cols-2 print-coupon-grid"
+              }`}
             >
-              {getCouponList().map((num) => {
+              {getPaginatedCouponList().map((num) => {
                 const formattedNum = String(num).padStart(3, "0");
                 
                 // Theme details mappings
@@ -801,115 +1149,403 @@ export default function FestiveEventView({ data, defaultTab = "coupon" }: Festiv
                     bgHeader: "bg-red-600 text-white",
                     accentText: "text-red-600",
                     stubHeader: "bg-red-700 text-red-50 text-center",
-                    dividerDot: "border-red-200"
+                    stubBg: "bg-red-50/25",
                   },
                   "luxury-gold": {
-                    border: "border-amber-200",
-                    bgHeader: "bg-amber-600 text-white",
-                    accentText: "text-amber-700",
-                    stubHeader: "bg-amber-700 text-amber-50 text-center",
-                    dividerDot: "border-amber-200"
+                    border: "border-amber-300",
+                    bgHeader: "bg-slate-900 text-amber-100 border-b border-amber-500/30",
+                    accentText: "text-amber-600 font-extrabold",
+                    stubHeader: "bg-amber-600 text-white text-center",
+                    stubBg: "bg-amber-50/20",
                   },
                   "cyber-festive": {
-                    border: "border-slate-300",
-                    bgHeader: "bg-slate-900 text-white",
-                    accentText: "text-slate-900",
-                    stubHeader: "bg-slate-800 text-slate-200 text-center",
-                    dividerDot: "border-slate-300"
+                    border: "border-cyan-300",
+                    bgHeader: "bg-gradient-to-r from-indigo-950 to-slate-900 text-cyan-400",
+                    accentText: "text-cyan-600 font-extrabold",
+                    stubHeader: "bg-indigo-900 text-cyan-300 text-center",
+                    stubBg: "bg-slate-950/20",
                   },
                   "emerald-green": {
                     border: "border-emerald-200",
                     bgHeader: "bg-emerald-600 text-white",
-                    accentText: "text-emerald-700",
+                    accentText: "text-emerald-700 font-extrabold",
                     stubHeader: "bg-emerald-700 text-emerald-50 text-center",
-                    dividerDot: "border-emerald-200"
+                    stubBg: "bg-emerald-50/20",
+                  },
+                  "sporty-orange": {
+                    border: "border-orange-300",
+                    bgHeader: "bg-gradient-to-r from-orange-500 to-amber-500 text-white",
+                    accentText: "text-orange-600 font-black",
+                    stubHeader: "bg-orange-600 text-white text-center",
+                    stubBg: "bg-orange-50/30",
+                  },
+                  "ocean-blue": {
+                    border: "border-sky-300",
+                    bgHeader: "bg-gradient-to-r from-sky-600 to-cyan-500 text-white",
+                    accentText: "text-sky-600 font-black",
+                    stubHeader: "bg-sky-700 text-white text-center",
+                    stubBg: "bg-sky-50/30",
+                  },
+                  "sunset-purple": {
+                    border: "border-purple-300",
+                    bgHeader: "bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-500 text-white",
+                    accentText: "text-indigo-600 font-black",
+                    stubHeader: "bg-indigo-700 text-white text-center",
+                    stubBg: "bg-purple-50/20",
+                  },
+                  "fresh-lime": {
+                    border: "border-lime-400",
+                    bgHeader: "bg-gradient-to-r from-emerald-600 to-lime-500 text-white",
+                    accentText: "text-emerald-700 font-black",
+                    stubHeader: "bg-emerald-800 text-white text-center",
+                    stubBg: "bg-lime-50/30",
                   }
                 };
 
                 const activeTheme = themes[couponTheme] || themes["red-white"];
+                const frontId = `coupon-front-${num}`;
+                const backId = `coupon-back-${num}`;
+                const combinedId = `coupon-combined-${num}`;
 
-                return (
+                // RENDERING FRONT CARD
+                const renderFrontCard = () => (
                   <div 
-                    key={num}
-                    className={`bg-white rounded-2xl border-2 ${activeTheme.border} shadow-3xs flex overflow-hidden min-h-[175px] h-full page-break-avoid select-none relative`}
+                    id={frontId}
+                    className={`bg-white rounded-2xl border-2 ${activeTheme.border} shadow-3xs flex overflow-hidden min-h-[175px] h-full page-break-avoid select-none relative coupon-print-card`}
                   >
-                    {/* LEFT STUB (RAPAT/KOTAK UNDIAN) - 30% width */}
-                    <div className="w-[32%] border-r-2 border-dashed border-slate-300 flex flex-col justify-between relative bg-slate-50/50">
-                      
-                      {/* Sobek half circle decoration (cut lines) */}
-                      <div className="absolute top-1/2 -translate-y-1/2 -right-2 w-4 h-4 bg-slate-50 border-2 border-transparent border-l-slate-300 rounded-full z-10 print:bg-white" />
+                    {/* Decorative notch */}
+                    <div className="absolute top-0 left-[32%] -translate-x-1/2 -translate-y-1/2 w-4 h-4 bg-slate-50 border-b-2 border-slate-300 rounded-full z-10 print:bg-white print:border-b-2 print:border-slate-300" />
+                    <div className="absolute bottom-0 left-[32%] -translate-x-1/2 translate-y-1/2 w-4 h-4 bg-slate-50 border-t-2 border-slate-300 rounded-full z-10 print:bg-white print:border-t-2 print:border-slate-300" />
 
-                      <div className={`p-2 text-center ${activeTheme.stubHeader} font-black text-[9px] uppercase tracking-wider py-1.5`}>
+                    {/* Stamp Overlay centered on the dividing line */}
+                    {couponStampEnabled && (
+                      <div 
+                        className={`absolute left-[32%] top-1/2 -translate-x-1/2 -translate-y-1/2 z-20 pointer-events-none select-none mix-blend-multiply rotate-[-12deg] opacity-80 ${
+                          couponStampColor === "red" ? "text-red-500" :
+                          couponStampColor === "blue" ? "text-blue-600" :
+                          couponStampColor === "purple" ? "text-purple-600" :
+                          couponStampColor === "green" ? "text-emerald-600" :
+                          "text-orange-500"
+                        }`}
+                      >
+                        {couponStampStyle === "circular" && (
+                          <svg width="65" height="65" viewBox="0 0 100 100" className="w-[60px] h-[60px] sm:w-[68px] sm:h-[68px] print:w-[76px] print:h-[76px]">
+                            {/* Outer circle with slight rugged/dashed effect */}
+                            <circle cx="50" cy="50" r="46" fill="none" stroke="currentColor" strokeWidth="2.5" strokeDasharray="3 1" />
+                            {/* Inner circle */}
+                            <circle cx="50" cy="50" r="38" fill="none" stroke="currentColor" strokeWidth="1" />
+                            {/* Star decoration */}
+                            <path d="M50 20 L52 26 L58 26 L53 30 L55 36 L50 32 L45 36 L47 30 L42 26 L48 26 Z" fill="currentColor" />
+                            <text x="50" y="49" fontFamily="monospace, sans-serif" fontWeight="900" fontSize="12" fill="currentColor" textAnchor="middle" letterSpacing="0.5">SAH</text>
+                            <text x="50" y="63" fontFamily="sans-serif" fontWeight="800" fontSize="6.5" fill="currentColor" textAnchor="middle" letterSpacing="0.2">
+                              {couponStampText.slice(0, 16)}
+                            </text>
+                            <text x="50" y="74" fontFamily="sans-serif" fontWeight="800" fontSize="5" fill="currentColor" textAnchor="middle" opacity="0.8">
+                              PANITIA
+                            </text>
+                          </svg>
+                        )}
+                        {couponStampStyle === "oval" && (
+                          <svg width="75" height="55" viewBox="0 0 100 70" className="w-[70px] h-[50px] sm:w-[78px] sm:h-[56px] print:w-[86px] print:h-[62px]">
+                            <ellipse cx="50" cy="35" rx="46" ry="32" fill="none" stroke="currentColor" strokeWidth="2.5" strokeDasharray="3 1" />
+                            <ellipse cx="50" cy="35" rx="39" ry="25" fill="none" stroke="currentColor" strokeWidth="1" />
+                            <line x1="15" y1="35" x2="85" y2="35" stroke="currentColor" strokeWidth="1" strokeDasharray="1.5 1" />
+                            <text x="50" y="27" fontFamily="sans-serif" fontWeight="800" fontSize="7" fill="currentColor" textAnchor="middle" letterSpacing="0.5">PANITIA SAH</text>
+                            <text x="50" y="48" fontFamily="monospace, sans-serif" fontWeight="900" fontSize="8" fill="currentColor" textAnchor="middle">
+                              {couponStampText.slice(0, 16)}
+                            </text>
+                            <text x="50" y="58" fontFamily="sans-serif" fontWeight="800" fontSize="5" fill="currentColor" textAnchor="middle" opacity="0.8">
+                              HUT RI KE-81
+                            </text>
+                          </svg>
+                        )}
+                        {couponStampStyle === "rectangular" && (
+                          <svg width="70" height="55" viewBox="0 0 100 70" className="w-[66px] h-[50px] sm:w-[74px] sm:h-[56px] print:w-[82px] print:h-[62px]">
+                            <rect x="4" y="4" width="92" height="62" rx="3" fill="none" stroke="currentColor" strokeWidth="2.5" strokeDasharray="3 1.5" />
+                            <rect x="10" y="10" width="80" height="50" rx="1.5" fill="none" stroke="currentColor" strokeWidth="1" />
+                            <text x="50" y="27" fontFamily="monospace, sans-serif" fontWeight="900" fontSize="11" fill="currentColor" textAnchor="middle" letterSpacing="1">SAH</text>
+                            <line x1="14" y1="34" x2="86" y2="34" stroke="currentColor" strokeWidth="1" />
+                            <text x="50" y="47" fontFamily="sans-serif" fontWeight="800" fontSize="7.5" fill="currentColor" textAnchor="middle" letterSpacing="0.2">
+                              {couponStampText.slice(0, 16)}
+                            </text>
+                            <text x="50" y="57" fontFamily="sans-serif" fontWeight="800" fontSize="5.5" fill="currentColor" textAnchor="middle" opacity="0.8">
+                              PANITIA PELAKSANA
+                            </text>
+                          </svg>
+                        )}
+                      </div>
+                    )}
+
+                    {/* LEFT STUB (32%) */}
+                    <div className={`w-[32%] border-r-2 border-dashed border-slate-300 flex flex-col justify-between relative ${activeTheme.stubBg} py-0.5`}>
+                      <div className={`p-1.5 text-center ${activeTheme.stubHeader} font-black text-[9px] uppercase tracking-wider py-1.5 shadow-3xs`}>
                         STUB UNDIAN
                       </div>
 
-                      <div className="p-2 flex-1 flex flex-col items-center justify-center text-center space-y-1.5">
-                        <span className="text-[8px] text-slate-400 font-bold uppercase tracking-wider leading-none">SERIAL NUMBER</span>
-                        <h2 className={`text-xl font-black ${activeTheme.accentText} font-mono tracking-wider leading-none`}>
+                      <div className="p-2 flex-1 flex flex-col items-center justify-center text-center space-y-2">
+                        <span className="text-[7.5px] text-slate-400 font-extrabold uppercase tracking-wider leading-none">NO. SERIAL</span>
+                        <h2 className={`text-2xl sm:text-3xl print:text-4xl font-black ${activeTheme.accentText} font-mono tracking-wider leading-none my-1`}>
                           {formattedNum}
                         </h2>
-                        <div className="h-6 flex items-center justify-center gap-0.5 overflow-hidden">
-                          {getBarcodeLines(num)}
-                        </div>
-                        <span className="text-[7px] text-slate-400 font-bold font-mono">MASUKKAN KOTAK</span>
+                        <span className="text-[7px] text-slate-500 font-bold bg-slate-100 px-1.5 py-0.5 rounded-full font-mono">MASUK KOTAK</span>
                       </div>
 
                       <div className="p-1 border-t border-slate-100 text-[6.5px] text-slate-400 font-mono text-center truncate">
-                        RW04-NGABEAN-HUT81
+                        RW04-HUT81-RI
                       </div>
                     </div>
 
-                    {/* RIGHT MAIN TICKET (PESERTA COUPOUN) - 68% width */}
-                    <div className="flex-1 flex flex-col justify-between">
-                      {/* Header bar */}
+                    {/* RIGHT MAIN TICKET (68%) */}
+                    <div className="flex-1 flex flex-col justify-between bg-white relative">
                       <div className={`px-3 py-1.5 ${activeTheme.bgHeader} flex items-center justify-between`}>
                         <div className="flex items-center gap-1">
                           <Ticket className="w-3.5 h-3.5 text-white/90" />
-                          <span className="text-[10px] font-black uppercase tracking-wider leading-none">
+                          <span className="text-[10px] font-black uppercase tracking-wider leading-none text-white">
                             {couponTitle}
                           </span>
                         </div>
-                        <span className="text-[10px] font-black font-mono bg-white text-slate-900 px-1.5 py-0.5 rounded shadow-3xs">
-                          {formattedNum}
-                        </span>
                       </div>
 
-                      {/* Content block */}
-                      <div className="p-3 flex-1 flex flex-col justify-center space-y-1 bg-white">
+                      <div className="px-3 py-1.5 flex-1 flex flex-col justify-center space-y-1">
                         <div className="flex justify-between items-start">
-                          <p className="text-[7.5px] font-bold text-slate-400 uppercase tracking-widest leading-none">
+                          <p className="text-[7.5px] font-extrabold text-slate-400 uppercase tracking-widest leading-none">
                             PENYELENGGARA: {couponOrganizer}
                           </p>
                         </div>
 
-                        <div className="pt-0.5">
-                          <p className="text-[9px] font-black text-slate-700 uppercase leading-snug">
-                            Tema HUT RI:
-                          </p>
-                          <p className={`text-[9.5px] font-black leading-tight ${activeTheme.accentText} uppercase tracking-wide line-clamp-2`}>
-                            {couponPrize}
-                          </p>
+                        {/* Flex layout for Tema and enlarged Coupon Number side-by-side */}
+                        <div className="flex items-center justify-between gap-1.5">
+                          <div className="flex-1 min-w-0 pr-1 text-left">
+                            <p className="text-[7.5px] font-black text-slate-400 uppercase tracking-wider leading-none">
+                              TEMA:
+                            </p>
+                            <p className={`text-[10px] font-extrabold leading-tight ${activeTheme.accentText} uppercase tracking-wide line-clamp-2 mt-0.5`}>
+                              "{couponPrize}"
+                            </p>
+                          </div>
+                          
+                          {/* ENLARGED SERIAL NUMBER (Pojok kosong samping Tema) */}
+                          <div className="shrink-0 flex flex-col items-center justify-center bg-slate-100 border border-slate-300 px-2.5 py-1.5 rounded-lg text-center shadow-3xs min-w-[70px]">
+                            <span className="text-[6.5px] text-slate-500 font-extrabold uppercase tracking-widest leading-none">NO. UNDIAN</span>
+                            <span className={`text-2xl sm:text-3xl print:text-4xl font-black font-mono tracking-wider leading-none mt-0.5 ${activeTheme.accentText}`}>
+                              {formattedNum}
+                            </span>
+                          </div>
                         </div>
 
-                        {/* Location Details inside Ticket */}
-                        <div className="grid grid-cols-2 gap-1 pt-1.5 border-t border-slate-100 text-slate-500">
+                        <div className="grid grid-cols-2 gap-1.5 pt-1 border-t border-slate-100 text-slate-500">
                           <div className="flex items-center gap-1">
                             <Calendar className="w-2.5 h-2.5 shrink-0 text-slate-400" />
-                            <span className="text-[7.5px] font-bold leading-none">{couponDate}</span>
+                            <span className="text-[8px] font-bold leading-none">{couponDate}</span>
                           </div>
                           <div className="flex items-center gap-1">
                             <MapPin className="w-2.5 h-2.5 shrink-0 text-slate-400" />
-                            <span className="text-[7.5px] font-bold leading-none truncate">{couponLocation}</span>
+                            <span className="text-[8px] font-bold leading-none truncate">{couponLocation}</span>
                           </div>
                         </div>
                       </div>
 
-                      {/* Footer bar */}
                       <div className="px-3 py-1 bg-slate-50 border-t border-slate-100 flex items-center justify-between text-[7px] text-slate-400 font-mono">
                         <span>Pukul: {couponTime}</span>
-                        <span className="text-right font-bold">Harap bawa kupon saat acara</span>
+                        <span className="text-right font-black text-slate-500 bg-slate-100 px-1 py-0.2 rounded uppercase">Harap bawa kupon</span>
                       </div>
                     </div>
+                  </div>
+                );
+
+                // RENDERING BACK CARD
+                const renderBackCard = () => (
+                  <div 
+                    id={backId}
+                    className={`bg-white rounded-2xl border-2 ${activeTheme.border} shadow-3xs flex overflow-hidden min-h-[175px] h-full page-break-avoid select-none relative`}
+                  >
+                    {/* Decorative notch */}
+                    <div className="absolute top-0 left-[32%] -translate-x-1/2 -translate-y-1/2 w-4 h-4 bg-slate-50 border-b-2 border-slate-300 rounded-full z-10 print:bg-white print:border-b-2 print:border-slate-300" />
+                    <div className="absolute bottom-0 left-[32%] -translate-x-1/2 translate-y-1/2 w-4 h-4 bg-slate-50 border-t-2 border-slate-300 rounded-full z-10 print:bg-white print:border-t-2 print:border-slate-300" />
+
+                    {/* LEFT STUB BACK (FORM) */}
+                    <div className={`w-[32%] border-r-2 border-dashed border-slate-300 flex flex-col justify-between relative ${activeTheme.stubBg} py-0.5`}>
+                      <div className={`p-1.5 text-center ${activeTheme.stubHeader} font-black text-[9px] uppercase tracking-wider py-1.5 shadow-3xs`}>
+                        DATA PEMEGANG
+                      </div>
+
+                      <div className="p-2 flex-1 flex flex-col justify-center space-y-2.5 text-left pl-2.5">
+                        <div className="space-y-0.5">
+                          <span className="text-[6.5px] font-black text-slate-400 block uppercase tracking-wider">Nama Lengkap</span>
+                          <div className="border-b border-dotted border-slate-400 h-4 pl-1" />
+                        </div>
+                        <div className="space-y-0.5">
+                          <span className="text-[6.5px] font-black text-slate-400 block uppercase tracking-wider">No. RT / Alamat</span>
+                          <div className="border-b border-dotted border-slate-400 h-4 pl-1" />
+                        </div>
+                        <div className="space-y-0.5">
+                          <span className="text-[6.5px] font-black text-slate-400 block uppercase tracking-wider">No. Telepon / WA</span>
+                          <div className="border-b border-dotted border-slate-400 h-4 pl-1" />
+                        </div>
+                      </div>
+
+                      <div className="p-1 border-t border-slate-100 text-[6px] text-slate-400 font-mono text-center">
+                        *Tulis sebelum masuk kotak
+                      </div>
+                    </div>
+
+                    {/* RIGHT MAIN TICKET BACK (T&C, RUNDOWN) */}
+                    <div className="flex-1 flex flex-col justify-between bg-white relative">
+                      <div className={`px-3 py-1.5 ${activeTheme.bgHeader} flex items-center justify-between`}>
+                        <div className="flex items-center gap-1">
+                          <Layers className="w-3.5 h-3.5 text-white/90" />
+                          <span className="text-[9px] font-black uppercase tracking-wider leading-none text-white">
+                            INFORMASI KUPON ACARA
+                          </span>
+                        </div>
+                        <span className="text-[9px] font-black font-mono bg-white/20 text-white px-1.5 py-0.5 rounded shadow-3xs">
+                          SERI {formattedNum}
+                        </span>
+                      </div>
+
+                      <div className="p-2.5 flex-1 grid grid-cols-12 gap-1 bg-white items-center">
+                        <div className="col-span-9 space-y-1.5 text-left">
+                          <div>
+                            <p className="text-[7.5px] font-black text-slate-500 uppercase tracking-wider leading-none mb-0.5">Syarat & Ketentuan:</p>
+                            <ul className="list-none text-[6.5px] text-slate-600 font-bold space-y-0.5 pl-0">
+                              {couponBackTnC.split('\n').filter(line => line.trim()).slice(0, 3).map((line, i) => (
+                                <li key={i} className="truncate flex items-start gap-1">
+                                  <span className="text-red-500 select-none font-bold">✓</span>
+                                  <span className="truncate">{line.replace(/^\d+[\.\-]\s*/, "")}</span>
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+
+                          <div>
+                            <p className="text-[7.5px] font-black text-slate-500 uppercase tracking-wider leading-none mb-0.5">Rundown Utama:</p>
+                            <div className="text-[6.5px] text-slate-600 font-semibold space-y-0.5">
+                              {couponBackRundown.split('\n').filter(line => line.trim()).slice(0, 2).map((line, i) => (
+                                <div key={i} className="flex gap-1 truncate items-center">
+                                  <span className="text-[6px] bg-slate-100 text-slate-700 px-1 py-0.2 rounded font-mono shrink-0">
+                                    {line.split(' - ')[0]}
+                                  </span>
+                                  <span className="truncate">{line.split(' - ')[1] || line}</span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="col-span-3 flex flex-col items-center justify-center border-l border-slate-100 pl-1.5 shrink-0">
+                          <QRCodeCanvas 
+                            value={`SEMS-RW04-SECURE-VERIFIED-${formattedNum}`}
+                            size={42}
+                            level="M"
+                            includeMargin={false}
+                          />
+                          <span className="text-[5.5px] text-slate-400 font-extrabold font-mono mt-0.5 text-center leading-none">SECURE QR</span>
+                        </div>
+                      </div>
+
+                      <div className="px-3 py-1 bg-slate-50 border-t border-slate-100 flex items-center justify-between text-[6.5px] text-slate-400 font-mono">
+                        <div className="truncate flex items-center gap-1 w-full">
+                          <span className="font-extrabold text-slate-500 text-[6.5px] shrink-0 uppercase">SPONSOR:</span>
+                          <span className="truncate text-slate-500 italic">{couponBackSponsors}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                );
+
+                return (
+                  <div key={num} className="space-y-2 relative group">
+                    
+                    {/* Floating Action Button (PNG Individual Export) - Desktop Hover only */}
+                    <div className="absolute top-2 right-2 z-30 flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity print:hidden export-btn-exclude bg-white/95 backdrop-blur-xs p-1.5 rounded-xl border border-slate-200/80 shadow-md">
+                      {couponLayoutMode === "double-fold" ? (
+                        <>
+                          <button
+                            type="button"
+                            onClick={() => handleExportAsImage(frontId, `KUPON_DEPAN_${formattedNum}`, false)}
+                            className="p-1 hover:bg-slate-100 rounded-md text-[10px] font-bold text-slate-700 flex items-center gap-1 transition-colors cursor-pointer"
+                          >
+                            <Download className="w-3 h-3 text-red-600" />
+                            <span>Depan</span>
+                          </button>
+                          <div className="w-px h-3 bg-slate-200" />
+                          <button
+                            type="button"
+                            onClick={() => handleExportAsImage(backId, `KUPON_BELAKANG_${formattedNum}`, false)}
+                            className="p-1 hover:bg-slate-100 rounded-md text-[10px] font-bold text-slate-700 flex items-center gap-1 transition-colors cursor-pointer"
+                          >
+                            <Download className="w-3 h-3 text-red-600" />
+                            <span>Belakang</span>
+                          </button>
+                          <div className="w-px h-3 bg-slate-200" />
+                          <button
+                            type="button"
+                            onClick={() => handleExportAsImage(combinedId, `KUPON_LIPAT_${formattedNum}`, false)}
+                            className="p-1 hover:bg-red-50 hover:text-red-700 rounded-md text-[10px] font-extrabold text-slate-800 flex items-center gap-1 transition-colors cursor-pointer"
+                          >
+                            <Download className="w-3 h-3 text-red-600 animate-bounce" />
+                            <span>Lipat (2 Side)</span>
+                          </button>
+                        </>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => handleExportAsImage(
+                            couponLayoutMode === "double-duplex" && duplexView === "back" ? backId : frontId,
+                            `KUPON_${couponLayoutMode === "double-duplex" && duplexView === "back" ? "BELAKANG" : "DEPAN"}_${formattedNum}`,
+                            false
+                          )}
+                          className="px-2 py-1 hover:bg-red-50 text-slate-800 hover:text-red-700 rounded-lg text-[10px] font-black flex items-center gap-1.5 transition-colors cursor-pointer"
+                        >
+                          {exportingCardId === (couponLayoutMode === "double-duplex" && duplexView === "back" ? backId : frontId) ? (
+                            <RefreshCw className="w-3 h-3 animate-spin text-red-600" />
+                          ) : (
+                            <Download className="w-3 h-3 text-red-600" />
+                          )}
+                          <span>Unduh PNG</span>
+                        </button>
+                      )}
+                    </div>
+
+                    {/* RENDER MODES */}
+                    {couponLayoutMode === "single" && renderFrontCard()}
+
+                    {couponLayoutMode === "double-duplex" && (
+                      duplexView === "front" ? renderFrontCard() : renderBackCard()
+                    )}
+
+                    {couponLayoutMode === "double-fold" && (
+                      <div 
+                        id={combinedId}
+                        className="grid grid-cols-1 sm:grid-cols-2 print:grid-cols-2 gap-4 sm:gap-0 page-break-avoid border-2 border-slate-200 bg-slate-50 p-2.5 rounded-3xl relative overflow-hidden"
+                      >
+                        {/* Front Side Segment */}
+                        <div className="flex-1">
+                          <div className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1 select-none flex items-center gap-1 print:hidden">
+                            <span className="w-1.5 h-1.5 rounded-full bg-red-500" />
+                            <span>Tampak Depan</span>
+                          </div>
+                          {renderFrontCard()}
+                        </div>
+
+                        {/* Middle vertical fold line for folding on paper */}
+                        <div className="hidden sm:flex flex-col items-center justify-center relative w-0 shrink-0 z-10">
+                          <div className="absolute top-0 bottom-0 border-r-2 border-dashed border-slate-300 z-15" />
+                          <div className="bg-slate-800 text-white text-[6px] font-black uppercase px-1 py-0.5 rounded rotate-90 z-20 print:hidden shrink-0">
+                            GARIS LIPAT / CUT HERE
+                          </div>
+                        </div>
+
+                        {/* Back Side Segment */}
+                        <div className="flex-1">
+                          <div className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1 select-none flex items-center gap-1 print:hidden">
+                            <span className="w-1.5 h-1.5 rounded-full bg-slate-500" />
+                            <span>Tampak Belakang</span>
+                          </div>
+                          {renderBackCard()}
+                        </div>
+                      </div>
+                    )}
 
                   </div>
                 );
@@ -949,7 +1585,8 @@ export default function FestiveEventView({ data, defaultTab = "coupon" }: Festiv
                   {[
                     { id: "classic-red", label: "Classic Red Patriotic", color: "bg-red-600" },
                     { id: "modern-dark", label: "Cyber Punk Dark Slate", color: "bg-slate-900" },
-                    { id: "patriotic-blue", label: "Elegant Deep Blue", color: "bg-blue-800" }
+                    { id: "patriotic-blue", label: "Elegant Deep Blue", color: "bg-blue-800" },
+                    { id: "custom-canva", label: "Custom Desain (Canva Mode)", color: "bg-purple-600" }
                   ].map((t) => (
                     <button
                       key={t.id}
@@ -966,6 +1603,20 @@ export default function FestiveEventView({ data, defaultTab = "coupon" }: Festiv
                   ))}
                 </div>
               </div>
+
+              {idCardTheme === "custom-canva" && (
+                <div className="bg-purple-50/50 p-4 rounded-2xl border border-purple-200">
+                  <p className="text-xs text-purple-700 font-medium mb-3">
+                    Desain ID Card Anda menggunakan editor visual drag-and-drop.
+                  </p>
+                  <button
+                    onClick={() => setIsCanvaEditorOpen(true)}
+                    className="w-full py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-xl text-xs font-black uppercase tracking-wider shadow-md shadow-purple-900/10 cursor-pointer"
+                  >
+                    Buka Editor Desain
+                  </button>
+                </div>
+              )}
 
               {/* Feature Logo Placeholder (Twibbon Style) */}
               <div className="space-y-3 bg-slate-50/50 p-3.5 rounded-2xl border border-slate-200/60">
@@ -1225,7 +1876,7 @@ export default function FestiveEventView({ data, defaultTab = "coupon" }: Festiv
 
             {/* List to print */}
             <div 
-              id="print-area"
+              id="print-area-idcard"
               className={`grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 ${printMode === "idcard" ? "print-idcard-grid" : ""}`}
             >
               {selectedPanitiaIds.length > 0 ? (
@@ -1294,7 +1945,62 @@ export default function FestiveEventView({ data, defaultTab = "coupon" }: Festiv
                       }
                     };
 
-                    const styleConfig = cardThemes[idCardTheme] || cardThemes["classic-red"];
+                    const styleConfig = cardThemes[idCardTheme as keyof typeof cardThemes] || cardThemes["classic-red"];
+
+                    if (idCardTheme === "custom-canva") {
+                      return (
+                        <div 
+                          key={p.id}
+                          className="w-[235px] h-[360px] mx-auto rounded-2xl border-2 border-slate-200 shadow-md relative overflow-hidden page-break-avoid animate-in fade-in zoom-in duration-300 bg-white"
+                          style={{ backgroundColor: customCanvaBackground }}
+                        >
+                          <div className="absolute top-2 left-1/2 -translate-x-1/2 w-10 h-1.5 bg-slate-300 rounded-full z-50 print:hidden" />
+                          {[...customCanvaElements].sort((a,b) => a.zIndex - b.zIndex).map(el => {
+                            let text = el.text;
+                            if (el.placeholderFor === 'name') text = p.name;
+                            if (el.placeholderFor === 'role') text = p.role || '';
+                            
+                            return (
+                              <div key={el.id} style={{
+                                  position: 'absolute',
+                                  left: el.x,
+                                  top: el.y,
+                                  width: el.width,
+                                  height: el.height,
+                                  zIndex: el.zIndex,
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: el.textAlign === 'center' ? 'center' : el.textAlign === 'right' ? 'flex-end' : 'flex-start',
+                                  backgroundColor: el.type === "shape" ? el.backgroundColor : "transparent",
+                                  borderRadius: el.borderRadius ? `${el.borderRadius}px` : undefined,
+                                  overflow: "hidden"
+                              }}>
+                                {el.type === 'text' && (
+                                    <div style={{
+                                      fontSize: `${el.fontSize}px`,
+                                      color: el.color,
+                                      fontWeight: el.fontWeight,
+                                      fontFamily: el.fontFamily,
+                                      textAlign: el.textAlign,
+                                      width: '100%',
+                                      wordWrap: 'break-word',
+                                      lineHeight: 1.2
+                                    }}>
+                                      {text}
+                                    </div>
+                                )}
+                                {el.type === 'image' && el.src && (
+                                    <img src={el.src} alt="" className="w-full h-full object-cover" />
+                                )}
+                                {el.type === "qr" && (
+                                    <img src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(p.name)}`} alt="qr" className="w-full h-full object-contain" />
+                                )}
+                              </div>
+                            )
+                          })}
+                        </div>
+                      );
+                    }
 
                     return (
                       <div 
@@ -1410,16 +2116,14 @@ export default function FestiveEventView({ data, defaultTab = "coupon" }: Festiv
                            {/* Beautiful Contemporary Gambar Bebas / Ornament Frame */}
                            <div className="w-full py-1.5 relative z-10 my-auto flex flex-col items-center gap-2">
                              {/* The Decorative Frame */}
-                             <div className="w-[84px] h-[112px] rounded-xl border border-slate-200/55 bg-white/75 backdrop-blur-xs flex flex-col items-center justify-center relative overflow-hidden shadow-xs shrink-0 transition-all hover:scale-105 duration-200">
+                             <div className="w-[84px] h-[112px] flex flex-col items-center justify-center relative overflow-hidden shrink-0 transition-all hover:scale-105 duration-200">
                                {idCardCustomImage ? (
-                                 <img src={idCardCustomImage} alt="Custom Ornament" className="w-full h-full object-cover" />
+                                 <img src={idCardCustomImage} alt="Custom Ornament" className="w-full h-full object-cover rounded-xl shadow-xs" />
                                ) : (
-                                 <div className="w-full h-full relative flex flex-col items-center justify-center p-3 text-center select-none bg-slate-50/50">
-                                   {/* A clean dashed placeholder container */}
-                                   <div className="absolute inset-1.5 rounded-lg border border-dashed border-slate-300/80 flex flex-col items-center justify-center p-1">
-                                     <ImageIcon className="w-6 h-6 stroke-[1.2] text-slate-400/80 mb-1" />
-                                     <span className="text-[6px] font-black text-slate-400 tracking-wider uppercase leading-none">GAMBAR BEBAS</span>
-                                     <span className="text-[5px] font-mono text-slate-300 mt-1 leading-none">TEMPEL DISINI</span>
+                                 <div className="w-full h-full relative flex flex-col items-center justify-center p-3 text-center select-none print:hidden opacity-40">
+                                   <div className="flex flex-col items-center justify-center p-1">
+                                     <ImageIcon className="w-6 h-6 stroke-[1.2] text-slate-800 mb-1 drop-shadow-sm" />
+                                     <span className="text-[6px] font-black text-slate-800 tracking-wider uppercase leading-none drop-shadow-sm">GAMBAR BEBAS</span>
                                    </div>
                                  </div>
                                )}
@@ -2338,6 +3042,47 @@ export default function FestiveEventView({ data, defaultTab = "coupon" }: Festiv
         </div>
       )}
 
+      {/* CANVA EDITOR MODAL */}
+      {isCanvaEditorOpen && (
+        <div className="fixed inset-0 z-[300] bg-slate-900/80 backdrop-blur-sm flex items-center justify-center p-4 sm:p-10">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-6xl max-h-[90vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+            <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50">
+              <div>
+                <h2 className="text-lg font-black text-slate-800 tracking-wider uppercase">Editor ID Card Visual</h2>
+                <p className="text-xs font-medium text-slate-500">Mode Canva untuk kustomisasi penuh.</p>
+              </div>
+              <div className="flex gap-3">
+                <button 
+                  onClick={() => setIsCanvaEditorOpen(false)}
+                  className="px-4 py-2 text-slate-500 hover:text-slate-800 text-sm font-bold transition-colors cursor-pointer"
+                >
+                  Batal
+                </button>
+                <button 
+                  onClick={() => {
+                     // Get elements from IdCardCanvasEditor via a ref or callback?
+                     // Currently onSave in IdCardCanvasEditor is not automatically called on change, wait, let's fix IdCardCanvasEditor.
+                     setIsCanvaEditorOpen(false);
+                  }}
+                  className="px-6 py-2 bg-purple-600 hover:bg-purple-700 text-white text-sm font-black uppercase tracking-wider rounded-xl shadow-md transition-colors cursor-pointer"
+                >
+                  Tutup Editor
+                </button>
+              </div>
+            </div>
+            <div className="flex-1 bg-slate-100 overflow-hidden relative">
+               <IdCardCanvasEditor 
+                 initialElements={customCanvaElements.length > 0 ? customCanvaElements : undefined}
+                 onSave={(elements, bg) => {
+                   setCustomCanvaElements(elements);
+                   setCustomCanvaBackground(bg);
+                 }}
+               />
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Styled Printable rules for CSS injection */}
       <style>{`
         @page {
@@ -2373,7 +3118,7 @@ export default function FestiveEventView({ data, defaultTab = "coupon" }: Festiv
             width: 100% !important;
             max-width: none !important;
           }
-          #print-area {
+          #print-area-coupon, #print-area-idcard {
             position: static !important;
             display: grid !important;
             width: 100% !important;
@@ -2382,9 +3127,29 @@ export default function FestiveEventView({ data, defaultTab = "coupon" }: Festiv
             padding: 0 !important;
           }
           .print-coupon-grid {
-            grid-template-cols: 1fr 1fr !important;
-            gap: 8mm !important;
+            display: grid !important;
+            grid-template-cols: repeat(2, 1fr) !important;
+            grid-template-rows: repeat(5, 52mm) !important;
+            gap: 3mm 5mm !important;
             width: 100% !important;
+            box-sizing: border-box !important;
+          }
+          .print-coupon-grid-fold {
+            display: grid !important;
+            grid-template-cols: repeat(1, 1fr) !important;
+            grid-template-rows: repeat(5, 52mm) !important;
+            gap: 3mm 0 !important;
+            width: 100% !important;
+            box-sizing: border-box !important;
+          }
+          .coupon-print-card {
+            height: 52mm !important;
+            max-height: 52mm !important;
+            min-height: 52mm !important;
+            box-sizing: border-box !important;
+            border-width: 1.5px !important;
+            border-style: solid !important;
+            border-radius: 12px !important;
           }
           .print-idcard-grid {
             grid-template-cols: 1fr 1fr 1fr !important;

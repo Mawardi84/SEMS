@@ -15,7 +15,9 @@ import NotulensiView from "./components/NotulensiView";
 import DigitalDocumentsView from "./components/DigitalDocumentsView";
 import UndanganRapatView from "./components/UndanganRapatView";
 import FestiveEventView from "./components/FestiveEventView";
-import { SEMSData, SystemSetting, Panitia, Kegiatan, RKBAItem, KeuanganTransaction, Notulensi, DigitalDocument, UndanganRapat } from "./types";
+import PerubahanAnggaranView from "./components/PerubahanAnggaranView";
+import RealokasiAnggaranView from "./components/RealokasiAnggaranView";
+import { SEMSData, SystemSetting, Panitia, Kegiatan, RKBAItem, KeuanganTransaction, Notulensi, DigitalDocument, UndanganRapat, BudgetChange, BudgetReallocation } from "./types";
 import { Award, AlertTriangle, RefreshCw, Menu, Clock } from "lucide-react";
 
 export default function App() {
@@ -25,19 +27,18 @@ export default function App() {
       const validViews = [
         "dashboard",
         "proposal",
-        "undangan",
         "notulensi",
         "documents",
         "rkba",
+        "perubahan-anggaran",
+        "realokasi-anggaran",
         "keuangan",
         "monitoring",
         "master",
         "sheets",
         "panduan",
         "setting",
-        "coupon",
-        "idcard",
-        "doorprize"
+        "coupon"
       ];
       if (saved && validViews.includes(saved)) {
         return saved;
@@ -373,17 +374,21 @@ export default function App() {
   };
 
   // 9. NOTULENSI CRUD
-  const handleSaveNotulensi = async (action: 'add' | 'edit' | 'delete', data: Notulensi) => {
+  const handleSaveNotulensi = async (action: 'add' | 'edit' | 'delete', data: Notulensi, actor?: string) => {
     try {
       const response = await fetch("/api/sems/notulensi", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action, data })
+        body: JSON.stringify({ action, data, actor })
       });
       if (!response.ok) throw new Error("Gagal sinkronisasi data Notulensi.");
       const result = await response.json();
       if (result.success && semsData) {
-        setSemsData({ ...semsData, notulensi: result.notulensi });
+        setSemsData({ 
+          ...semsData, 
+          notulensi: result.notulensi,
+          auditTrails: result.auditTrails || semsData.auditTrails
+        });
       } else {
         throw new Error(result.error);
       }
@@ -429,6 +434,182 @@ export default function App() {
       }
     } catch (error: any) {
       alert(error.message);
+    }
+  };
+
+  // 12. BUDGET CHANGES (Perubahan Anggaran) CRUD & WORKFLOW
+  const handleSaveBudgetChange = async (action: 'add' | 'edit' | 'submit' | 'approve' | 'reject' | 'cancel', data: BudgetChange, actor?: string) => {
+    try {
+      const response = await fetch("/api/sems/budget-changes", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action, data, actor })
+      });
+      if (!response.ok) throw new Error("Gagal sinkronisasi data Perubahan Anggaran.");
+      const result = await response.json();
+      if (result.success && semsData) {
+        setSemsData({
+          ...semsData,
+          budgetChanges: result.budgetChanges,
+          rkba: result.rkba || semsData.rkba,
+          auditTrails: result.auditTrails || semsData.auditTrails
+        });
+      } else {
+        throw new Error(result.error);
+      }
+    } catch (error: any) {
+      alert(error.message || "Gagal memproses perubahan anggaran.");
+      throw error;
+    }
+  };
+
+  // 13. BUDGET REALLOCATIONS (Realokasi Anggaran - Zero-Sum Shift) CRUD & WORKFLOW
+  const handleSaveBudgetReallocation = async (action: 'add' | 'edit' | 'submit' | 'approve' | 'reject' | 'cancel', data: BudgetReallocation, actor?: string) => {
+    try {
+      const response = await fetch("/api/sems/budget-reallocations", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action, data, actor })
+      });
+      if (!response.ok) throw new Error("Gagal sinkronisasi data Realokasi Anggaran.");
+      const result = await response.json();
+      if (result.success && semsData) {
+        setSemsData({
+          ...semsData,
+          budgetReallocations: result.budgetReallocations,
+          rkba: result.rkba || semsData.rkba,
+          auditTrails: result.auditTrails || semsData.auditTrails
+        });
+      } else {
+        throw new Error(result.error);
+      }
+    } catch (error: any) {
+      alert(error.message || "Gagal memproses realokasi anggaran.");
+      throw error;
+    }
+  };
+
+  // 14. LPJ MANAGEMENT HANDLERS
+  const handleUpdateLPJSection = async (sectionId: string, updates: any, actor?: string, reason?: string) => {
+    try {
+      const response = await fetch("/api/sems/lpj/update-section", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ sectionId, ...updates, actor, reason })
+      });
+      if (!response.ok) throw new Error("Gagal memperbarui pembagian penyampai LPJ.");
+      const result = await response.json();
+      if (result.success && semsData) {
+        setSemsData({
+          ...semsData,
+          lpj: result.lpj,
+          auditTrails: result.auditTrails || semsData.auditTrails
+        });
+        return result.lpj;
+      } else {
+        throw new Error(result.error);
+      }
+    } catch (error: any) {
+      alert(error.message);
+      throw error;
+    }
+  };
+
+  const handleUpdateLPJStatus = async (status: string, actor?: string, notes?: string, isReconciled?: boolean, reconciliationNotes?: string) => {
+    try {
+      const response = await fetch("/api/sems/lpj/update-status", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status, actor, notes, isReconciled, reconciliationNotes })
+      });
+      const result = await response.json();
+      if (!response.ok || !result.success) {
+        throw new Error(result.error || "Gagal memperbarui status LPJ.");
+      }
+      if (semsData) {
+        setSemsData({
+          ...semsData,
+          lpj: result.lpj,
+          auditTrails: result.auditTrails || semsData.auditTrails
+        });
+      }
+      return result.lpj;
+    } catch (error: any) {
+      alert(error.message);
+      throw error;
+    }
+  };
+
+  const handleSaveLPJ = async (lpj: any, actor?: string, reason?: string) => {
+    try {
+      const response = await fetch("/api/sems/lpj/save-master", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ lpj, actor, reason })
+      });
+      if (!response.ok) throw new Error("Gagal menyimpan dokumen LPJ.");
+      const result = await response.json();
+      if (result.success && semsData) {
+        setSemsData({
+          ...semsData,
+          lpj: result.lpj,
+          auditTrails: result.auditTrails || semsData.auditTrails
+        });
+      } else {
+        throw new Error(result.error);
+      }
+    } catch (error: any) {
+      alert(error.message);
+      throw error;
+    }
+  };
+
+  const handleGenerateLPJNotulen = async (payload: any) => {
+    try {
+      const response = await fetch("/api/sems/lpj/generate-notulen", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+      if (!response.ok) throw new Error("Gagal membuat notulensi rapat LPJ.");
+      const result = await response.json();
+      if (result.success && semsData) {
+        setSemsData({
+          ...semsData,
+          notulensi: result.notulensi,
+          lpj: result.lpj,
+          auditTrails: result.auditTrails || semsData.auditTrails
+        });
+        return result.createdNotulensi;
+      } else {
+        throw new Error(result.error);
+      }
+    } catch (error: any) {
+      alert(error.message);
+      throw error;
+    }
+  };
+
+  const handleGenerateLPJSpeech = async () => {
+    try {
+      const response = await fetch("/api/sems/lpj/generate-speech", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" }
+      });
+      if (!response.ok) throw new Error("Gagal menghasilkan naskah penyampaian.");
+      const result = await response.json();
+      if (result.success && semsData) {
+        setSemsData({
+          ...semsData,
+          lpj: result.lpj
+        });
+        return result.speechScripts;
+      } else {
+        throw new Error(result.error);
+      }
+    } catch (error: any) {
+      alert(error.message);
+      throw error;
     }
   };
 
@@ -612,7 +793,10 @@ export default function App() {
               className="space-y-4 sm:space-y-6 print:space-y-0"
             >
               {currentView === "dashboard" && (
-                <DashboardView data={semsData} />
+                <DashboardView 
+                  data={semsData} 
+                  onNavigateView={(view) => setCurrentView(view)}
+                />
               )}
 
               {currentView === "rkba" && (
@@ -624,6 +808,44 @@ export default function App() {
                   onSaveRKBA={handleSaveRKBA}
                   onBelanjaItem={handleBelanjaItem}
                   isRecordingBelanjaId={isRecordingBelanjaId}
+                  onNavigateView={(view) => setCurrentView(view)}
+                />
+              )}
+
+              {currentView === "perubahan-anggaran" && (
+                <PerubahanAnggaranView 
+                  budgetChanges={semsData.budgetChanges || []}
+                  rkba={semsData.rkba || []}
+                  notulensi={semsData.notulensi || []}
+                  settings={semsData.settings}
+                  onSaveBudgetChange={handleSaveBudgetChange}
+                  onNavigateView={(view) => setCurrentView(view)}
+                />
+              )}
+
+              {currentView === "realokasi-anggaran" && (
+                <RealokasiAnggaranView 
+                  budgetReallocations={semsData.budgetReallocations || []}
+                  rkba={semsData.rkba || []}
+                  notulensi={semsData.notulensi || []}
+                  settings={semsData.settings}
+                  onSaveBudgetReallocation={handleSaveBudgetReallocation}
+                  onNavigateView={(view) => setCurrentView(view)}
+                />
+              )}
+
+              {currentView === "notulensi" && (
+                <NotulensiView 
+                  notulensi={semsData.notulensi || []}
+                  budgetChanges={semsData.budgetChanges || []}
+                  budgetReallocations={semsData.budgetReallocations || []}
+                  auditTrails={semsData.auditTrails || []}
+                  rkba={semsData.rkba || []}
+                  settings={semsData.settings}
+                  panitia={semsData.panitia || []}
+                  kegiatan={semsData.kegiatan || []}
+                  onSaveNotulensi={handleSaveNotulensi}
+                  onNavigateView={(view) => setCurrentView(view)}
                 />
               )}
 
@@ -646,26 +868,6 @@ export default function App() {
                 />
               )}
 
-              {currentView === "notulensi" && (
-                <NotulensiView 
-                  notulensi={semsData.notulensi || []}
-                  settings={semsData.settings}
-                  panitia={semsData.panitia || []}
-                  kegiatan={semsData.kegiatan || []}
-                  onSaveNotulensi={handleSaveNotulensi}
-                />
-              )}
-
-              {currentView === "undangan" && (
-                <UndanganRapatView 
-                  undangan={semsData.undangan || []}
-                  panitia={semsData.panitia || []}
-                  kegiatan={semsData.kegiatan || []}
-                  settings={semsData.settings}
-                  onSaveUndangan={handleSaveUndangan}
-                />
-              )}
-
               {currentView === "documents" && (
                 <DigitalDocumentsView 
                   documents={semsData.documents || []}
@@ -680,7 +882,20 @@ export default function App() {
                   settings={semsData.settings} 
                   keuangan={semsData.keuangan || []}
                   panitia={semsData.panitia || []}
+                  kegiatan={semsData.kegiatan || []}
+                  budgetChanges={semsData.budgetChanges || []}
+                  budgetReallocations={semsData.budgetReallocations || []}
+                  notulensi={semsData.notulensi || []}
+                  auditTrails={semsData.auditTrails || []}
+                  rkba={semsData.rkba || []}
+                  lpj={semsData.lpj}
                   onToggleTaskStatus={handleToggleTaskStatus}
+                  onUpdateLPJSection={handleUpdateLPJSection}
+                  onUpdateLPJStatus={handleUpdateLPJStatus}
+                  onSaveLPJ={handleSaveLPJ}
+                  onGenerateLPJNotulen={handleGenerateLPJNotulen}
+                  onGenerateLPJSpeech={handleGenerateLPJSpeech}
+                  onNavigateView={(view) => setCurrentView(view)}
                 />
               )}
 
@@ -712,14 +927,6 @@ export default function App() {
 
                {currentView === "coupon" && (
                 <FestiveEventView data={semsData} defaultTab="coupon" />
-              )}
-
-              {currentView === "idcard" && (
-                <FestiveEventView data={semsData} defaultTab="idcard" />
-              )}
-
-              {currentView === "doorprize" && (
-                <FestiveEventView data={semsData} defaultTab="doorprize" />
               )}
 
               {currentView === "setting" && (

@@ -25,20 +25,52 @@ import {
   Upload,
   X,
   Image,
-  Eye
+  Eye,
+  FileCheck,
+  UserCheck
 } from "lucide-react";
-import { SeksiTask, SystemSetting, KeuanganTransaction, Panitia } from "../types";
+import { 
+  SeksiTask, 
+  SystemSetting, 
+  KeuanganTransaction, 
+  Panitia,
+  Kegiatan,
+  BudgetChange,
+  BudgetReallocation,
+  Notulensi,
+  AuditTrailRecord,
+  RKBAItem,
+  LPJMaster,
+  LPJSection,
+  LPJStatus
+} from "../types";
 import { exportToPDF } from "../utils/pdfExport";
 import { exportToWord } from "../utils/wordExport";
 import { PDFPreviewModal } from "./PDFPreviewModal";
 import OrgChart from "./OrgChart";
+import LPJDeliveryPanel from "./LPJDeliveryPanel";
+import LPJSpeechModal from "./LPJSpeechModal";
+import LPJNotulenModal from "./LPJNotulenModal";
 
 interface MonitoringViewProps {
   tasks: SeksiTask[];
   settings: SystemSetting;
   keuangan: KeuanganTransaction[];
   panitia: Panitia[];
+  kegiatan?: Kegiatan[];
+  budgetChanges?: BudgetChange[];
+  budgetReallocations?: BudgetReallocation[];
+  notulensi?: Notulensi[];
+  auditTrails?: AuditTrailRecord[];
+  rkba?: RKBAItem[];
+  lpj?: LPJMaster;
   onToggleTaskStatus: (taskId: string) => Promise<void>;
+  onUpdateLPJSection?: (sectionId: string, updates: Partial<LPJSection>, actor?: string, reason?: string) => Promise<any>;
+  onUpdateLPJStatus?: (status: LPJStatus, actor?: string, notes?: string, isReconciled?: boolean, reconciliationNotes?: string) => Promise<any>;
+  onSaveLPJ?: (lpj: any, actor?: string, reason?: string) => Promise<any>;
+  onGenerateLPJNotulen?: (payload: any) => Promise<any>;
+  onGenerateLPJSpeech?: () => Promise<any>;
+  onNavigateView?: (view: string) => void;
 }
 
 export default function MonitoringView({
@@ -46,7 +78,20 @@ export default function MonitoringView({
   settings,
   keuangan,
   panitia,
-  onToggleTaskStatus
+  kegiatan = [],
+  budgetChanges = [],
+  budgetReallocations = [],
+  notulensi = [],
+  auditTrails = [],
+  rkba = [],
+  lpj,
+  onToggleTaskStatus,
+  onUpdateLPJSection,
+  onUpdateLPJStatus,
+  onSaveLPJ,
+  onGenerateLPJNotulen,
+  onGenerateLPJSpeech,
+  onNavigateView
 }: MonitoringViewProps) {
   // Safety checks for props
   const safeSettings: SystemSetting = {
@@ -67,6 +112,8 @@ export default function MonitoringView({
   const [copiedLPJ, setCopiedLPJ] = useState(false);
   const [isExportingPDF, setIsExportingPDF] = useState(false);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+  const [showSpeechModal, setShowSpeechModal] = useState(false);
+  const [showNotulenModal, setShowNotulenModal] = useState(false);
 
   // Custom LPJ Template settings & inputs
   const [selectedTemplate, setSelectedTemplate] = useState<"formal" | "ringkas">("formal");
@@ -93,6 +140,7 @@ export default function MonitoringView({
     }
   });
   const [useMockData, setUseMockData] = useState<boolean>(false);
+  const [activeTab, setActiveTab] = useState<"monitoring" | "delivery">("monitoring");
 
   // 1. Compute RT Contributions
   const rtCollections = safeSettings.rtList.map((rtName) => {
@@ -554,15 +602,76 @@ Laporan Pertanggungjawaban ini dibuat rangkap sebagai dokumentasi resmi dan arsi
         <div>
           <h2 className="text-sm font-extrabold text-slate-800 flex items-center gap-2 uppercase tracking-wide">
             <TrendingUp className="w-4 h-4 text-red-600" />
-            Monitoring Progress & Penyusunan LPJ
+            Monitoring & Pelaporan
           </h2>
           <p className="text-[11px] text-slate-500 mt-0.5">
-            Pantau rincian tugas seksi, tagihan iuran RT, serta formulasikan Laporan Pertanggungjawaban (LPJ) lengkap berbasis data real-time secara instan.
+            Pantau rincian tugas seksi, tagihan iuran RT, serta formulasikan Laporan Pertanggungjawaban (LPJ).
           </p>
         </div>
       </div>
 
-      {/* Grid: Tasks & Iuran RT */}
+      <div className="flex space-x-1 border-b border-slate-200 print:hidden">
+        <button
+          onClick={() => setActiveTab('monitoring')}
+          className={`flex items-center gap-2 px-4 py-2 text-xs font-bold uppercase tracking-wider transition-colors border-b-2 ${
+            activeTab === 'monitoring'
+              ? 'border-red-600 text-red-600'
+              : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
+          }`}
+        >
+          <TrendingUp className="w-4 h-4" />
+          Progress & Penyusunan LPJ
+        </button>
+        <button
+          onClick={() => setActiveTab('delivery')}
+          className={`flex items-center gap-2 px-4 py-2 text-xs font-bold uppercase tracking-wider transition-colors border-b-2 ${
+            activeTab === 'delivery'
+              ? 'border-red-600 text-red-600'
+              : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
+          }`}
+        >
+          <FileCheck className="w-4 h-4" />
+          Pengiriman LPJ Terpusat
+        </button>
+      </div>
+
+      {activeTab === 'delivery' ? (
+        <div className="relative">
+          <LPJDeliveryPanel
+            lpj={lpj}
+            panitia={panitia}
+            keuangan={keuangan}
+            budgetChanges={budgetChanges}
+            budgetReallocations={budgetReallocations}
+            auditTrails={auditTrails}
+            onUpdateSection={onUpdateLPJSection || (async () => {})}
+            onUpdateStatus={onUpdateLPJStatus || (async () => {})}
+            onOpenSpeechModal={() => setShowSpeechModal(true)}
+            onOpenNotulenModal={() => setShowNotulenModal(true)}
+            onNavigateView={onNavigateView}
+          />
+
+          {showSpeechModal && lpj && (
+            <LPJSpeechModal
+              isOpen={showSpeechModal}
+              lpj={lpj}
+              onClose={() => setShowSpeechModal(false)}
+              onGenerateSpeech={onGenerateLPJSpeech || (async () => {})}
+            />
+          )}
+
+          {showNotulenModal && lpj && (
+            <LPJNotulenModal
+              isOpen={showNotulenModal}
+              lpj={lpj}
+              onClose={() => setShowNotulenModal(false)}
+              onGenerateNotulen={onGenerateLPJNotulen || (async () => {})}
+            />
+          )}
+        </div>
+      ) : (
+        <>
+          {/* Grid: Tasks & Iuran RT */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         
         {/* Card Left: Seksi Tasks list */}
@@ -1985,7 +2094,8 @@ Laporan Pertanggungjawaban ini dibuat rangkap sebagai dokumentasi resmi dan arsi
         )}
 
       </div>
-
+        </>
+      )}
     </div>
   );
 }

@@ -25,7 +25,15 @@ import {
   LineChart as LucideLineChart,
   Activity,
   Download,
-  Sparkles
+  Sparkles,
+  History,
+  FileText,
+  GitCompare,
+  ArrowUpRight,
+  ArrowDownRight,
+  Scale,
+  Clock,
+  ExternalLink
 } from "lucide-react";
 import {
   BarChart,
@@ -47,15 +55,20 @@ import { exportToPDF } from "../utils/pdfExport";
 
 interface DashboardViewProps {
   data: SEMSData;
+  onNavigateView?: (viewName: string) => void;
 }
 
-export default function DashboardView({ data }: DashboardViewProps) {
+export default function DashboardView({ data, onNavigateView }: DashboardViewProps) {
   const settings = data?.settings;
   const keuangan = data?.keuangan || [];
   const rkba = data?.rkba || [];
   const panitia = data?.panitia || [];
   const kegiatan = data?.kegiatan || [];
   const tasks = data?.tasks || [];
+  const budgetChanges = data?.budgetChanges || [];
+  const budgetReallocations = data?.budgetReallocations || [];
+  const auditTrails = data?.auditTrails || [];
+  const notulensi = data?.notulensi || [];
 
   // Safety checks for settings
   const safeSettings = {
@@ -155,6 +168,31 @@ export default function DashboardView({ data }: DashboardViewProps) {
   const totalTasks = tasks.length;
   const completedTasks = tasks.filter((t) => t.status === "Selesai").length;
   const taskPercent = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
+
+  // 6. Master Governance Budget Calculations
+  const totalBaselinePagu = Object.values(safeSettings.paguAnggaranSeksi || {}).reduce((a, b) => a + b, 0);
+
+  const approvedBudgetChanges = budgetChanges.filter(c => c.status === "DISETUJUI");
+  const totalApprovedBudgetChangeDelta = approvedBudgetChanges.reduce((sum, c) => {
+    if (c.changeType === "DITAMBAHKAN") return sum + (c.changeAmount || c.revisedAmount || 0);
+    if (c.changeType === "DITIADAKAN") return sum - (c.initialAmount || c.changeAmount || 0);
+    return sum + (c.changeAmount || (c.revisedAmount - c.initialAmount) || 0);
+  }, 0);
+
+  const approvedReallocations = budgetReallocations.filter(r => r.status === "DISETUJUI");
+  const totalApprovedReallocationVolume = approvedReallocations.reduce((sum, r) => sum + r.amount, 0);
+
+  const totalActivePagu = Math.max(0, totalBaselinePagu + totalApprovedBudgetChangeDelta);
+
+  const totalRealisasiKas = keuangan
+    .filter(t => t.type === "Keluar" && t.category === "RKBA Belanja")
+    .reduce((sum, t) => sum + t.amount, 0);
+
+  const sisaPaguAktif = totalActivePagu - totalRealisasiKas;
+  const paguAbsorptionPercent = totalActivePagu > 0 ? Math.round((totalRealisasiKas / totalActivePagu) * 100) : 0;
+
+  const pendingProposalsCount = budgetChanges.filter(c => c.status === "DIAJUKAN").length +
+    budgetReallocations.filter(r => r.status === "DIAJUKAN").length;
 
   // Sorting for RT Leaderboard (Projector Mode)
   const sortedRtLeaderboard = [...rtCollections].sort((a, b) => b.percent - a.percent);
@@ -414,6 +452,128 @@ export default function DashboardView({ data }: DashboardViewProps) {
               </div>
               <div className="bg-emerald-50 p-2.5 rounded-xl border border-emerald-100 shrink-0 group-hover:scale-105 transition-transform">
                 <CheckCircle2 className="w-5 h-5 text-emerald-600" />
+              </div>
+            </div>
+          </div>
+
+          {/* Master Governance & Fiscal Control Hub */}
+          <div id="card-budget-governance-hub" className="bg-gradient-to-br from-slate-900 via-slate-800 to-indigo-950 rounded-2xl p-5 text-white shadow-lg border border-slate-700/60 relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-80 h-80 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none -translate-y-16 translate-x-16"></div>
+
+            <div className="relative z-10 flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 pb-4 border-b border-slate-700/60">
+              <div className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <span className="px-2 py-0.5 rounded bg-indigo-500/20 text-indigo-300 text-[10px] font-mono font-bold uppercase tracking-wider border border-indigo-500/30 flex items-center gap-1">
+                    <Scale className="w-3 h-3" />
+                    <span>Governance & Fiscal Control</span>
+                  </span>
+                  {pendingProposalsCount > 0 && (
+                    <span className="px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 text-[10px] font-mono font-bold border border-amber-500/30 animate-pulse">
+                      {pendingProposalsCount} Menunggu Persetujuan
+                    </span>
+                  )}
+                </div>
+                <h3 className="text-base font-extrabold tracking-tight text-white flex items-center gap-2">
+                  Konsolidasi Pagu Anggaran & Pengendalian Belanja
+                </h3>
+                <p className="text-xs text-slate-300 max-w-2xl leading-relaxed">
+                  Integrasi otomatis antara RAB Baseline Awal, Perubahan Anggaran (Add/Deduct), Realokasi Antar Seksi, dan Realisasi Kas Riil.
+                </p>
+              </div>
+
+              {/* Quick Navigation Action Hub */}
+              {onNavigateView && (
+                <div className="flex flex-wrap items-center gap-1.5 self-stretch sm:self-auto">
+                  <button
+                    onClick={() => onNavigateView("perubahan-anggaran")}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-[11px] font-bold transition shadow-sm cursor-pointer"
+                  >
+                    <GitCompare className="w-3.5 h-3.5" />
+                    <span>Perubahan Anggaran ({budgetChanges.length})</span>
+                  </button>
+                  <button
+                    onClick={() => onNavigateView("realokasi-anggaran")}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-700 hover:bg-slate-600 text-white text-[11px] font-bold transition border border-slate-600 cursor-pointer"
+                  >
+                    <Scale className="w-3.5 h-3.5" />
+                    <span>Realokasi ({budgetReallocations.length})</span>
+                  </button>
+                  <button
+                    onClick={() => onNavigateView("notulensi")}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-700 hover:bg-slate-600 text-white text-[11px] font-bold transition border border-slate-600 cursor-pointer"
+                  >
+                    <FileText className="w-3.5 h-3.5" />
+                    <span>Risalah Rapat ({notulensi.length})</span>
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* 6-Grid Fiscal Metrics */}
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 mt-4 relative z-10">
+              {/* 1. Baseline RAB */}
+              <div className="bg-slate-800/80 rounded-xl p-3 border border-slate-700/60">
+                <span className="text-[9px] font-mono uppercase tracking-wider text-slate-400 block font-semibold">1. Baseline Awal</span>
+                <span className="text-sm md:text-base font-mono font-extrabold text-white mt-1 block">
+                  {formatRp(totalBaselinePagu)}
+                </span>
+                <span className="text-[9px] text-slate-400 block mt-0.5">Pagu awal seksi</span>
+              </div>
+
+              {/* 2. Perubahan Net */}
+              <div className="bg-slate-800/80 rounded-xl p-3 border border-slate-700/60">
+                <div className="flex items-center justify-between">
+                  <span className="text-[9px] font-mono uppercase tracking-wider text-slate-400 font-semibold">2. Net Perubahan</span>
+                  {totalApprovedBudgetChangeDelta >= 0 ? (
+                    <ArrowUpRight className="w-3 h-3 text-emerald-400" />
+                  ) : (
+                    <ArrowDownRight className="w-3 h-3 text-amber-400" />
+                  )}
+                </div>
+                <span className={`text-sm md:text-base font-mono font-extrabold mt-1 block ${
+                  totalApprovedBudgetChangeDelta >= 0 ? "text-emerald-400" : "text-amber-400"
+                }`}>
+                  {totalApprovedBudgetChangeDelta >= 0 ? "+" : ""}{formatRp(totalApprovedBudgetChangeDelta)}
+                </span>
+                <span className="text-[9px] text-slate-400 block mt-0.5">{approvedBudgetChanges.length} SK Disetujui</span>
+              </div>
+
+              {/* 3. Realokasi Pergeseran */}
+              <div className="bg-slate-800/80 rounded-xl p-3 border border-slate-700/60">
+                <span className="text-[9px] font-mono uppercase tracking-wider text-slate-400 block font-semibold">3. Realokasi Pos</span>
+                <span className="text-sm md:text-base font-mono font-extrabold text-indigo-300 mt-1 block">
+                  {formatRp(totalApprovedReallocationVolume)}
+                </span>
+                <span className="text-[9px] text-slate-400 block mt-0.5">{approvedReallocations.length} Berita Acara</span>
+              </div>
+
+              {/* 4. Pagu Aktif Total */}
+              <div className="bg-indigo-950/70 rounded-xl p-3 border border-indigo-500/40">
+                <span className="text-[9px] font-mono uppercase tracking-wider text-indigo-300 block font-semibold">4. Pagu Aktif</span>
+                <span className="text-sm md:text-base font-mono font-extrabold text-amber-300 mt-1 block">
+                  {formatRp(totalActivePagu)}
+                </span>
+                <span className="text-[9px] text-indigo-200 block mt-0.5">Plafon belanja sah</span>
+              </div>
+
+              {/* 5. Realisasi Belanja */}
+              <div className="bg-slate-800/80 rounded-xl p-3 border border-slate-700/60">
+                <span className="text-[9px] font-mono uppercase tracking-wider text-slate-400 block font-semibold">5. Realisasi Kas</span>
+                <span className="text-sm md:text-base font-mono font-extrabold text-red-400 mt-1 block">
+                  {formatRp(totalRealisasiKas)}
+                </span>
+                <span className="text-[9px] text-slate-400 block mt-0.5">Serapan {paguAbsorptionPercent}%</span>
+              </div>
+
+              {/* 6. Sisa Pagu */}
+              <div className="bg-emerald-950/60 rounded-xl p-3 border border-emerald-500/40">
+                <span className="text-[9px] font-mono uppercase tracking-wider text-emerald-300 block font-semibold">6. Sisa Pagu</span>
+                <span className={`text-sm md:text-base font-mono font-extrabold mt-1 block ${
+                  sisaPaguAktif >= 0 ? "text-emerald-300" : "text-red-400"
+                }`}>
+                  {formatRp(sisaPaguAktif)}
+                </span>
+                <span className="text-[9px] text-emerald-200 block mt-0.5">{sisaPaguAktif >= 0 ? "Saldo aman" : "Defisit pagu"}</span>
               </div>
             </div>
           </div>
@@ -833,6 +993,117 @@ export default function DashboardView({ data }: DashboardViewProps) {
                   </div>
                 </div>
               </div>
+            </div>
+          </div>
+
+          {/* Audit Trail & Governance Activity Feed */}
+          <div id="card-governance-audit-feed" className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+            <div className="p-4 bg-slate-50/80 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+              <div className="flex items-center gap-2">
+                <div className="p-1.5 bg-indigo-50 text-indigo-600 rounded-lg border border-indigo-100">
+                  <History className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="font-sans font-bold text-slate-800 text-xs uppercase tracking-wider">
+                    Jejak Audit & Riwayat Keputusan Anggaran
+                  </h3>
+                  <p className="text-[10px] text-slate-500">
+                    Transparansi perubahan data, persetujuan realokasi, dan risalah notulensi secara kronologis.
+                  </p>
+                </div>
+              </div>
+
+              {onNavigateView && (
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => onNavigateView("notulensi")}
+                    className="flex items-center gap-1 text-[11px] font-bold text-indigo-600 hover:text-indigo-700 cursor-pointer"
+                  >
+                    <span>Buka Risalah Rapat</span>
+                    <ArrowRight className="w-3 h-3" />
+                  </button>
+                </div>
+              )}
+            </div>
+
+            <div className="p-4">
+              {auditTrails.length === 0 ? (
+                <div className="text-center py-6 text-slate-400 text-xs">
+                  <History className="w-8 h-8 mx-auto mb-2 opacity-30 text-slate-400" />
+                  <p>Belum ada rekaman audit log. Aktivitas perubahan anggaran dan notulensi akan tercatat otomatis di sini.</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {auditTrails.slice(-6).reverse().map((audit) => {
+                    const actionColors: Record<string, string> = {
+                      CREATE: "bg-emerald-50 text-emerald-700 border-emerald-200",
+                      UPDATE: "bg-blue-50 text-blue-700 border-blue-200",
+                      APPROVE: "bg-indigo-50 text-indigo-700 border-indigo-200",
+                      REJECT: "bg-rose-50 text-rose-700 border-rose-200",
+                      CANCEL: "bg-amber-50 text-amber-700 border-amber-200",
+                      LINK: "bg-purple-50 text-purple-700 border-purple-200"
+                    };
+
+                    const typeLabels: Record<string, string> = {
+                      BUDGET_CHANGE: "Perubahan Anggaran",
+                      BUDGET_REALLOCATION: "Realokasi Pos",
+                      NOTULENSI: "Risalah Notulensi",
+                      RKBA: "Item Belanja RKBA",
+                      SETTINGS: "Konfigurasi Sistem"
+                    };
+
+                    let formattedDate = audit.timestamp;
+                    try {
+                      formattedDate = new Date(audit.timestamp).toLocaleString("id-ID", {
+                        day: "2-digit",
+                        month: "short",
+                        year: "numeric",
+                        hour: "2-digit",
+                        minute: "2-digit"
+                      });
+                    } catch (e) {
+                      // fallback
+                    }
+
+                    return (
+                      <div
+                        key={audit.id}
+                        className="flex flex-col sm:flex-row sm:items-center justify-between p-3 rounded-lg border border-slate-100 hover:border-slate-200 hover:bg-slate-50/60 transition gap-2"
+                      >
+                        <div className="flex items-start gap-2.5">
+                          <span className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold uppercase tracking-wide border shrink-0 mt-0.5 ${
+                            actionColors[audit.action] || "bg-slate-100 text-slate-700 border-slate-200"
+                          }`}>
+                            {audit.action}
+                          </span>
+                          <div>
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <span className="text-[11px] font-bold text-slate-800">
+                                {typeLabels[audit.entityType] || audit.entityType}
+                              </span>
+                              <span className="text-[10px] font-mono text-slate-400">
+                                #{audit.entityId}
+                              </span>
+                            </div>
+                            <p className="text-xs text-slate-600 mt-0.5 leading-relaxed">
+                              {audit.details}
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="flex sm:flex-col items-center sm:items-end justify-between sm:justify-center text-right shrink-0 pt-1 sm:pt-0 border-t sm:border-t-0 border-slate-100">
+                          <span className="text-[10px] font-medium text-slate-500 font-mono">
+                            {audit.actor}
+                          </span>
+                          <span className="text-[9px] text-slate-400 font-mono">
+                            {formattedDate}
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           </div>
         </div>

@@ -8,7 +8,18 @@ import { dirname } from 'path';
 import dotenv from "dotenv";
 import { GoogleGenAI, Type } from "@google/genai";
 import { initialData } from "./src/data/initialData.js";
-import { SEMSData, RKBAItem, KeuanganTransaction, Panitia, Kegiatan, SeksiTask } from "./src/types.js";
+import { 
+  SEMSData, 
+  RKBAItem, 
+  KeuanganTransaction, 
+  Panitia, 
+  Kegiatan, 
+  SeksiTask,
+  BudgetChange,
+  BudgetReallocation,
+  AuditTrailRecord,
+  Notulensi
+} from "./src/types.js";
 
 dotenv.config();
 
@@ -64,6 +75,33 @@ function readDB(): SEMSData {
     if (!parsed.undangan) {
       parsed.undangan = [];
     }
+    if (!parsed.budgetChanges) {
+      parsed.budgetChanges = [];
+    }
+    if (!parsed.budgetReallocations) {
+      parsed.budgetReallocations = [];
+    }
+    if (!parsed.auditTrails) {
+      parsed.auditTrails = [];
+    }
+    if (!parsed.lpj) {
+      parsed.lpj = initialData.lpj;
+    }
+
+    // Ensure backwards-compatible activityCode and baseline locking for existing RKBA items
+    if (Array.isArray(parsed.rkba)) {
+      parsed.rkba = parsed.rkba.map((item: any, idx: number) => {
+        const activityCode = item.activityCode || `ACT-${String(idx + 1).padStart(3, '0')}`;
+        const activityStatus = item.activityStatus || (item.status === 'Disetujui' || item.status === 'Belanja' ? 'BERJALAN' : 'RENCANA');
+        return {
+          ...item,
+          activityCode,
+          activityStatus,
+          isLockedBaseline: item.isLockedBaseline !== undefined ? item.isLockedBaseline : (item.status === 'Disetujui' || item.status === 'Belanja')
+        };
+      });
+    }
+
     return parsed;
   } catch (error) {
     console.error("Error reading db.json, returning initialData:", error);
@@ -125,7 +163,7 @@ const app = express();
       });
       res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
       res.setHeader('Content-Disposition', 'attachment; filename=document.docx');
-      res.send(Buffer.from(docx as ArrayBuffer));
+      res.send(Buffer.from(docx as any));
     } catch (error) {
       console.error("Word export failed:", error);
       res.status(500).json({ success: false, error: "Gagal mengekspor ke Word." });
@@ -199,44 +237,758 @@ const app = express();
   // API - CRUD RKBA (Rencana Kebutuhan Barang dan Anggaran)
   app.post("/api/sems/rkba", (req, res) => {
     const db = readDB();
-    const { action, data } = req.body as { action: 'add' | 'edit' | 'delete' | 'approve' | 'reject'; data: RKBAItem };
+    const { action, data, actor } = req.body as { action: 'add' | 'edit' | 'delete' | 'approve' | 'reject'; data: RKBAItem; actor?: string };
     
     if (action === 'add') {
+      const idx = (db.rkba?.length || 0) + 1;
       const newItem: RKBAItem = {
         ...data,
         id: 'rkba_' + Date.now(),
+        activityCode: data.activityCode || `ACT-${String(idx).padStart(3, '0')}`,
         total: data.qty * data.price,
+        status: data.status || 'Draft',
+        activityStatus: data.activityStatus || 'RENCANA',
+        isLockedBaseline: false,
         dateAdded: new Date().toISOString().split('T')[0]
       };
       db.rkba.push(newItem);
+      logAudit(db, 'RAB', newItem.id, 'CREATE', actor || 'Seksi Terkait', `Menambahkan item RAB baru: ${newItem.name} (Seksi ${newItem.seksi}) senilai Rp ${newItem.total.toLocaleString('id-ID')}`, undefined, newItem.status);
     } else if (action === 'edit') {
+      const prev = db.rkba.find(r => r.id === data.id);
+      if (prev && prev.isLockedBaseline) {
+        return res.status(400).json({ 
+          success: false, 
+          error: "Item RAB Awal ini telah disahkan dan dikunci. Silakan gunakan menu 'Perubahan Anggaran' untuk memodifikasi." 
+        });
+      }
       const updatedItem = {
         ...data,
         total: data.qty * data.price
       };
       db.rkba = db.rkba.map(r => r.id === data.id ? updatedItem : r);
+      logAudit(db, 'RAB', data.id, 'UPDATE', actor || 'Seksi Terkait', `Mengubah item RAB: ${data.name}`, prev ? `${prev.name} (${prev.total})` : undefined, `${data.name} (${updatedItem.total})`);
     } else if (action === 'delete') {
+      const prev = db.rkba.find(r => r.id === data.id);
+      if (prev && prev.isLockedBaseline) {
+        return res.status(400).json({ 
+          success: false, 
+          error: "Item RAB Awal ini telah disahkan dan dikunci. Item tidak boleh dihapus langsung. Silakan ajukan di menu 'Perubahan Anggaran' (DITIADAKAN)." 
+        });
+      }
       db.rkba = db.rkba.filter(r => r.id !== data.id);
+      logAudit(db, 'RAB', data.id, 'CANCEL', actor || 'Admin Panitia', `Menghapus item draf RAB: ${prev?.name}`, prev ? `${prev.name} (${prev.total})` : undefined, 'DELETED');
     } else if (action === 'approve') {
-      // Approve RKBA item
+      // Approve RKBA item and lock baseline
+      const prev = db.rkba.find(r => r.id === data.id);
       db.rkba = db.rkba.map(r => {
         if (r.id === data.id) {
-          return { ...r, status: 'Disetujui' as const };
+          return { 
+            ...r, 
+            status: 'Disetujui' as const, 
+            activityStatus: 'BERJALAN' as const,
+            isLockedBaseline: true 
+          };
         }
         return r;
       });
+      logAudit(db, 'RAB', data.id, 'APPROVE', actor || 'Ketua Panitia', `Mengesahkan & Mengunci Baseline RAB Awal: ${prev?.name} (Rp ${prev?.total.toLocaleString('id-ID')})`, prev?.status, 'Disetujui (Locked Baseline)');
     } else if (action === 'reject') {
       // Reject RKBA item
+      const prev = db.rkba.find(r => r.id === data.id);
       db.rkba = db.rkba.map(r => {
         if (r.id === data.id) {
           return { ...r, status: 'Ditolak' as const };
         }
         return r;
       });
+      logAudit(db, 'RAB', data.id, 'REJECT', actor || 'Ketua Panitia', `Menolak usulan item RAB: ${prev?.name}`, prev?.status, 'Ditolak');
     }
     
     writeDB(db);
-    res.json({ success: true, rkba: db.rkba });
+    res.json({ success: true, rkba: db.rkba, auditTrails: db.auditTrails });
+  });
+
+  // Helper to append audit trail log
+  function logAudit(
+    db: SEMSData, 
+    entityType: 'RAB' | 'PERUBAHAN' | 'REALOKASI' | 'REALISASI' | 'NOTULENSI' | 'LPJ', 
+    entityId: string, 
+    action: 'CREATE' | 'UPDATE' | 'SUBMIT' | 'APPROVE' | 'REJECT' | 'CANCEL', 
+    actor: string, 
+    reason: string,
+    previousState?: string,
+    newState?: string
+  ) {
+    if (!db.auditTrails) {
+      db.auditTrails = [];
+    }
+    const record: AuditTrailRecord = {
+      id: 'audit_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
+      timestamp: new Date().toISOString(),
+      entityType,
+      entityId,
+      action,
+      actor: actor || 'Admin Panitia',
+      previousState,
+      newState: newState || '',
+      reason: reason || '-'
+    };
+    db.auditTrails.unshift(record);
+  }
+
+  // API - CRUD & Workflow Perubahan Anggaran (Budget Changes)
+  app.post("/api/sems/budget-changes", (req, res) => {
+    try {
+      const db = readDB();
+      if (!db.budgetChanges) db.budgetChanges = [];
+
+      const { action, data, actor } = req.body as { 
+        action: 'add' | 'edit' | 'submit' | 'approve' | 'reject' | 'cancel'; 
+        data: BudgetChange;
+        actor?: string;
+      };
+
+      if (!data) {
+        return res.status(400).json({ success: false, error: "Data perubahan anggaran diperlukan." });
+      }
+
+      if (action === 'add') {
+        const changeNumber = data.changeNumber || `PA-2026-${String(db.budgetChanges.length + 1).padStart(3, '0')}`;
+        const newItem: BudgetChange = {
+          ...data,
+          id: data.id || 'bc_' + Date.now(),
+          changeNumber,
+          status: data.status || 'DRAFT',
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        };
+        db.budgetChanges.unshift(newItem);
+        logAudit(db, 'PERUBAHAN', newItem.id, 'CREATE', actor || data.proposedBy, `Membuat draf perubahan anggaran ${changeNumber}: ${data.changeType} untuk ${data.activityName}`, undefined, newItem.status);
+      } else if (action === 'edit') {
+        const prev = db.budgetChanges.find(b => b.id === data.id);
+        if (prev && prev.status === 'DISETUJUI') {
+          return res.status(400).json({ success: false, error: "Perubahan anggaran yang sudah disetujui tidak dapat diedit langsung." });
+        }
+        db.budgetChanges = db.budgetChanges.map(b => b.id === data.id ? { ...data, updatedAt: new Date().toISOString() } : b);
+        logAudit(db, 'PERUBAHAN', data.id, 'UPDATE', actor || data.proposedBy, `Mengubah data perubahan anggaran ${data.changeNumber}`, prev?.status, data.status);
+      } else if (action === 'submit') {
+        const prev = db.budgetChanges.find(b => b.id === data.id);
+        db.budgetChanges = db.budgetChanges.map(b => b.id === data.id ? { ...b, status: 'DIAJUKAN', updatedAt: new Date().toISOString() } : b);
+        logAudit(db, 'PERUBAHAN', data.id, 'SUBMIT', actor || data.proposedBy, `Mengajukan persetujuan perubahan anggaran ${data.changeNumber}`, prev?.status, 'DIAJUKAN');
+      } else if (action === 'approve') {
+        const prev = db.budgetChanges.find(b => b.id === data.id);
+        const approvedItem: BudgetChange = {
+          ...(prev || data),
+          status: 'DISETUJUI',
+          approvedBy: actor || data.approvedBy || 'Ketua Panitia',
+          approvalDate: new Date().toISOString().split('T')[0],
+          updatedAt: new Date().toISOString()
+        };
+        db.budgetChanges = db.budgetChanges.map(b => b.id === data.id ? approvedItem : b);
+
+        // Update target activity status if needed
+        if (approvedItem.changeType === 'DITIADAKAN') {
+          db.rkba = db.rkba.map(r => r.id === approvedItem.activityId ? { ...r, activityStatus: 'DITIADAKAN' as const } : r);
+        } else if (approvedItem.changeType === 'DITAMBAHKAN') {
+          db.rkba = db.rkba.map(r => r.id === approvedItem.activityId ? { ...r, activityStatus: 'DITAMBAHKAN' as const } : r);
+        }
+
+        logAudit(db, 'PERUBAHAN', data.id, 'APPROVE', actor || approvedItem.approvedBy || 'Ketua Panitia', `Menyetujui perubahan anggaran ${approvedItem.changeNumber}: ${approvedItem.changeType} senilai Rp ${approvedItem.changeAmount.toLocaleString('id-ID')}`, prev?.status, 'DISETUJUI');
+      } else if (action === 'reject') {
+        const prev = db.budgetChanges.find(b => b.id === data.id);
+        db.budgetChanges = db.budgetChanges.map(b => b.id === data.id ? { 
+          ...b, 
+          status: 'DITOLAK', 
+          approvedBy: actor || data.approvedBy || 'Ketua Panitia',
+          notes: data.notes || b.notes,
+          updatedAt: new Date().toISOString() 
+        } : b);
+        logAudit(db, 'PERUBAHAN', data.id, 'REJECT', actor || 'Ketua Panitia', `Menolak perubahan anggaran ${data.changeNumber}. Catatan: ${data.notes || '-'}`, prev?.status, 'DITOLAK');
+      } else if (action === 'cancel') {
+        const prev = db.budgetChanges.find(b => b.id === data.id);
+        db.budgetChanges = db.budgetChanges.map(b => b.id === data.id ? { ...b, status: 'CANCELLED', updatedAt: new Date().toISOString() } : b);
+        logAudit(db, 'PERUBAHAN', data.id, 'CANCEL', actor || 'Admin Panitia', `Membatalkan perubahan anggaran ${data.changeNumber}`, prev?.status, 'CANCELLED');
+      }
+
+      writeDB(db);
+      res.json({ 
+        success: true, 
+        budgetChanges: db.budgetChanges, 
+        rkba: db.rkba,
+        auditTrails: db.auditTrails 
+      });
+    } catch (error: any) {
+      console.error("Budget Changes API Error:", error);
+      res.status(500).json({ success: false, error: error.message || "Gagal memproses data perubahan anggaran." });
+    }
+  });
+
+  // API - CRUD & Workflow Realokasi Anggaran (Budget Reallocations)
+  app.post("/api/sems/budget-reallocations", (req, res) => {
+    try {
+      const db = readDB();
+      if (!db.budgetReallocations) db.budgetReallocations = [];
+
+      const { action, data, actor } = req.body as { 
+        action: 'add' | 'edit' | 'submit' | 'approve' | 'reject' | 'cancel'; 
+        data: BudgetReallocation;
+        actor?: string;
+      };
+
+      if (!data) {
+        return res.status(400).json({ success: false, error: "Data realokasi anggaran diperlukan." });
+      }
+
+      if (action === 'add') {
+        if (data.amount > data.availableAmount) {
+          return res.status(400).json({ success: false, error: "Nilai realokasi tidak boleh melebihi dana yang tersedia di sumber." });
+        }
+        const reallocationNumber = data.reallocationNumber || `RA-2026-${String(db.budgetReallocations.length + 1).padStart(3, '0')}`;
+        const remainingAmount = Math.max(0, data.availableAmount - data.amount);
+        const newItem: BudgetReallocation = {
+          ...data,
+          id: data.id || 'br_' + Date.now(),
+          reallocationNumber,
+          remainingAmount,
+          status: data.status || 'DRAFT',
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        };
+        db.budgetReallocations.unshift(newItem);
+        logAudit(db, 'REALOKASI', newItem.id, 'CREATE', actor || data.proposedBy || 'Admin', `Membuat draf realokasi ${reallocationNumber}: ${data.sourceActivityName} -> ${data.targetActivityName} sebesar Rp ${data.amount.toLocaleString('id-ID')}`, undefined, newItem.status);
+      } else if (action === 'edit') {
+        const prev = db.budgetReallocations.find(r => r.id === data.id);
+        if (prev && prev.status === 'DISETUJUI') {
+          return res.status(400).json({ success: false, error: "Realokasi anggaran yang sudah disetujui tidak dapat diedit langsung." });
+        }
+        const remainingAmount = Math.max(0, data.availableAmount - data.amount);
+        db.budgetReallocations = db.budgetReallocations.map(r => r.id === data.id ? { 
+          ...data, 
+          remainingAmount, 
+          updatedAt: new Date().toISOString() 
+        } : r);
+        logAudit(db, 'REALOKASI', data.id, 'UPDATE', actor || 'Admin', `Mengubah data realokasi ${data.reallocationNumber}`, prev?.status, data.status);
+      } else if (action === 'submit') {
+        const prev = db.budgetReallocations.find(r => r.id === data.id);
+        db.budgetReallocations = db.budgetReallocations.map(r => r.id === data.id ? { ...r, status: 'DIAJUKAN', updatedAt: new Date().toISOString() } : r);
+        logAudit(db, 'REALOKASI', data.id, 'SUBMIT', actor || 'Admin', `Mengajukan persetujuan realokasi ${data.reallocationNumber}`, prev?.status, 'DIAJUKAN');
+      } else if (action === 'approve') {
+        const prev = db.budgetReallocations.find(r => r.id === data.id);
+        const approvedItem: BudgetReallocation = {
+          ...(prev || data),
+          status: 'DISETUJUI',
+          approvedBy: actor || data.approvedBy || 'Ketua Panitia',
+          approvalDate: new Date().toISOString().split('T')[0],
+          updatedAt: new Date().toISOString()
+        };
+        db.budgetReallocations = db.budgetReallocations.map(r => r.id === data.id ? approvedItem : r);
+
+        // Update status of target/source activity if needed
+        db.rkba = db.rkba.map(r => {
+          if (r.id === approvedItem.sourceActivityId) {
+            return { ...r, activityStatus: 'DIALIHKAN' as const };
+          }
+          return r;
+        });
+
+        logAudit(db, 'REALOKASI', data.id, 'APPROVE', actor || approvedItem.approvedBy || 'Ketua Panitia', `Menyetujui realokasi ${approvedItem.reallocationNumber}: ${approvedItem.sourceActivityName} -> ${approvedItem.targetActivityName} sebesar Rp ${approvedItem.amount.toLocaleString('id-ID')}`, prev?.status, 'DISETUJUI');
+      } else if (action === 'reject') {
+        const prev = db.budgetReallocations.find(r => r.id === data.id);
+        db.budgetReallocations = db.budgetReallocations.map(r => r.id === data.id ? { 
+          ...r, 
+          status: 'DITOLAK', 
+          approvedBy: actor || 'Ketua Panitia',
+          notes: data.notes || r.notes,
+          updatedAt: new Date().toISOString() 
+        } : r);
+        logAudit(db, 'REALOKASI', data.id, 'REJECT', actor || 'Ketua Panitia', `Menolak realokasi ${data.reallocationNumber}. Catatan: ${data.notes || '-'}`, prev?.status, 'DITOLAK');
+      } else if (action === 'cancel') {
+        const prev = db.budgetReallocations.find(r => r.id === data.id);
+        db.budgetReallocations = db.budgetReallocations.map(r => r.id === data.id ? { ...r, status: 'CANCELLED', updatedAt: new Date().toISOString() } : r);
+        logAudit(db, 'REALOKASI', data.id, 'CANCEL', actor || 'Admin Panitia', `Membatalkan realokasi ${data.reallocationNumber}`, prev?.status, 'CANCELLED');
+      }
+
+      writeDB(db);
+      res.json({ 
+        success: true, 
+        budgetReallocations: db.budgetReallocations, 
+        rkba: db.rkba,
+        auditTrails: db.auditTrails 
+      });
+    } catch (error: any) {
+      console.error("Budget Reallocation API Error:", error);
+      res.status(500).json({ success: false, error: error.message || "Gagal memproses data realokasi anggaran." });
+    }
+  });
+
+  // API - Get Audit Trails
+  app.get("/api/sems/audit-trails", (req, res) => {
+    const db = readDB();
+    res.json({ success: true, auditTrails: db.auditTrails || [] });
+  });
+
+  // API - Update LPJ Section Presenter & Metadata
+  app.post("/api/sems/lpj/update-section", (req, res) => {
+    try {
+      const db = readDB();
+      if (!db.lpj) db.lpj = initialData.lpj;
+      
+      const { 
+        sectionId, 
+        presenterRole, 
+        presenterNameSnapshot, 
+        status, 
+        notes, 
+        actor, 
+        reason 
+      } = req.body;
+
+      if (!sectionId) {
+        return res.status(400).json({ success: false, error: "sectionId diperlukan." });
+      }
+
+      const sectionIndex = db.lpj!.sections.findIndex(s => s.id === sectionId);
+      if (sectionIndex === -1) {
+        return res.status(404).json({ success: false, error: "Bab LPJ tidak ditemukan." });
+      }
+
+      const prevSection = db.lpj!.sections[sectionIndex];
+      const oldPresenter = prevSection.presenterNameSnapshot || prevSection.presenterRole;
+      const newPresenter = presenterNameSnapshot || presenterRole || prevSection.presenterRole;
+
+      db.lpj!.sections[sectionIndex] = {
+        ...prevSection,
+        presenterRole: presenterRole || prevSection.presenterRole,
+        presenterNameSnapshot: presenterNameSnapshot || prevSection.presenterNameSnapshot,
+        status: status || prevSection.status,
+        notes: notes !== undefined ? notes : prevSection.notes,
+        updatedAt: new Date().toISOString()
+      };
+
+      db.lpj!.updatedAt = new Date().toISOString();
+
+      const changeDetail = oldPresenter !== newPresenter 
+        ? `Mengubah penyampai Bab ${prevSection.sectionCode} (${prevSection.sectionTitle}) dari '${oldPresenter}' menjadi '${newPresenter}'`
+        : `Memperbarui status/catatan Bab ${prevSection.sectionCode} (${prevSection.sectionTitle})`;
+
+      logAudit(
+        db,
+        'LPJ',
+        sectionId,
+        'UPDATE',
+        actor || 'Admin Panitia',
+        `${changeDetail}. Alasan: ${reason || 'Penyesuaian susunan penyampai'}`,
+        oldPresenter,
+        newPresenter
+      );
+
+      writeDB(db);
+      res.json({ success: true, lpj: db.lpj, auditTrails: db.auditTrails });
+    } catch (error: any) {
+      console.error("LPJ Section Update Error:", error);
+      res.status(500).json({ success: false, error: error.message || "Gagal memperbarui bab LPJ." });
+    }
+  });
+
+  // API - Update LPJ Overall Status with Strict Reconciliation & Checklist Guard
+  app.post("/api/sems/lpj/update-status", (req, res) => {
+    try {
+      const db = readDB();
+      if (!db.lpj) db.lpj = initialData.lpj;
+
+      const { status: targetStatus, actor, notes, isReconciled, reconciliationNotes } = req.body;
+
+      if (!targetStatus) {
+        return res.status(400).json({ success: false, error: "Status tujuan diperlukan." });
+      }
+
+      const prevStatus = db.lpj!.status;
+
+      // STRICT VALIDATION: If attempting to approve (DISETUJUI), ensure finance is reconciled
+      if (targetStatus === 'DISETUJUI') {
+        const totalPemasukan = (db.keuangan || []).filter(t => t.type === 'Masuk').reduce((s, t) => s + t.amount, 0);
+        const totalPengeluaran = (db.keuangan || []).filter(t => t.type === 'Keluar').reduce((s, t) => s + t.amount, 0);
+        const hasUnreconciledTransactions = (db.keuangan || []).some(t => t.proofStatus === 'Belum Lengkap');
+        
+        const effectiveReconciled = isReconciled !== undefined ? isReconciled : db.lpj!.isReconciled;
+        
+        if (!effectiveReconciled) {
+          return res.status(400).json({ 
+            success: false, 
+            error: "LPJ BELUM SIAP DISETUJUI: Bagian Laporan Keuangan belum direkonsiliasi secara penuh. Pastikan seluruh kuitansi terverifikasi dan rekonsiliasi ditandai seimbang." 
+          });
+        }
+      }
+
+      db.lpj!.status = targetStatus;
+      if (isReconciled !== undefined) db.lpj!.isReconciled = isReconciled;
+      if (reconciliationNotes !== undefined) db.lpj!.reconciliationNotes = reconciliationNotes;
+      if (targetStatus === 'DISETUJUI') {
+        db.lpj!.approvalDate = new Date().toISOString();
+        db.lpj!.approvedByRW = actor || 'Ketua RW 04 Ngabean';
+      }
+      db.lpj!.updatedAt = new Date().toISOString();
+
+      logAudit(
+        db,
+        'LPJ',
+        db.lpj!.id,
+        targetStatus === 'DISETUJUI' ? 'APPROVE' : 'UPDATE',
+        actor || 'Panitia Pelaksana',
+        `Mengubah status LPJ Panitia menjadi ${targetStatus}. ${notes ? `Catatan: ${notes}` : ''}`,
+        prevStatus,
+        targetStatus
+      );
+
+      writeDB(db);
+      res.json({ success: true, lpj: db.lpj, auditTrails: db.auditTrails });
+    } catch (error: any) {
+      console.error("LPJ Status Update Error:", error);
+      res.status(500).json({ success: false, error: error.message || "Gagal memperbarui status LPJ." });
+    }
+  });
+
+  // API - Save LPJ Master Full State
+  app.post("/api/sems/lpj/save-master", (req, res) => {
+    try {
+      const db = readDB();
+      const { lpj, actor, reason } = req.body;
+      if (!lpj) {
+        return res.status(400).json({ success: false, error: "Data LPJ tidak boleh kosong." });
+      }
+
+      db.lpj = { ...lpj, updatedAt: new Date().toISOString() };
+
+      logAudit(
+        db,
+        'LPJ',
+        db.lpj.id,
+        'UPDATE',
+        actor || 'Admin Panitia',
+        `Menyimpan pembaruan dokumen LPJ Master. Alasan: ${reason || 'Pembaruan data laporan'}`,
+        undefined,
+        db.lpj.status
+      );
+
+      writeDB(db);
+      res.json({ success: true, lpj: db.lpj, auditTrails: db.auditTrails });
+    } catch (error: any) {
+      console.error("LPJ Save Master Error:", error);
+      res.status(500).json({ success: false, error: error.message || "Gagal menyimpan LPJ." });
+    }
+  });
+
+  // API - Generate Notulen Rapat LPJ Otomatis (11 Agenda Baku)
+  app.post("/api/sems/lpj/generate-notulen", (req, res) => {
+    try {
+      const db = readDB();
+      if (!db.lpj) db.lpj = initialData.lpj;
+      const { date, location, leader, actor } = req.body;
+
+      const meetingDate = date || "Minggu, 23 Agustus 2026";
+      const meetingLocation = location || "Balai RW 04 Ngabean";
+      const meetingLeader = leader || db.lpj?.ketuaNameSnapshot || "Ketua Panitia";
+      const sekretarisName = db.lpj?.sekretarisNameSnapshot || "Sekretaris Panitia";
+      const bendaharaName = db.lpj?.bendaharaNameSnapshot || "Bendahara Panitia";
+      const ketuaName = db.lpj?.ketuaNameSnapshot || "Ketua Panitia";
+      const rwName = db.lpj?.rwNameSnapshot || "Ketua RW 04";
+
+      const totalPemasukan = (db.keuangan || []).filter(t => t.type === 'Masuk').reduce((s, t) => s + t.amount, 0);
+      const totalPengeluaran = (db.keuangan || []).filter(t => t.type === 'Keluar').reduce((s, t) => s + t.amount, 0);
+      const saldoSisa = totalPemasukan - totalPengeluaran;
+      const totalKegiatan = (db.kegiatan || []).length;
+      const totalChanges = (db.budgetChanges || []).length;
+      const totalRealloc = (db.budgetReallocations || []).length;
+
+      const minutesNumber = `NR-LPJ-2026-${String((db.notulensi?.length || 0) + 1).padStart(3, '0')}`;
+
+      const agendaItems = [
+        "1. Pembukaan",
+        `2. Penyampaian laporan pelaksanaan oleh Sekretaris (${sekretarisName})`,
+        `3. Penyampaian laporan administrasi oleh Sekretaris (${sekretarisName})`,
+        `4. Penyampaian laporan keuangan oleh Bendahara (${bendaharaName})`,
+        `5. Penyampaian perubahan anggaran oleh Bendahara (${bendaharaName})`,
+        `6. Penyampaian rekonsiliasi keuangan oleh Bendahara (${bendaharaName})`,
+        `7. Penyampaian kesimpulan oleh Ketua Panitia (${ketuaName})`,
+        "8. Tanya jawab dan tanggapan peserta musyawarah",
+        "9. Klarifikasi dan penegasan pertanggungjawaban",
+        `10. Pengesahan LPJ oleh Pengurus RW (${rwName}) dan Ketua Panitia`,
+        "11. Penutup dan doa bersama"
+      ];
+
+      const notulenContentMarkdown = `# NOTULENSI RAPAT PLENO PERTANGGUNGJAWABAN (LPJ)
+## PERINGATAN HARI ULANG TAHUN KEMERDEKAAN RI KE-81
+**RUKUN WARGA 04 KELURAHAN NGABEAN KOTA SEMARANG**
+Nomor Risalah: **${minutesNumber}**
+
+---
+
+### I. IDENTITAS & INFORMASI MUSYAWARAH
+- **Hari / Tanggal** : ${meetingDate}
+- **Waktu**          : 19:30 - 22:30 WIB
+- **Tempat**         : ${meetingLocation}
+- **Pimpinan Sidang**: ${meetingLeader}
+- **Notulis**        : ${sekretarisName}
+- **Jumlah Hadir**   : Pengurus RW 04, Ketua RT 01-04, Tokoh Masyarakat, dan Seluruh Panitia Pelaksana
+
+---
+
+### II. SUSUNAN AGENDA RESMI PENYAMPAIAN LPJ
+${agendaItems.join("\n")}
+
+---
+
+### III. JALANNYA MUSYAWARAH & RINGKASAN PENYAMPAIAN PER BIDANG
+
+#### 1. Laporan Pendahuluan & Pengantar Umum (Disampaikan oleh Ketua Panitia: ${ketuaName})
+Ketua Panitia membuka sidang pleno pertanggungjawaban dengan memanjatkan rasa syukur atas suksesnya seluruh rangkaian HUT RI Ke-81. Disampaikan bahwa LPJ ini merupakan wujud pertanggungjawaban kolektif seluruh panitia pelaksana kepada warga dan pengurus RW 04 Ngabean.
+
+#### 2. Laporan Pelaksanaan & Administrasi (Disampaikan oleh Sekretaris: ${sekretarisName})
+- **Pelaksanaan Kegiatan:** Seluruh ${totalKegiatan > 0 ? `${totalKegiatan} kegiatan` : 'rangkaian kegiatan lomba, tirakatan, dan pentas seni'} berhasil terlaksana dengan aman, tertib, dan disambut antusias tinggi oleh warga RT 01 s.d RT 04.
+- **Administrasi:** Seluruh berkas perizinan, surat keluar, daftar hadir, dan dokumentasi foto/video telah diarsipkan secara digital di Google Drive SEMS RW 04.
+
+#### 3. Laporan Keuangan, Perubahan Anggaran, & Rekonsiliasi (Disampaikan oleh Bendahara: ${bendaharaName})
+- **Penerimaan Dana:** Total pemasukan terhimpun sebesar **Rp ${totalPemasukan.toLocaleString('id-ID')}** (Iuran Warga RT 01-04, Donatur, dan Sponsor).
+- **Pengeluaran Riil:** Total realisasi belanja kegiatan sebesar **Rp ${totalPengeluaran.toLocaleString('id-ID')}**.
+- **Sisa Saldo Kas:** Saldo surplus bersih sebesar **Rp ${saldoSisa.toLocaleString('id-ID')}**.
+- **Perubahan & Realokasi Anggaran:** Terdokumentasi ${totalChanges} perubahan pagu anggaran (PA) dan ${totalRealloc} pergeseran realokasi antar seksi (RA) yang semuanya telah disetujui sesuai regulasi musyawarah.
+- **Rekonsiliasi Kas:** Rekonsiliasi kas telah seimbang (balance) dengan seluruh nota dan bukti kuitansi terverifikasi lengkap.
+
+#### 4. Kesimpulan & Penegasan Pertanggungjawaban Akhir (Disampaikan oleh Ketua Panitia: ${ketuaName})
+Ketua Panitia menegaskan bahwa masa tugas kepanitiaan HUT RI Ke-81 telah tuntas dilaksanakan dengan penuh dedikasi dan kejujuran. Sisa saldo kas sebesar **Rp ${saldoSisa.toLocaleString('id-ID')}** diserahkan kembali secara resmi kepada kas pengurus RW 04.
+
+---
+
+### IV. TANGGAPAN, TANYA JAWAB, & PENGESAHAN DOKUMEN
+1. Perwakilan Ketua RT dan Tokoh Warga mengapresiasi kinerja transparan dan akuntabel dari panitia pelaksana.
+2. Pengurus RW 04 menyatakan menerima dan **MENGESAHKAN** Laporan Pertanggungjawaban (LPJ) Panitia HUT RI Ke-81 tanpa catatan keberatan.
+3. Panitia Pelaksana secara resmi dibubarkan dengan ucapan terima kasih dan penghargaan setinggi-tingginya dari warga.
+
+---
+
+### V. PENGESAHAN DOKUMEN RISALAH
+Semarang, ${meetingDate}
+
+| Pembuat Notulen | Mengetahui / Mengesahkan |
+| :---: | :---: |
+| **${sekretarisName}**<br>Sekretaris Panitia | **${ketuaName}**<br>Ketua Panitia |
+| | **${rwName}**<br>Ketua RW 04 Ngabean |
+`;
+
+      const notulensiId = 'notulensi_lpj_' + Date.now();
+      const newNotulensi: Notulensi = {
+        id: notulensiId,
+        minutesNumber,
+        title: "Rapat Pleno Pertanggungjawaban (LPJ) HUT RI Ke-81",
+        date: meetingDate,
+        time: "19:30 - 22:30 WIB",
+        location: meetingLocation,
+        leader: meetingLeader,
+        attendeesCount: 25,
+        attendeesList: `Ketua RW (${rwName}), Ketua Panitia (${ketuaName}), Sekretaris (${sekretarisName}), Bendahara (${bendaharaName}), Ketua RT 01-04, Tokoh Masyarakat`,
+        agenda: agendaItems.join("\n"),
+        notesRaw: `Sidang pleno LPJ HUT RI Ke-81 dipimpin oleh Ketua Panitia. Sekretaris memaparkan pelaksanaan agenda. Bendahara memaparkan laporan keuangan (Total Masuk Rp ${totalPemasukan.toLocaleString('id-ID')}, Belanja Rp ${totalPengeluaran.toLocaleString('id-ID')}, Sisa Saldo Rp ${saldoSisa.toLocaleString('id-ID')}). Pengurus RW 04 secara bulat menerima dan mengesahkan LPJ.`,
+        decisions: `1. Menerima dan Mengesahkan Laporan Pertanggungjawaban (LPJ) HUT RI Ke-81 RW 04 Ngabean secara bulat.\n2. Menyerahkan sisa saldo kas panitia sebesar Rp ${saldoSisa.toLocaleString('id-ID')} kepada Kas Utama RW 04.\n3. Menyatakan masa tugas Kepanitiaan HUT RI Ke-81 resmi selesai dan dibubarkan dengan rasa hormat.`,
+        contentMarkdown: notulenContentMarkdown,
+        actionItems: [
+          { id: "ai_lpj_1", task: "Serah terima sisa saldo kas ke Bendahara RW 04", pic: bendaharaName, deadline: "25 Agustus 2026" },
+          { id: "ai_lpj_2", task: "Pengarsipan dokumen LPJ fisik dan digital di Balai RW 04", pic: sekretarisName, deadline: "28 Agustus 2026" }
+        ],
+        createdAt: new Date().toISOString()
+      };
+
+      if (!db.notulensi) db.notulensi = [];
+      db.notulensi.unshift(newNotulensi);
+
+      db.lpj!.meetingMinutesId = notulensiId;
+      db.lpj!.updatedAt = new Date().toISOString();
+
+      logAudit(
+        db,
+        'NOTULENSI',
+        notulensiId,
+        'CREATE',
+        actor || 'Sekretaris Panitia',
+        `Membuat Notulensi Rapat Pleno LPJ Resmi (${minutesNumber}) dengan 11 agenda baku.`,
+        undefined,
+        'DISAHKAN'
+      );
+
+      writeDB(db);
+      res.json({ 
+        success: true, 
+        notulensi: db.notulensi, 
+        lpj: db.lpj, 
+        auditTrails: db.auditTrails,
+        createdNotulensi: newNotulensi 
+      });
+    } catch (error: any) {
+      console.error("LPJ Generate Notulen Error:", error);
+      res.status(500).json({ success: false, error: error.message || "Gagal membuat notulen LPJ." });
+    }
+  });
+
+  // API - Generate Role-based Speech Scripts (Naskah Penyampaian LPJ)
+  app.post("/api/sems/lpj/generate-speech", async (req, res) => {
+    try {
+      const db = readDB();
+      if (!db.lpj) db.lpj = initialData.lpj;
+
+      const totalPemasukan = (db.keuangan || []).filter(t => t.type === 'Masuk').reduce((s, t) => s + t.amount, 0);
+      const totalPengeluaran = (db.keuangan || []).filter(t => t.type === 'Keluar').reduce((s, t) => s + t.amount, 0);
+      const saldoSisa = totalPemasukan - totalPengeluaran;
+      const totalKegiatan = (db.kegiatan || []).length;
+      const totalSelesai = (db.kegiatan || []).filter(k => k.status === 'SELESAI' || k.status === 'Selesai').length;
+      const totalChanges = (db.budgetChanges || []).length;
+      const totalRealloc = (db.budgetReallocations || []).length;
+
+      const ketuaName = db.lpj?.ketuaNameSnapshot || "Ketua Panitia";
+      const sekretarisName = db.lpj?.sekretarisNameSnapshot || "Sekretaris Panitia";
+      const bendaharaName = db.lpj?.bendaharaNameSnapshot || "Bendahara Panitia";
+      const rwName = db.lpj?.rwNameSnapshot || "Ketua RW 04";
+
+      // Try AI generation first if Gemini client available, else use robust offline generated speech
+      let scripts = {
+        ketua: `### NASKAH PENYAMPAIAN KETUA PANITIA
+**"Pengantar dan Pertanggungjawaban Akhir Panitia"**
+*Penyampai: ${ketuaName} (Ketua Panitia HUT RI Ke-81 RW 04 Ngabean)*
+
+---
+
+*Assalamu’alaikum Warahmatullahi Wabarakatuh,*
+*Selamat malam, salam sejahtera, dan salam kemerdekaan untuk kita semua.*
+
+Yang kami hormati Bapak Ketua RW 04 Ngabean (${rwName}), para Ketua RT 01 s.d RT 04, para sesepuh pinisepuh, tokoh masyarakat, rekan-rekan panitia yang tangguh, serta seluruh bapak/ibu warga RW 04 yang kami banggakan.
+
+Pertama-tama, marilah kita panjatkan puji dan syukur ke hadirat Tuhan Yang Maha Kuasa, atas limpahan rahmat, berkah kesehatan, dan kerukunan, sehingga kita dapat berkumpul di Balai RW 04 malam ini dalam rangka **Rapat Pleno Penyampaian Laporan Pertanggungjawaban (LPJ) Peringatan HUT Kemerdekaan RI Ke-81**.
+
+Bapak, Ibu, dan hadirin yang kami hormati,
+
+Sebagai Ketua Panitia, saya ingin menegaskan sejak awal bahwa **LPJ ini adalah bentuk pertanggungjawaban KOLEKTIF dari seluruh jajaran panitia pelaksana**. Keberhasilan kegiatan yang meriah, tertib, dan guyub ini bukanlah hasil kerja satu orang, melainkan buah dari keringat, pengorbanan waktu, dan keikhlasan seluruh seksi kepanitiaan bersama dukungan swadaya warga RW 04 yang luar biasa.
+
+Pada malam hari ini, penyampaian LPJ telah kami bagi secara profesional sesuai bidang tugas:
+1. **Bagian Pelaksanaan Kegiatan & Administrasi** akan dipaparkan secara langsung oleh rekan kami **Sekretaris (${sekretarisName})**.
+2. **Bagian Laporan Keuangan, Perubahan Anggaran, & Rekonsiliasi Kas** akan dipaparkan secara terperinci dan transparan oleh rekan kami **Bendahara (${bendaharaName})**.
+3. Di akhir sesi, saya akan menyampaikan kesimpulan umum, evaluasi kerja, dan penegasan serah terima sisa saldo kas panitia.
+
+Kami berharap bapak/ibu sekalian dapat menyimak dan memberikan masukan konstruktif demi kemajuan kepanitiaan lingkungan kita di masa yang akan datang.
+
+Terima kasih. Waktu selanjutnya kami serahkan kepada Sekretaris untuk memaparkan Laporan Pelaksanaan.
+
+*Wassalamu’alaikum Warahmatullahi Wabarakatuh.*`,
+
+        sekretaris: `### NASKAH PENYAMPAIAN SEKRETARIS
+**"Laporan Pelaksanaan dan Administrasi Kegiatan"**
+*Penyampai: ${sekretarisName} (Sekretaris Panitia HUT RI Ke-81 RW 04 Ngabean)*
+
+---
+
+*Assalamu’alaikum Warahmatullahi Wabarakatuh,*
+*Selamat malam Bapak/Ibu hadirin yang kami hormati,*
+
+Terima kasih atas kesempatan yang diberikan oleh Ketua Panitia. Izinkan saya, mewakili Sekretariat dan seluruh seksi lapangan, untuk menyampaikan **Laporan Pelaksanaan Kegiatan dan Administrasi HUT RI Ke-81 RW 04 Ngabean**.
+
+#### 1. Laporan Pelaksanaan Kegiatan Lapangan
+Rangkaian perayaan HUT RI Ke-81 di lingkungan RW 04 telah berjalan sejak awal Agustus 2026. Dari total **${totalKegiatan > 0 ? totalKegiatan : 'seluruh'} agenda program kerja** yang dirancang bersama:
+- Perlombaan anak-anak, remaja, dan ibu-ibu antar RT telah sukses diselenggarakan dengan tingkat partisipasi mencapai lebih dari 90%.
+- Malam Tirakatan 16 Agustus berlangsung dengan khidmat, dilanjutkan dengan Panggung Gembira dan Jalan Sehat Warga yang berlangsung sangat semarak.
+- Seluruh kendala teknis lapangan di seksi Perlengkapan, Acara, dan Konsumsi dapat dimitigasi dengan sigap berkat kerjasama gotong royong warga.
+
+#### 2. Laporan Administrasi & Surat-Menyurat
+Di bidang ketatausahaan dan kesekretariatan:
+- Seluruh surat permohonan izin keramaian ke kelurahan dan polsek setempat telah terselesaikan dan disetujui.
+- Pengelolaan daftar hadir, notulensi rapat koordinasi mingguan, surat edaran iuran warga, dan piagam penghargaan pemenang lomba telah diarsipkan rapi.
+- Seluruh dokumen dan dokumentasi foto/video beresolusi tinggi telah diunggah ke repositori digital Google Drive SEMS RW 04 dan dapat diakses terbuka oleh pengurus lingkungan.
+
+Demikian laporan pelaksanaan dan administrasi ini kami sampaikan. Selanjutnya, kami persilakan Bendahara untuk memaparkan Laporan Keuangan secara lengkap.
+
+*Wassalamu’alaikum Warahmatullahi Wabarakatuh.*`,
+
+        bendahara: `### NASKAH PENYAMPAIAN BENDAHARA
+**"Laporan Pertanggungjawaban Keuangan, Perubahan Anggaran, & Rekonsiliasi"**
+*Penyampai: ${bendaharaName} (Bendahara Panitia HUT RI Ke-81 RW 04 Ngabean)*
+
+---
+
+*Assalamu’alaikum Warahmatullahi Wabarakatuh,*
+*Selamat malam Bapak/Ibu, para sesepuh, dan rekan-rekan panitia sekalian,*
+
+Terima kasih kepada Ketua dan Sekretaris. Selaku Bendahara Panitia, saya memegang amanah untuk memaparkan laporan keuangan yang akuntabel, transparan, dan dapat dipertanggungjawabkan hingga rupiah terakhir.
+
+Berikut adalah ringkasan pembukuan keuangan kegiatan HUT RI Ke-81 RW 04 Ngabean:
+
+#### 1. Realisasi Penerimaan Dana (Pemasukan)
+Total penerimaan kas panitia terhimpun sebesar **Rp ${totalPemasukan.toLocaleString('id-ID')}**, bersumber dari:
+- Setoran Iuran Pokok Warga RT 01 s.d RT 04.
+- Bantuan dana usaha, donatur perorangan, dan kemitraan sponsorship.
+
+#### 2. Realisasi Belanja Kegiatan (Pengeluaran)
+Total realisasi pengeluaran untuk membiayai kebutuhan seluruh seksi (Acara, Lomba, Panggung/Tenda, Konsumsi, Hadiah, dan Keamanan) sebesar **Rp ${totalPengeluaran.toLocaleString('id-ID')}**.
+
+#### 3. Tata Kelola Perubahan & Realokasi Anggaran
+Dalam perjalanan kegiatan, terdapat:
+- **${totalChanges} dokumen Perubahan Anggaran (PA)** yang diajukan seksi dan disetujui secara resmi.
+- **${totalRealloc} dokumen Realokasi Anggaran (RA)** antar pos belanja (zero-sum) guna efisiensi tanpa menambah beban defisit.
+
+#### 4. Rekonsiliasi Kas & Sisa Saldo Akhir
+Setelah dilakukan pencocokan antara buku kas, mutasi rekening, dan kelengkapan bukti nota/kuitansi fisik:
+- Posisi keuangan dinyatakan **SEIMBANG & TELAH DIREKONSILIASI PENUH**.
+- Terdapat **Sisa Saldo Kas Bersih sebesar Rp ${saldoSisa.toLocaleString('id-ID')}**.
+
+Seluruh nota belanja dan buku kas asli telah kami siapkan di meja sidang untuk diperiksa bersama. Sisa saldo surplus ini siap kami serahkan secara utuh kepada kas pengurus RW 04.
+
+Terima kasih. Waktu kami kembalikan kepada Ketua Panitia.
+
+*Wassalamu’alaikum Warahmatullahi Wabarakatuh.*`
+      };
+
+      // If AI is available, optionally enhance scripts
+      try {
+        if (process.env.GEMINI_API_KEY) {
+          const ai = getGeminiClient();
+          const prompt = `Sebagai konsultan organisasi warga, tolong sempurnakan 3 naskah pidato/penyampaian LPJ berikut agar bernada sangat berwibawa, santun, hangat, dan mencerminkan semangat gotong royong warga RW 04 Ngabean:
+Ketua Panitia: ${ketuaName}
+Sekretaris: ${sekretarisName}
+Bendahara: ${bendaharaName}
+Data Keuangan: Masuk Rp ${totalPemasukan}, Belanja Rp ${totalPengeluaran}, Sisa Rp ${saldoSisa}.
+
+Berikan output JSON dengan keys: "ketua", "sekretaris", "bendahara".`;
+
+          const aiResp = await ai.models.generateContent({
+            model: "gemini-2.5-flash",
+            contents: [{ role: 'user', parts: [{ text: prompt }] }],
+            config: {
+              responseMimeType: "application/json",
+              responseSchema: {
+                type: Type.OBJECT,
+                properties: {
+                  ketua: { type: Type.STRING },
+                  sekretaris: { type: Type.STRING },
+                  bendahara: { type: Type.STRING }
+                },
+                required: ["ketua", "sekretaris", "bendahara"]
+              }
+            }
+          });
+
+          const parsedAI = JSON.parse(aiResp.text || "{}");
+          if (parsedAI.ketua && parsedAI.sekretaris && parsedAI.bendahara) {
+            scripts = parsedAI;
+          }
+        }
+      } catch (aiErr) {
+        console.warn("AI Speech Generation fallback to template:", aiErr);
+      }
+
+      db.lpj!.speechScripts = scripts;
+      db.lpj!.updatedAt = new Date().toISOString();
+      writeDB(db);
+
+      res.json({ success: true, speechScripts: scripts, lpj: db.lpj });
+    } catch (error: any) {
+      console.error("Speech Generation Error:", error);
+      res.status(500).json({ success: false, error: error.message || "Gagal membuat naskah penyampaian LPJ." });
+    }
   });
 
   // API - Record Approved RKBA directly to Keuangan Ledger (Satu-klik Belanja)
@@ -329,19 +1081,28 @@ Berikan hasil analisis dalam format Markdown dengan bahasa yang profesional, teg
   // API - CRUD Keuangan
   app.post("/api/sems/keuangan", (req, res) => {
     const db = readDB();
-    const { action, data } = req.body as { action: 'add' | 'edit' | 'delete'; data: KeuanganTransaction };
+    const { action, data, actor } = req.body as { action: 'add' | 'edit' | 'delete'; data: KeuanganTransaction; actor?: string };
     
     if (action === 'add') {
-      db.keuangan.push({ ...data, id: 'tx_' + Date.now() });
+      const newTx: KeuanganTransaction = {
+        ...data,
+        id: data.id || 'tx_' + Date.now(),
+        date: data.date || new Date().toISOString().split('T')[0]
+      };
+      db.keuangan.push(newTx);
+      logAudit(db, 'REALISASI', newTx.id, 'CREATE', actor || 'Bendahara', `Mencatat transaksi kas ${newTx.type} Rp ${newTx.amount.toLocaleString('id-ID')} (${newTx.category}): ${newTx.notes}`, undefined, `${newTx.type} - Rp ${newTx.amount}`);
     } else if (action === 'edit') {
+      const prev = db.keuangan.find(t => t.id === data.id);
       db.keuangan = db.keuangan.map(t => t.id === data.id ? data : t);
+      logAudit(db, 'REALISASI', data.id, 'UPDATE', actor || 'Bendahara', `Mengubah transaksi kas ${data.category}: ${data.notes}`, prev ? `${prev.type} - Rp ${prev.amount}` : undefined, `${data.type} - Rp ${data.amount}`);
     } else if (action === 'delete') {
-      // If deleted, check if we need to remove refId association or just delete
+      const prev = db.keuangan.find(t => t.id === data.id);
       db.keuangan = db.keuangan.filter(t => t.id !== data.id);
+      logAudit(db, 'REALISASI', data.id, 'CANCEL', actor || 'Bendahara', `Menghapus transaksi kas: ${prev?.notes || '-'} (Rp ${prev?.amount.toLocaleString('id-ID')})`, prev ? `${prev.type} - Rp ${prev.amount}` : undefined, 'DELETED');
     }
     
     writeDB(db);
-    res.json({ success: true, keuangan: db.keuangan });
+    res.json({ success: true, keuangan: db.keuangan, auditTrails: db.auditTrails });
   });
 
   // API - CRUD Seksi Tasks
@@ -685,28 +1446,42 @@ Silakan susun draf proposal kegiatan sesuai dengan instruksi sistem. Pastikan un
   app.post("/api/sems/notulensi", (req, res) => {
     try {
       const db = readDB();
-      const { action, data } = req.body as { action: 'add' | 'edit' | 'delete'; data: any };
+      const { action, data, actor } = req.body as { action: 'add' | 'edit' | 'delete'; data: any; actor?: string };
       
       if (action === 'add') {
         const existingIndex = db.notulensi.findIndex((n: any) => n.id === data.id);
+        const minutesNumber = data.minutesNumber || `NR-2026-${String(db.notulensi.length + 1).padStart(3, '0')}`;
         if (existingIndex >= 0) {
-          db.notulensi[existingIndex] = { ...data, createdAt: db.notulensi[existingIndex].createdAt || new Date().toISOString() };
+          db.notulensi[existingIndex] = { 
+            ...data, 
+            minutesNumber: db.notulensi[existingIndex].minutesNumber || minutesNumber,
+            createdAt: db.notulensi[existingIndex].createdAt || new Date().toISOString() 
+          };
+          logAudit(db, 'NOTULENSI', data.id, 'UPDATE', actor || data.leader || 'Sekretaris', `Memperbarui risalah notulensi: ${data.title} (${minutesNumber})`, undefined, 'TERCATAT');
         } else {
           const newItem = {
             ...data,
             id: data.id || 'notulensi_' + Date.now(),
+            minutesNumber,
+            linkedBudgetChanges: data.linkedBudgetChanges || [],
+            linkedReallocations: data.linkedReallocations || [],
             createdAt: data.createdAt || new Date().toISOString()
           };
           db.notulensi.push(newItem);
+          logAudit(db, 'NOTULENSI', newItem.id, 'CREATE', actor || data.leader || 'Sekretaris', `Mencatat berita acara & risalah notulensi: ${newItem.title} (${minutesNumber})`, undefined, 'TERBIT');
         }
       } else if (action === 'edit') {
-        db.notulensi = db.notulensi.map(n => n.id === data.id ? { ...data, createdAt: n.createdAt || new Date().toISOString() } : n);
+        const prev = db.notulensi.find(n => n.id === data.id);
+        db.notulensi = db.notulensi.map(n => n.id === data.id ? { ...data, minutesNumber: n.minutesNumber || data.minutesNumber || `NR-2026-001`, createdAt: n.createdAt || new Date().toISOString() } : n);
+        logAudit(db, 'NOTULENSI', data.id, 'UPDATE', actor || data.leader || 'Sekretaris', `Mengubah berita acara notulensi: ${data.title}`, prev?.title, data.title);
       } else if (action === 'delete') {
+        const prev = db.notulensi.find(n => n.id === data.id);
         db.notulensi = db.notulensi.filter(n => n.id !== data.id);
+        logAudit(db, 'NOTULENSI', data.id, 'CANCEL', actor || 'Sekretaris Panitia', `Menghapus dokumen notulensi: ${prev?.title || '-'}`, prev?.title, 'DELETED');
       }
       
       writeDB(db);
-      res.json({ success: true, notulensi: db.notulensi });
+      res.json({ success: true, notulensi: db.notulensi, auditTrails: db.auditTrails });
     } catch (error: any) {
       console.error("Notulensi CRUD Error:", error);
       res.status(500).json({ success: false, error: error.message || "Gagal memproses data notulensi." });

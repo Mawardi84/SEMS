@@ -15,9 +15,16 @@ import {
   HelpCircle,
   TrendingDown,
   Download,
-  Eye
+  Eye,
+  Lock,
+  ShieldCheck,
+  ArrowRightLeft,
+  TrendingUp,
+  Search,
+  Layers,
+  History
 } from "lucide-react";
-import { RKBAItem, SystemSetting, KeuanganTransaction, Kegiatan } from "../types";
+import { RKBAItem, SystemSetting, KeuanganTransaction, Kegiatan, ActivityStatus } from "../types";
 import { exportToPDF } from "../utils/pdfExport";
 import { exportToWord } from "../utils/wordExport";
 import { PDFPreviewModal } from "./PDFPreviewModal";
@@ -31,6 +38,7 @@ interface RKBAViewProps {
   onSaveRKBA: (action: 'add' | 'edit' | 'delete' | 'approve' | 'reject', data: RKBAItem) => Promise<void>;
   onBelanjaItem: (rkbaId: string) => Promise<void>;
   isRecordingBelanjaId: string | null;
+  onNavigateView?: (viewName: string, params?: any) => void;
 }
 
 export default function RKBAView({
@@ -40,7 +48,8 @@ export default function RKBAView({
   keuangan,
   onSaveRKBA,
   onBelanjaItem,
-  isRecordingBelanjaId
+  isRecordingBelanjaId,
+  onNavigateView
 }: RKBAViewProps) {
   // Safety checks
   const safeSettings = {
@@ -51,11 +60,13 @@ export default function RKBAView({
   const [filterSeksi, setFilterSeksi] = useState<string>("Semua");
   const [filterStatus, setFilterStatus] = useState<string>("Semua");
   const [filterSource, setFilterSource] = useState<string>("Semua");
+  const [searchQuery, setSearchQuery] = useState<string>("");
   
   // Form / Modal states
   const [showModal, setShowModal] = useState(false);
   const [editingItem, setEditingItem] = useState<RKBAItem | null>(null);
   const [form, setForm] = useState<Omit<RKBAItem, 'id' | 'total' | 'dateAdded'>>({
+    activityCode: "",
     name: "",
     seksi: safeSettings.seksiList[0] || "Acara",
     qty: 1,
@@ -63,6 +74,7 @@ export default function RKBAView({
     price: 10000,
     fundingSource: "Kas Utama",
     status: "Draft",
+    activityStatus: "RENCANA",
     notes: ""
   });
 
@@ -295,83 +307,146 @@ export default function RKBAView({
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-slate-50 text-slate-900 font-sans text-[10px] uppercase tracking-wider border-b-2 border-slate-900 font-bold print:bg-white print:border-b-2 print:border-black">
-                <th className="px-4 py-3 text-left">Kebutuhan</th>
-                <th className="px-4 py-3 text-left">Volume</th>
-                <th className="px-4 py-3 text-left text-right">Harga Satuan</th>
-                <th className="px-4 py-3 text-left text-right">Total</th>
-                <th className="px-4 py-3 text-left">Sumber</th>
-                <th className="px-4 py-3 text-left">Status</th>
-                {!isModal && <th className="px-4 py-3 text-left print:hidden">Aksi</th>}
+                <th className="px-3 py-3 text-left">Kode</th>
+                <th className="px-4 py-3 text-left">Kebutuhan & Uraian</th>
+                <th className="px-3 py-3 text-left">Volume</th>
+                <th className="px-3 py-3 text-left text-right">Harga Satuan</th>
+                <th className="px-4 py-3 text-left text-right">Total (RAB Awal)</th>
+                <th className="px-3 py-3 text-left">Sumber</th>
+                <th className="px-3 py-3 text-left">Status</th>
+                {!isModal && <th className="px-4 py-3 text-left print:hidden">Aksi & Tata Kelola</th>}
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-200 text-xs text-slate-900">
-              {(isModal ? filteredRKBA : currentItems).map((item, idx) => (
-                <tr key={item.id} className={`hover:bg-slate-50 transition-colors ${idx % 2 === 0 ? 'bg-white' : 'bg-slate-50/30'}`}>
-                  <td className="px-4 py-3 border-r border-slate-100">
-                    <div className="font-semibold text-slate-950">{item.name}</div>
-                    <div className="text-[9px] text-slate-500">{item.seksi}</div>
-                  </td>
-                  <td className="px-4 py-3 font-mono border-r border-slate-100">
-                    {item.qty} {item.unit}
-                  </td>
-                  <td className="px-4 py-3 font-mono border-r border-slate-100 text-right">
-                    {formatRp(item.price)}
-                  </td>
-                  <td className="px-4 py-3 font-semibold font-mono border-r border-slate-100 text-right text-indigo-700">
-                    {formatRp(item.total)}
-                  </td>
-                  <td className="px-4 py-3 text-[10px] border-r border-slate-100">
-                    <span className="px-2 py-0.5 rounded-full bg-slate-100 border border-slate-200 text-slate-600 font-medium">
-                      {item.fundingSource}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 font-mono font-medium text-[10px] border-r border-slate-100">
-                    <span className={`px-2 py-0.5 rounded-full font-bold ${item.status === 'Disetujui' ? 'bg-emerald-100 text-emerald-700' : item.status === 'Belanja' ? 'bg-blue-100 text-blue-700' : item.status === 'Ditolak' ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700'}`}>
-                      {item.status}
-                    </span>
-                  </td>
-                  {!isModal && (
-                    <td className="px-4 py-3 print:hidden">
-                      {item.status === 'Draft' && (
-                        <div className="flex gap-1.5">
-                          <button 
-                            onClick={() => handleOpenEdit(item)} 
-                            title="Edit"
-                            className="p-1 text-blue-600 hover:text-blue-800 bg-blue-50 rounded"
-                          >
-                            <Edit className="w-3.5 h-3.5" />
-                          </button>
-                          <button 
-                            onClick={() => handleDelete(item)} 
-                            title="Hapus"
-                            className="p-1 text-red-600 hover:text-red-800 bg-red-50 rounded"
-                          >
-                            <Trash className="w-3.5 h-3.5" />
-                          </button>
-                          <button 
-                            onClick={() => handleApprove(item)} 
-                            title="Setujui"
-                            className="p-1 text-emerald-600 hover:text-emerald-800 bg-emerald-50 rounded"
-                          >
-                            <CheckCircle className="w-3.5 h-3.5" />
-                          </button>
-                          <button 
-                            onClick={() => handleReject(item)} 
-                            title="Tolak"
-                            className="p-1 text-red-600 hover:text-red-800 bg-red-50 rounded"
-                          >
-                            <XCircle className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
-                      )}
+              {(isModal ? filteredRKBA : currentItems).map((item, idx) => {
+                const isLocked = item.isLockedBaseline || item.status === 'Disetujui' || item.status === 'Belanja';
+                const actStatus = item.activityStatus || (isLocked ? 'BERJALAN' : 'RENCANA');
+
+                return (
+                  <tr key={item.id} className={`hover:bg-slate-50 transition-colors ${idx % 2 === 0 ? 'bg-white' : 'bg-slate-50/30'}`}>
+                    <td className="px-3 py-3 font-mono text-[10px] font-bold text-slate-700 border-r border-slate-100 whitespace-nowrap">
+                      <span className="px-1.5 py-0.5 rounded bg-slate-100 border border-slate-200 text-slate-700">
+                        {item.activityCode || `ACT-${String(idx + 1).padStart(3, '0')}`}
+                      </span>
                     </td>
-                  )}
-                </tr>
-              ))}
+                    <td className="px-4 py-3 border-r border-slate-100">
+                      <div className="font-semibold text-slate-950 flex items-center gap-1.5">
+                        {item.name}
+                        {isLocked && (
+                          <span title="Historical Baseline Terkunci" className="inline-flex items-center text-slate-400">
+                            <Lock className="w-3 h-3 text-slate-500" />
+                          </span>
+                        )}
+                      </div>
+                      <div className="text-[10px] text-slate-500 flex items-center gap-2 mt-0.5">
+                        <span className="font-medium text-slate-600">{item.seksi}</span>
+                        {item.notes && <span className="italic text-slate-400">"{item.notes}"</span>}
+                      </div>
+                    </td>
+                    <td className="px-3 py-3 font-mono border-r border-slate-100 whitespace-nowrap">
+                      {item.qty} {item.unit}
+                    </td>
+                    <td className="px-3 py-3 font-mono border-r border-slate-100 text-right whitespace-nowrap">
+                      {formatRp(item.price)}
+                    </td>
+                    <td className="px-4 py-3 font-semibold font-mono border-r border-slate-100 text-right text-indigo-700 whitespace-nowrap">
+                      {formatRp(item.total)}
+                    </td>
+                    <td className="px-3 py-3 text-[10px] border-r border-slate-100 whitespace-nowrap">
+                      <span className="px-2 py-0.5 rounded-full bg-slate-100 border border-slate-200 text-slate-600 font-medium">
+                        {item.fundingSource}
+                      </span>
+                    </td>
+                    <td className="px-3 py-3 font-mono font-medium text-[10px] border-r border-slate-100 whitespace-nowrap">
+                      <div className="flex flex-col gap-1">
+                        <span className={`px-2 py-0.5 rounded-full text-center font-bold ${
+                          item.status === 'Disetujui' ? 'bg-emerald-100 text-emerald-700' : 
+                          item.status === 'Belanja' ? 'bg-blue-100 text-blue-700' : 
+                          item.status === 'Ditolak' ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700'
+                        }`}>
+                          {item.status}
+                        </span>
+                        {actStatus && actStatus !== 'RENCANA' && (
+                          <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold text-center ${
+                            actStatus === 'DITIADAKAN' ? 'bg-rose-100 text-rose-700 border border-rose-200' :
+                            actStatus === 'DITAMBAHKAN' ? 'bg-sky-100 text-sky-700 border border-sky-200' :
+                            actStatus === 'DIALIHKAN' ? 'bg-purple-100 text-purple-700 border border-purple-200' :
+                            'bg-slate-100 text-slate-600'
+                          }`}>
+                            {actStatus}
+                          </span>
+                        )}
+                      </div>
+                    </td>
+                    {!isModal && (
+                      <td className="px-4 py-3 print:hidden">
+                        {!isLocked ? (
+                          <div className="flex items-center gap-1.5">
+                            <button 
+                              onClick={() => handleOpenEdit(item)} 
+                              title="Edit Usulan"
+                              className="p-1.5 text-blue-600 hover:text-blue-800 bg-blue-50 rounded hover:bg-blue-100 transition-colors"
+                            >
+                              <Edit className="w-3.5 h-3.5" />
+                            </button>
+                            <button 
+                              onClick={() => handleDelete(item)} 
+                              title="Hapus Usulan"
+                              className="p-1.5 text-red-600 hover:text-red-800 bg-red-50 rounded hover:bg-red-100 transition-colors"
+                            >
+                              <Trash className="w-3.5 h-3.5" />
+                            </button>
+                            <button 
+                              onClick={() => handleApprove(item)} 
+                              title="Sahkan & Kunci Baseline"
+                              className="p-1.5 text-emerald-600 hover:text-emerald-800 bg-emerald-50 rounded hover:bg-emerald-100 transition-colors flex items-center gap-1 text-[10px] font-bold"
+                            >
+                              <CheckCircle className="w-3.5 h-3.5" />
+                              <span>Sahkan</span>
+                            </button>
+                            <button 
+                              onClick={() => handleReject(item)} 
+                              title="Tolak Usulan"
+                              className="p-1.5 text-red-600 hover:text-red-800 bg-red-50 rounded hover:bg-red-100 transition-colors"
+                            >
+                              <XCircle className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-1.5">
+                            <span className="inline-flex items-center gap-1 px-2 py-1 bg-slate-100 text-slate-600 text-[10px] font-semibold rounded border border-slate-200">
+                              <Lock className="w-3 h-3 text-slate-500" />
+                              Baseline Sah
+                            </span>
+                            {onNavigateView && (
+                              <button
+                                onClick={() => onNavigateView('perubahan-anggaran', { activityId: item.id })}
+                                title="Ajukan Perubahan Anggaran"
+                                className="px-2 py-1 bg-sky-50 text-sky-700 hover:bg-sky-100 border border-sky-200 rounded text-[10px] font-bold transition-colors"
+                              >
+                                Perubahan
+                              </button>
+                            )}
+                            {onNavigateView && (
+                              <button
+                                onClick={() => onNavigateView('realokasi-anggaran', { sourceActivityId: item.id })}
+                                title="Ajukan Realokasi Anggaran"
+                                className="px-2 py-1 bg-purple-50 text-purple-700 hover:bg-purple-100 border border-purple-200 rounded text-[10px] font-bold transition-colors"
+                              >
+                                Realokasi
+                              </button>
+                            )}
+                          </div>
+                        )}
+                      </td>
+                    )}
+                  </tr>
+                );
+              })}
               {(isModal ? filteredRKBA : currentItems).length === 0 && (
                 <tr>
-                  <td colSpan={isModal ? 6 : 7} className="text-center py-6 text-slate-400 font-sans">
-                    Tidak ada item anggaran yang sesuai dengan filter saringan saat ini.
+                  <td colSpan={isModal ? 7 : 8} className="text-center py-6 text-slate-400 font-sans">
+                    Tidak ada item anggaran yang sesuai dengan kriteria pencarian / saringan saat ini.
                   </td>
                 </tr>
               )}
@@ -421,13 +496,18 @@ export default function RKBAView({
     const matchSeksi = filterSeksi === "Semua" || item.seksi === filterSeksi;
     const matchStatus = filterStatus === "Semua" || item.status === filterStatus;
     const matchSource = filterSource === "Semua" || item.fundingSource === filterSource;
-    return matchSeksi && matchStatus && matchSource;
+    const matchSearch = searchQuery.trim() === "" || 
+      item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (item.activityCode && item.activityCode.toLowerCase().includes(searchQuery.toLowerCase())) ||
+      (item.notes && item.notes.toLowerCase().includes(searchQuery.toLowerCase())) ||
+      item.seksi.toLowerCase().includes(searchQuery.toLowerCase());
+    return matchSeksi && matchStatus && matchSource && matchSearch;
   });
 
   // Reset to first page when filters change
   React.useEffect(() => {
     setCurrentPage(1);
-  }, [filterSeksi, filterStatus, filterSource, rkba]);
+  }, [filterSeksi, filterStatus, filterSource, searchQuery, rkba]);
 
   // Data for chart
   const rkbaChartData = React.useMemo(() => {
@@ -440,33 +520,16 @@ export default function RKBAView({
       const current = seksiMap.get(seksi)!;
       current.usulan += item.total;
       
-      // Calculate realisasi based on keuangan transactions if possible, 
-      // or based on approved items in RKBA
       if (item.status === 'Disetujui' || item.status === 'Belanja') {
         current.realisasi += item.total;
       }
     });
-    
-    // Calculate actual spending from Keuangan that matches these items?
-    // Since RKBA item has realisasi from Keuangan? Actually Keuangan has refId to RKBA
-    // For a more accurate chart, let's use Keuangan for realisasi if we want actual spending.
-    keuangan.forEach(k => {
-      if (k.type === 'Keluar' && k.category === 'RKBA Belanja' && k.refId) {
-        const relatedRkba = rkba.find(r => r.id === k.refId);
-        if (relatedRkba && seksiMap.has(relatedRkba.seksi)) {
-          // Subtract from the assumed realisasi (which was the approved amount) 
-          // and add the actual spent amount. Actually, we might just track them separately.
-        }
-      }
-    });
-    
     return Array.from(seksiMap.values());
-  }, [rkba, keuangan]);
+  }, [rkba]);
 
   const rkbaSourceData = React.useMemo(() => {
     const sourceMap = new Map<string, number>();
     rkba.forEach(item => {
-      // Only include approved or spent items for the source pie chart
       if (item.status === 'Disetujui' || item.status === 'Belanja') {
         const source = item.fundingSource || 'Lainnya';
         sourceMap.set(source, (sourceMap.get(source) || 0) + item.total);
@@ -484,7 +547,9 @@ export default function RKBAView({
 
   const handleOpenAdd = () => {
     setEditingItem(null);
+    const nextCode = `ACT-${String(rkba.length + 1).padStart(3, '0')}`;
     setForm({
+      activityCode: nextCode,
       name: "",
       seksi: safeSettings.seksiList[0] || "Acara",
       qty: 1,
@@ -492,14 +557,20 @@ export default function RKBAView({
       price: 10000,
       fundingSource: "Kas Utama",
       status: "Draft",
+      activityStatus: "RENCANA",
       notes: ""
     });
     setShowModal(true);
   };
 
   const handleOpenEdit = (item: RKBAItem) => {
+    if (item.isLockedBaseline || item.status === 'Disetujui' || item.status === 'Belanja') {
+      alert(`Item '${item.name}' telah disahkan sebagai Baseline RAB Awal (Terkunci).\n\nUntuk menjaga keabsahan audit trail keuangan, perubahan volume, harga satuan, atau peniadaan kegiatan harus diajukan melalui modul 'Perubahan Anggaran' atau 'Realokasi Anggaran'.`);
+      return;
+    }
     setEditingItem(item);
     setForm({
+      activityCode: item.activityCode || "",
       name: item.name,
       seksi: item.seksi,
       qty: item.qty,
@@ -507,6 +578,7 @@ export default function RKBAView({
       price: item.price,
       fundingSource: item.fundingSource,
       status: item.status,
+      activityStatus: item.activityStatus || 'RENCANA',
       notes: item.notes
     });
     setShowModal(true);
@@ -518,15 +590,21 @@ export default function RKBAView({
     const payload: RKBAItem = {
       ...form,
       id: editingItem ? editingItem.id : "",
+      activityCode: form.activityCode || (editingItem?.activityCode || `ACT-${String(rkba.length + 1).padStart(3, '0')}`),
       total: form.qty * form.price,
-      dateAdded: editingItem ? editingItem.dateAdded : new Date().toISOString().split('T')[0]
+      dateAdded: editingItem ? editingItem.dateAdded : new Date().toISOString().split('T')[0],
+      isLockedBaseline: editingItem ? editingItem.isLockedBaseline : false
     };
     await onSaveRKBA(action, payload);
     setShowModal(false);
   };
 
   const handleDelete = async (item: RKBAItem) => {
-    if (confirm(`Apakah Anda yakin ingin menghapus '${item.name}' dari daftar RKBA?`)) {
+    if (item.isLockedBaseline || item.status === 'Disetujui' || item.status === 'Belanja') {
+      alert(`Item '${item.name}' merupakan historical baseline yang telah disahkan dan tidak boleh dihapus secara langsung.\n\nSilakan gunakan menu 'Perubahan Anggaran' dengan jenis perubahan 'DITIADAKAN' agar peniadaan tercatat dalam risalah audit.`);
+      return;
+    }
+    if (confirm(`Apakah Anda yakin ingin menghapus usulan draf '${item.name}' dari daftar RKBA?`)) {
       await onSaveRKBA('delete', item);
     }
   };
@@ -574,10 +652,10 @@ export default function RKBAView({
         <div>
           <h2 className="text-sm font-extrabold text-slate-800 flex items-center gap-2 uppercase tracking-wide">
             <FileSpreadsheet className="w-4 h-4 text-red-600" />
-            RKBA (Rencana Kebutuhan Barang & Anggaran)
+            RKBA Awal (Rencana Kebutuhan Barang & Anggaran Baseline)
           </h2>
           <p className="text-[11px] text-slate-500 mt-0.5">
-            Pengajuan kebutuhan, penganggaran seksi, audit kelayakan anggaran, serta persetujuan bendahara & ketua panitia.
+            Baseline anggaran awal kepanitiaan. Item yang telah disahkan dikunci secara permanen untuk memelihara integritas audit.
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -608,9 +686,47 @@ export default function RKBAView({
             className="flex items-center gap-1 bg-red-700 hover:bg-red-800 text-white text-[11px] font-bold px-3 py-1.5 rounded shadow-xs transition-all duration-150 self-start md:self-auto uppercase tracking-wide cursor-pointer"
           >
             <Plus className="w-3.5 h-3.5" />
-            Ajukan Kebutuhan Anggaran
+            Ajukan Usulan Awal
           </button>
         </div>
+      </div>
+
+      {/* Governance & Baseline Policy Callout */}
+      <div className="bg-slate-900 text-white p-3.5 rounded-lg border border-slate-800 flex flex-col md:flex-row items-start md:items-center justify-between gap-3 shadow-xs">
+        <div className="flex items-start gap-2.5">
+          <div className="p-2 bg-slate-800 rounded-md text-amber-400 mt-0.5">
+            <ShieldCheck className="w-4 h-4" />
+          </div>
+          <div>
+            <div className="text-xs font-bold text-slate-100 flex items-center gap-2">
+              Prinsip Tata Kelola: RAB Awal adalah Historical Record (Baseline)
+              <span className="text-[9px] bg-amber-500/20 text-amber-300 px-2 py-0.5 rounded border border-amber-500/30">
+                Immutability Rule
+              </span>
+            </div>
+            <p className="text-[11px] text-slate-400 mt-0.5 leading-relaxed">
+              Seluruh item RAB yang telah berstatus <strong className="text-slate-200">Disetujui</strong> dikunci sebagai baseline. Segala penambahan kegiatan, peniadaan, perubahan kuantitas/harga, atau pergeseran anggaran antar-seksi wajib melalui modul <strong className="text-sky-300">Perubahan Anggaran</strong> atau <strong className="text-purple-300">Realokasi</strong> dengan dasar Notulen Rapat.
+            </p>
+          </div>
+        </div>
+        {onNavigateView && (
+          <div className="flex items-center gap-2 self-end md:self-auto shrink-0">
+            <button
+              onClick={() => onNavigateView('perubahan-anggaran')}
+              className="px-2.5 py-1.5 bg-sky-600 hover:bg-sky-500 text-white text-[11px] font-bold rounded flex items-center gap-1 transition-colors"
+            >
+              <TrendingUp className="w-3.5 h-3.5" />
+              Perubahan Anggaran
+            </button>
+            <button
+              onClick={() => onNavigateView('realokasi-anggaran')}
+              className="px-2.5 py-1.5 bg-purple-600 hover:bg-purple-500 text-white text-[11px] font-bold rounded flex items-center gap-1 transition-colors"
+            >
+              <ArrowRightLeft className="w-3.5 h-3.5" />
+              Realokasi
+            </button>
+          </div>
+        )}
       </div>
 
       {/* 3. Filtering Toolbar */}
@@ -618,6 +734,18 @@ export default function RKBAView({
         <div className="flex items-center gap-1.5 text-[11px] font-bold text-slate-600">
           <Filter className="w-3.5 h-3.5 text-slate-400" />
           <span>Saring:</span>
+        </div>
+
+        {/* Search Filter */}
+        <div className="relative flex-1 min-w-[180px]">
+          <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Cari kode (ACT-...), nama kebutuhan, seksi..."
+            className="w-full pl-8 pr-3 py-1 text-[11px] bg-slate-50 border border-slate-200 rounded focus:outline-none focus:border-red-500"
+          />
         </div>
 
         {/* Seksi Filter */}
@@ -668,14 +796,15 @@ export default function RKBAView({
         </div>
 
         {/* Clear filter shortcut */}
-        {(filterSeksi !== "Semua" || filterStatus !== "Semua" || filterSource !== "Semua") && (
+        {(filterSeksi !== "Semua" || filterStatus !== "Semua" || filterSource !== "Semua" || searchQuery.trim() !== "") && (
           <button
             onClick={() => {
               setFilterSeksi("Semua");
               setFilterStatus("Semua");
               setFilterSource("Semua");
+              setSearchQuery("");
             }}
-            className="text-[11px] text-red-600 hover:text-red-800 font-bold ml-auto font-sans"
+            className="text-[11px] text-red-600 hover:text-red-800 font-bold ml-auto font-sans cursor-pointer"
           >
             Reset Filter
           </button>
@@ -717,16 +846,29 @@ export default function RKBAView({
                </button>
              </div>
              <form onSubmit={handleSubmit} className="p-4 space-y-3.5">
-               <div>
-                 <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Nama Barang / Kebutuhan</label>
-                 <input
-                   type="text"
-                   required
-                   value={form.name}
-                   onChange={(e) => setForm({ ...form, name: e.target.value })}
-                   className="w-full text-xs border border-slate-200 focus:border-red-500 focus:outline-none rounded p-1.5 bg-slate-50"
-                   placeholder="Misal: Hadiah Piala Juara 1 Sepak Bola"
-                 />
+               <div className="grid grid-cols-3 gap-3">
+                 <div>
+                   <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Kode Kegiatan</label>
+                   <input
+                     type="text"
+                     required
+                     value={form.activityCode}
+                     onChange={(e) => setForm({ ...form, activityCode: e.target.value })}
+                     className="w-full text-xs font-mono border border-slate-200 focus:border-red-500 focus:outline-none rounded p-1.5 bg-slate-50 font-bold"
+                     placeholder="ACT-001"
+                   />
+                 </div>
+                 <div className="col-span-2">
+                   <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Nama Barang / Kebutuhan</label>
+                   <input
+                     type="text"
+                     required
+                     value={form.name}
+                     onChange={(e) => setForm({ ...form, name: e.target.value })}
+                     className="w-full text-xs border border-slate-200 focus:border-red-500 focus:outline-none rounded p-1.5 bg-slate-50"
+                     placeholder="Misal: Hadiah Piala Juara 1 Sepak Bola"
+                   />
+                 </div>
                </div>
 
                <div className="grid grid-cols-2 gap-3">

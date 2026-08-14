@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { 
   FileText, 
   ClipboardCheck, 
@@ -20,26 +20,55 @@ import {
   Printer,
   ChevronRight,
   TrendingUp,
-  FileSpreadsheet
+  FileSpreadsheet,
+  FileDiff,
+  ArrowRightLeft,
+  ExternalLink,
+  History,
+  ShieldCheck,
+  Search,
+  CheckCircle2,
+  Sparkles,
+  Link2
 } from "lucide-react";
-import { Notulensi, ActionItem, SystemSetting, Panitia, Kegiatan } from "../types";
+import { 
+  Notulensi, 
+  ActionItem, 
+  SystemSetting, 
+  Panitia, 
+  Kegiatan,
+  BudgetChange,
+  BudgetReallocation,
+  AuditTrail,
+  RKBAItem
+} from "../types";
 import { exportToPDF } from "../utils/pdfExport";
 import { exportToWord } from "../utils/wordExport";
 
 interface NotulensiViewProps {
   notulensi: Notulensi[];
+  budgetChanges?: BudgetChange[];
+  budgetReallocations?: BudgetReallocation[];
+  auditTrails?: AuditTrail[];
+  rkba?: RKBAItem[];
   settings: SystemSetting;
   panitia: Panitia[];
   kegiatan: Kegiatan[];
-  onSaveNotulensi: (action: 'add' | 'edit' | 'delete', data: Notulensi) => Promise<void>;
+  onSaveNotulensi: (action: 'add' | 'edit' | 'delete', data: Notulensi, actor?: string) => Promise<void>;
+  onNavigateView?: (viewName: string, params?: any) => void;
 }
 
 export default function NotulensiView({ 
-  notulensi, 
+  notulensi = [], 
+  budgetChanges = [],
+  budgetReallocations = [],
+  auditTrails = [],
+  rkba = [],
   settings, 
-  panitia, 
-  kegiatan, 
-  onSaveNotulensi 
+  panitia = [], 
+  kegiatan = [], 
+  onSaveNotulensi,
+  onNavigateView
 }: NotulensiViewProps) {
   const [viewMode, setViewMode] = useState<"list" | "create" | "view">("list");
   const [selectedNotulensi, setSelectedNotulensi] = useState<Notulensi | null>(null);
@@ -54,28 +83,37 @@ export default function NotulensiView({
 
   // Form States
   const [formId, setFormId] = useState<string>("");
+  const [minutesNumber, setMinutesNumber] = useState<string>("");
   const [title, setTitle] = useState<string>("Rapat Koordinasi Pleno I");
   const [date, setDate] = useState<string>("Senin, 6 Juli 2026");
   const [time, setTime] = useState<string>("19:30 - 22:00 WIB");
   const [location, setLocation] = useState<string>("Balai Warga RW 04 Ngabean");
   const [leader, setLeader] = useState<string>("");
   const [attendeesCount, setAttendeesCount] = useState<number>(15);
-  const [attendeesList, setAttendeesList] = useState<string>("Sekretaris, Humas, Acara, Keamanan");
-  const [agenda, setAgenda] = useState<string>("1. Evaluasi Anggaran (RKBA) HUT RI Ke-81\n2. Pembagian Tugas Seksi Lapangan\n3. Pembahasan Swadaya Natura Warga\n4. Teknis Pelaksanaan Lomba 17-an");
+  const [attendeesList, setAttendeesList] = useState<string>("Sekretaris, Humas, Acara, Keamanan, Perwakilan RT 01-05");
+  const [agenda, setAgenda] = useState<string>(
+    "1. Evaluasi Anggaran & RKBA Baseline HUT RI Ke-81\n" +
+    "2. Pembahasan Usulan Perubahan & Realokasi Anggaran Antar Seksi\n" +
+    "3. Pembagian Tugas Teknis Lapangan & Swadaya Warga\n" +
+    "4. Teknis Pelaksanaan Lomba dan Acara Puncak"
+  );
   const [notesRaw, setNotesRaw] = useState<string>(
-    "- Acara pembukaan direncanakan pada 10 Agustus 2026, Seksi Acara harap menyiapkan draf rundown.\n" +
-    "- Anggaran Seksi Lomba disepakati maksimal Rp 1.500.000 dengan pendanaan utama dari Iuran RT.\n" +
-    "- Perlengkapan sound system dan panggung utama akan dikoordinasikan oleh Seksi Perlengkapan (Pak RT 02).\n" +
+    "- Acara pembukaan direncanakan pada 10 Agustus 2026, Seksi Acara harap menyiapkan draf rundown detail.\n" +
+    "- Anggaran Seksi Lomba disepakati penyesuaian pagu tambahan Rp 500.000 untuk piala bergilir.\n" +
+    "- Perlengkapan sound system dan panggung utama disetujui realokasi dari pos cadangan.\n" +
     "- Keamanan dan Kebersihan wajib menjaga sterilisasi area lomba dan menyediakan tempat sampah portabel."
   );
   const [decisions, setDecisions] = useState<string>(
-    "- Menyetujui pagu anggaran Seksi Lomba sebesar Rp 1.500.000.\n" +
+    "- Menyetujui usulan penyesuaian pagu anggaran Seksi Lomba & Hadiah.\n" +
     "- Menyepakati jadwal pelaksanaan lomba dimulai tanggal 11 - 15 Agustus 2026.\n" +
-    "- Penetapan iuran warga diserahkan kepada koordinasi masing-masing RT."
+    "- Menetapkan pembentukan tim kerja swadaya warga di tiap lingkungan RT."
   );
+  const [selectedBudgetChanges, setSelectedBudgetChanges] = useState<string[]>([]);
+  const [selectedReallocations, setSelectedReallocations] = useState<string[]>([]);
+
   const [actionItems, setActionItems] = useState<Omit<ActionItem, 'id'>[]>([
     { task: "Menyusun draf rundown detail pembukaan", pic: "Acara", deadline: "12 Juli 2026" },
-    { task: "Membeli perlengkapan hadiah lomba anak-anak", pic: "Seksi Hadiah Dan Doorprize", deadline: "20 Juli 2026" }
+    { task: "Membeli perlengkapan hadiah lomba anak-anak", pic: "Lomba", deadline: "20 Juli 2026" }
   ]);
 
   // Form Temp Action Item inputs
@@ -108,7 +146,7 @@ export default function NotulensiView({
     setActionItems(actionItems.filter((_, i) => i !== index));
   };
 
-  const logStep = (message: string, delay = 200) => {
+  const logStep = (message: string, delay = 180) => {
     return new Promise<void>((resolve) => {
       setConsoleSteps(prev => [...prev, { msg: message, status: 'pending' }]);
       setTimeout(() => {
@@ -126,13 +164,48 @@ export default function NotulensiView({
       ? actionItems.map((item, idx) => `| ${idx + 1} | ${item.task} | ${item.pic} | ${item.deadline} |`).join("\n")
       : "| - | Tidak ada rencana tindak lanjut spesifik | - | - |";
 
+    // Linked budget change section
+    const linkedBCItems = budgetChanges.filter(bc => selectedBudgetChanges.includes(bc.id));
+    const linkedReallocItems = budgetReallocations.filter(br => selectedReallocations.includes(br.id));
+
+    let budgetImpactSection = "";
+    if (linkedBCItems.length > 0 || linkedReallocItems.length > 0) {
+      budgetImpactSection += "### V. RISALAH DAMPAK & KEPUTUSAN ANGGARAN (FINANCIAL RESOLUTIONS)\n";
+      budgetImpactSection += "Rapat koordinasi menyepakati dan menetapkan usulan tata kelola anggaran sebagai berikut:\n\n";
+
+      if (linkedBCItems.length > 0) {
+        budgetImpactSection += "#### A. Perubahan Pagu Anggaran (Budget Changes)\n";
+        budgetImpactSection += "| No | No. Dokumen | Pos / Kegiatan | Jenis Perubahan | Nominal | Status |\n";
+        budgetImpactSection += "| :--- | :--- | :--- | :--- | :--- | :--- |\n";
+        linkedBCItems.forEach((bc, idx) => {
+          const sign = bc.changeType === "DITAMBAHKAN" ? "+" : bc.changeType === "DITIADAKAN" ? "-" : "";
+          const nominalVal = bc.changeAmount || bc.revisedAmount || 0;
+          budgetImpactSection += `| ${idx + 1} | ${bc.changeNumber} | ${bc.activityName} | ${bc.changeType} | ${sign} Rp ${nominalVal.toLocaleString('id-ID')} | ${bc.status} |\n`;
+        });
+        budgetImpactSection += "\n";
+      }
+
+      if (linkedReallocItems.length > 0) {
+        budgetImpactSection += "#### B. Pergeseran / Realokasi Antar Pos Anggaran (Reallocations)\n";
+        budgetImpactSection += "| No | No. Dokumen | Pos Sumber (Pengurang) | Pos Tujuan (Penerima) | Nilai Pergeseran | Status |\n";
+        budgetImpactSection += "| :--- | :--- | :--- | :--- | :--- | :--- |\n";
+        linkedReallocItems.forEach((br, idx) => {
+          budgetImpactSection += `| ${idx + 1} | ${br.reallocationNumber} | ${br.sourceActivityName} | ${br.targetActivityName} | Rp ${br.amount.toLocaleString('id-ID')} | ${br.status} |\n`;
+        });
+        budgetImpactSection += "\n";
+      }
+      budgetImpactSection += "---\n\n";
+    }
+
     return `# NOTULENSI RAPAT KOORDINASI KEPANITIAAN
 ## ${title.toUpperCase()}
 **HUT KEMERDEKAAN REPUBLIK INDONESIA KE-81 - RW 04 NGABEAN**
+**Nomor Risalah: ${minutesNumber || `NR-2026-${String(notulensi.length + 1).padStart(3, '0')}`}**
 
 ---
 
 ### I. IDENTITAS & INFORMASI RAPAT
+- **Nomor Dokumen**  : ${minutesNumber || `NR-2026-${String(notulensi.length + 1).padStart(3, '0')}`}
 - **Hari / Tanggal** : ${date}
 - **Waktu**          : ${time}
 - **Tempat**         : ${location}
@@ -161,7 +234,7 @@ ${decisions}
 
 ---
 
-### V. RENCANA TINDAK LANJUT (ACTION PLAN)
+${budgetImpactSection}### VI. RENCANA TINDAK LANJUT (ACTION PLAN)
 Aktivitas taktis lanjutan yang wajib diselesaikan oleh masing-masing Seksi penanggung jawab:
 
 | No | Rencana Tindak Lanjut / Tugas | Seksi Penanggung Jawab (PIC) | Batas Waktu (Deadline) |
@@ -170,7 +243,7 @@ ${formattedActionItems}
 
 ---
 
-### VI. PENUTUP & PENGESAHAN DOKUMEN
+### VII. PENUTUP & PENGESAHAN DOKUMEN
 Demikian draf notulen rapat koordinasi ini disusun dengan sebenar-benarnya untuk digunakan sebagai acuan kerja bersama seluruh Seksi Kepanitiaan Kemerdekaan RI Ke-81 RW 04 Ngabean Semarang.
 
 Semarang, ${date}
@@ -178,14 +251,16 @@ Semarang, ${date}
 **Pembuat Notulen (Sekretaris)**
 Kepanitiaan HUT RI Ke-81 RW 04 Ngabean
 
-*(Dokumen ini disahkan secara digital dalam Sistem Informasi SEMS)*`;
+*(Dokumen ini disahkan secara digital dalam Sistem Informasi SEMS • Dok No: ${minutesNumber || `NR-2026-${String(notulensi.length + 1).padStart(3, '0')}`})*`;
   };
 
   // trigger local save
   const handleLocalFormSave = async () => {
+    const nextNumber = minutesNumber || `NR-2026-${String(notulensi.length + 1).padStart(3, '0')}`;
     const formattedReport = generateLocalNotulensi();
     const payload: Notulensi = {
       id: formId || 'notulensi_' + Date.now(),
+      minutesNumber: nextNumber,
       title,
       date,
       time,
@@ -198,6 +273,8 @@ Kepanitiaan HUT RI Ke-81 RW 04 Ngabean
       decisions,
       contentMarkdown: formattedReport,
       actionItems: actionItems.map((a, i) => ({ ...a, id: `ai_${i}` })),
+      linkedBudgetChanges: selectedBudgetChanges,
+      linkedReallocations: selectedReallocations,
       createdAt: new Date().toISOString()
     };
 
@@ -205,13 +282,13 @@ Kepanitiaan HUT RI Ke-81 RW 04 Ngabean
     setShowConsole(true);
     setConsoleSteps([]);
 
-    await logStep("Menginisialisasi Penyusunan Notulensi Lokal...", 150);
-    await logStep("Memvalidasi parameter identitas & daftar kehadiran rapat...", 150);
-    await logStep("Memformulasikan rangkuman pembahasan & mufakat keputusan...", 150);
-    await logStep("Mengonversi daftar Action Plan ke dalam format tabel formal...", 150);
+    await logStep("Menginisialisasi Penyusunan Notulensi Lokal...", 120);
+    await logStep("Memvalidasi parameter identitas & daftar kehadiran rapat...", 120);
+    await logStep("Menyusun risalah dampak perubahan & realokasi anggaran...", 120);
+    await logStep("Mengonversi daftar Action Plan ke dalam format tabel formal...", 120);
     await logStep("Membubuhkan tanda tangan digital kepanitiaan...", 100);
 
-    await onSaveNotulensi(formId ? 'edit' : 'add', payload);
+    await onSaveNotulensi(formId ? 'edit' : 'add', payload, leader || "Sekretaris Panitia");
     
     await logStep("Sukses! Dokumen Notulensi resmi telah disimpan ke dalam database.", 100);
     
@@ -219,7 +296,7 @@ Kepanitiaan HUT RI Ke-81 RW 04 Ngabean
       setShowConsole(false);
       setViewMode("list");
       setIsGenerating(false);
-    }, 1200);
+    }, 1000);
   };
 
   // trigger AI Gemini generation
@@ -245,7 +322,9 @@ Kepanitiaan HUT RI Ke-81 RW 04 Ngabean
           attendeesCount,
           attendeesList,
           agenda,
-          notesRaw
+          notesRaw,
+          linkedBudgetChanges: selectedBudgetChanges,
+          linkedReallocations: selectedReallocations
         })
       });
 
@@ -256,8 +335,8 @@ Kepanitiaan HUT RI Ke-81 RW 04 Ngabean
       const result = await response.json();
 
       if (result.success && result.notulensi) {
-        await logStep("Kecerdasan Buatan berhasil merumuskan tata bahasa rapat formal...", 200);
-        await logStep("Tabel Action Items dan layout Markdown selesai distrukturkan...", 150);
+        await logStep("Kecerdasan Buatan berhasil merumuskan tata bahasa rapat formal...", 180);
+        await logStep("Tabel Action Items dan layout Markdown selesai distrukturkan...", 120);
 
         const aiExtractedActionItems = Array.isArray(result.actionItems) 
           ? result.actionItems.map((a: any, i: number) => ({
@@ -268,11 +347,12 @@ Kepanitiaan HUT RI Ke-81 RW 04 Ngabean
             }))
           : actionItems.map((a, i) => ({ ...a, id: `ai_${i}` }));
 
-        // Update local state with the extracted items so user can see them
         setActionItems(aiExtractedActionItems);
 
+        const nextNumber = minutesNumber || `NR-2026-${String(notulensi.length + 1).padStart(3, '0')}`;
         const payload: Notulensi = {
           id: formId || 'notulensi_' + Date.now(),
+          minutesNumber: nextNumber,
           title,
           date,
           time,
@@ -285,17 +365,19 @@ Kepanitiaan HUT RI Ke-81 RW 04 Ngabean
           decisions,
           contentMarkdown: result.notulensi,
           actionItems: aiExtractedActionItems,
+          linkedBudgetChanges: selectedBudgetChanges,
+          linkedReallocations: selectedReallocations,
           createdAt: new Date().toISOString()
         };
 
-        await onSaveNotulensi(formId ? 'edit' : 'add', payload);
+        await onSaveNotulensi(formId ? 'edit' : 'add', payload, leader || "Sekretaris Panitia");
         await logStep("Selesai! Dokumen Notulensi AI berhasil disinkronisasi ke database.", 100);
         
         setTimeout(() => {
           setShowConsole(false);
           setViewMode("list");
           setIsGenerating(false);
-        }, 1200);
+        }, 1000);
 
       } else {
         throw new Error(result.error || "Gagal memproses draf.");
@@ -304,9 +386,11 @@ Kepanitiaan HUT RI Ke-81 RW 04 Ngabean
       console.error(err);
       await logStep("Terjadi kesalahan koneksi! Mengaktifkan mode penulisan aman offline...", 150);
       
+      const nextNumber = minutesNumber || `NR-2026-${String(notulensi.length + 1).padStart(3, '0')}`;
       const formattedReport = generateLocalNotulensi();
       const payload: Notulensi = {
         id: formId || 'notulensi_' + Date.now(),
+        minutesNumber: nextNumber,
         title,
         date,
         time,
@@ -319,22 +403,25 @@ Kepanitiaan HUT RI Ke-81 RW 04 Ngabean
         decisions,
         contentMarkdown: formattedReport,
         actionItems: actionItems.map((a, i) => ({ ...a, id: `ai_${i}` })),
+        linkedBudgetChanges: selectedBudgetChanges,
+        linkedReallocations: selectedReallocations,
         createdAt: new Date().toISOString()
       };
 
-      await onSaveNotulensi(formId ? 'edit' : 'add', payload);
+      await onSaveNotulensi(formId ? 'edit' : 'add', payload, leader || "Sekretaris Panitia");
       await logStep("Draf lokal berhasil dirumuskan sebagai cadangan.", 100);
 
       setTimeout(() => {
         setShowConsole(false);
         setViewMode("list");
         setIsGenerating(false);
-      }, 1200);
+      }, 1000);
     }
   };
 
   const handleEditInit = (notulen: Notulensi) => {
     setFormId(notulen.id);
+    setMinutesNumber(notulen.minutesNumber || `NR-2026-001`);
     setTitle(notulen.title);
     setDate(notulen.date);
     setTime(notulen.time);
@@ -345,7 +432,9 @@ Kepanitiaan HUT RI Ke-81 RW 04 Ngabean
     setAgenda(notulen.agenda);
     setNotesRaw(notulen.notesRaw);
     setDecisions(notulen.decisions);
-    setActionItems(notulen.actionItems);
+    setActionItems(notulen.actionItems || []);
+    setSelectedBudgetChanges(notulen.linkedBudgetChanges || []);
+    setSelectedReallocations(notulen.linkedReallocations || []);
     setViewMode("create");
   };
 
@@ -353,7 +442,7 @@ Kepanitiaan HUT RI Ke-81 RW 04 Ngabean
     if (!confirm(`Apakah Anda yakin ingin menghapus dokumen notulensi "${notulen.title}"?`)) {
       return;
     }
-    await onSaveNotulensi('delete', notulen);
+    await onSaveNotulensi('delete', notulen, "Sekretaris Panitia");
   };
 
   const copyToClipboard = () => {
@@ -372,10 +461,12 @@ Kepanitiaan HUT RI Ke-81 RW 04 Ngabean
     txt += "                    NOTULENSI RAPAT KOORDINASI KEPANITIAAN                     \n";
     txt += `                      ${item.title.toUpperCase()}                      \n`;
     txt += "               HUT KEMERDEKAAN REPUBLIK INDONESIA KE-81 - RW 04                 \n";
+    txt += `                   NOMOR RISALAH: ${item.minutesNumber || item.id}             \n`;
     txt += divider + "\n";
     
     txt += "I. IDENTITAS & INFORMASI RAPAT\n";
     txt += subDivider;
+    txt += ` Nomor Risalah  : ${item.minutesNumber || item.id}\n`;
     txt += ` Hari / Tanggal : ${item.date}\n`;
     txt += ` Waktu          : ${item.time}\n`;
     txt += ` Tempat         : ${item.location}\n`;
@@ -427,7 +518,7 @@ Kepanitiaan HUT RI Ke-81 RW 04 Ngabean
     const element = document.createElement("a");
     const file = new Blob([formattedText], {type: 'text/plain;charset=utf-8'});
     element.href = URL.createObjectURL(file);
-    element.download = `Notulen_${targetItem.title.replace(/\s+/g, "_")}.txt`;
+    element.download = `Notulen_${(targetItem.minutesNumber || targetItem.title).replace(/[\s/]+/g, "_")}.txt`;
     document.body.appendChild(element);
     element.click();
     document.body.removeChild(element);
@@ -441,7 +532,7 @@ Kepanitiaan HUT RI Ke-81 RW 04 Ngabean
     await new Promise((resolve) => setTimeout(resolve, 350));
     
     try {
-      await exportToPDF("hidden-printable-notulensi-paper", `Notulen-${item.title.replace(/\s+/g, "-")}.pdf`);
+      await exportToPDF("hidden-printable-notulensi-paper", `Notulen-${(item.minutesNumber || item.title).replace(/[\s/]+/g, "-")}.pdf`);
     } catch (err) {
       console.error("Export failed:", err);
     } finally {
@@ -465,7 +556,7 @@ Kepanitiaan HUT RI Ke-81 RW 04 Ngabean
     await new Promise((resolve) => setTimeout(resolve, 350));
     
     try {
-      await exportToWord("hidden-printable-notulensi-paper", `Notulen-${item.title.replace(/\s+/g, "-")}`);
+      await exportToWord("hidden-printable-notulensi-paper", `Notulen-${(item.minutesNumber || item.title).replace(/[\s/]+/g, "-")}`);
     } catch (err) {
       console.error("DOC Export failed:", err);
     } finally {
@@ -482,11 +573,14 @@ Kepanitiaan HUT RI Ke-81 RW 04 Ngabean
   };
 
   // Filter notulensi list
-  const filteredNotulensi = notulensi.filter(item => 
-    item.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    item.agenda.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    item.leader.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredNotulensi = useMemo(() => {
+    return notulensi.filter(item => 
+      item.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (item.minutesNumber && item.minutesNumber.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      item.agenda.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      item.leader.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+  }, [notulensi, searchTerm]);
 
   // Markdown renderer helper
   const renderMarkdownText = (markdownText: string) => {
@@ -550,132 +644,109 @@ Kepanitiaan HUT RI Ke-81 RW 04 Ngabean
         continue;
       }
 
+      // Handle Headings
+      if (trimmed.startsWith("# ")) {
+        flushLists(`h1-${i}`);
+        flushTable(`h1-${i}`);
+        elements.push(
+          <h1 key={`h1-${i}`} className="text-base sm:text-lg font-black text-slate-900 uppercase tracking-wide text-center mt-2 mb-1">
+            {trimmed.replace("# ", "")}
+          </h1>
+        );
+        continue;
+      }
+      if (trimmed.startsWith("## ")) {
+        flushLists(`h2-${i}`);
+        flushTable(`h2-${i}`);
+        elements.push(
+          <h2 key={`h2-${i}`} className="text-sm sm:text-base font-extrabold text-red-700 uppercase tracking-wide text-center mb-1">
+            {trimmed.replace("## ", "")}
+          </h2>
+        );
+        continue;
+      }
+      if (trimmed.startsWith("### ")) {
+        flushLists(`h3-${i}`);
+        flushTable(`h3-${i}`);
+        elements.push(
+          <h3 key={`h3-${i}`} className="text-xs sm:text-sm font-black text-slate-800 uppercase tracking-wide mt-4 mb-2 pb-1 border-b border-slate-200">
+            {trimmed.replace("### ", "")}
+          </h3>
+        );
+        continue;
+      }
+      if (trimmed.startsWith("#### ")) {
+        flushLists(`h4-${i}`);
+        flushTable(`h4-${i}`);
+        elements.push(
+          <h4 key={`h4-${i}`} className="text-[11px] sm:text-xs font-extrabold text-slate-700 uppercase tracking-wide mt-3 mb-1.5">
+            {trimmed.replace("#### ", "")}
+          </h4>
+        );
+        continue;
+      }
+
       // Handle Tables
-      if (trimmed.startsWith("|")) {
-        flushLists(`table-row-${i}`);
+      if (trimmed.startsWith("|") && trimmed.endsWith("|")) {
+        flushLists(`tbl-${i}`);
+        const cells = trimmed.split("|").slice(1, -1).map(c => c.trim());
         
-        // Extract row items
-        const rawCells = line.split("|").map(cell => cell.trim()).filter((_, idx, arr) => idx > 0 && idx < arr.length - 1);
-        
-        // Skip separator line e.g. |:---|:---|
-        if (trimmed.includes("---") || trimmed.includes(":-")) {
-          inTable = true;
+        // Skip separator rows like | :--- | :--- |
+        if (cells.every(c => /^:?-+:?$/.test(c))) {
           continue;
         }
 
         if (!inTable) {
-          // This must be header row
-          tableHeaders = rawCells;
           inTable = true;
+          tableHeaders = cells;
         } else {
-          // Table body row
           tableRows.push(
-            <tr key={`tr-${i}`} className="even:bg-slate-50/50 hover:bg-slate-50 transition-colors">
-              {rawCells.map((cell, cIdx) => (
-                <td key={`td-${cIdx}`} className="p-2 border border-slate-200 font-medium text-slate-700">
-                  {cell.replace(/\*\*([\s\S]*?)\*\*/g, "$1")}
-                </td>
+            <tr key={`tr-${i}`} className="even:bg-slate-50 border-b border-slate-100 hover:bg-slate-100/50">
+              {cells.map((cell, cIdx) => (
+                <td key={`td-${cIdx}`} className="p-2 border border-slate-200/60 font-medium text-slate-700">{cell}</td>
               ))}
             </tr>
           );
         }
         continue;
       } else {
-        flushTable(`non-table-${i}`);
+        flushTable(`end-tbl-${i}`);
       }
 
-      // Handle Headers
-      if (trimmed.startsWith("# ")) {
-        flushLists(`h1-${i}`);
-        const headerText = trimmed.substring(2).replace(/[#*]/g, "").trim();
-        elements.push(
-          <h1 key={`h1-${i}`} className="text-sm sm:text-base font-black tracking-wider uppercase text-center text-red-800 font-sans mt-4 mb-2">
-            {headerText}
-          </h1>
-        );
-        continue;
-      }
-
-      if (trimmed.startsWith("## ")) {
-        flushLists(`h2-${i}`);
-        const headerText = trimmed.substring(3).replace(/[#*]/g, "").trim();
-        elements.push(
-          <h2 key={`h2-${i}`} className="text-[11px] sm:text-[13px] font-extrabold tracking-normal uppercase text-center text-slate-800 font-sans mb-3">
-            {headerText}
-          </h2>
-        );
-        continue;
-      }
-
-      if (trimmed.startsWith("### ")) {
-        flushLists(`h3-${i}`);
-        const headerText = trimmed.substring(4).replace(/[#*]/g, "").trim();
-        elements.push(
-          <h3 key={`h3-${i}`} className="text-xs font-black tracking-wider uppercase text-red-700 font-sans mt-5 mb-2.5 flex items-center gap-1.5 border-b pb-1">
-            {headerText}
-          </h3>
-        );
-        continue;
-      }
-
-      // Handle Lists
+      // Handle bullet lists
       if (trimmed.startsWith("- ") || trimmed.startsWith("* ")) {
         inList = true;
-        const bulletText = trimmed.substring(2);
-        
-        // Inline bold parsing helper
-        const parts = bulletText.split(/\*\*([\s\S]*?)\*\*/g);
-        const parsedBullet = parts.map((part, pIdx) => {
-          if (pIdx % 2 === 1) {
-            return <strong key={pIdx} className="font-extrabold text-slate-950">{part}</strong>;
-          }
-          return part;
-        });
-
         listItems.push(
-          <li key={`li-${i}-${listItems.length}`} className="leading-relaxed text-justify">
-            {parsedBullet}
+          <li key={`li-${i}`} className="leading-relaxed">
+            {trimmed.replace(/^[-*]\s+/, "")}
           </li>
         );
         continue;
+      } else {
+        flushLists(`end-list-${i}`);
       }
 
-      // Handle standard line
-      if (trimmed === "") {
-        flushLists(`empty-${i}`);
-        continue;
+      // Regular Paragraphs
+      if (trimmed) {
+        elements.push(
+          <p key={`p-${i}`} className="text-[11px] sm:text-[12px] text-slate-700 leading-relaxed font-sans text-justify mb-2">
+            {trimmed}
+          </p>
+        );
       }
-
-      // Normal paragraph line
-      flushLists(`p-${i}`);
-      const parts = trimmed.split(/\*\*([\s\S]*?)\*\*/g);
-      const parsedText = parts.map((part, pIdx) => {
-        if (pIdx % 2 === 1) {
-          return <strong key={pIdx} className="font-extrabold text-slate-950">{part}</strong>;
-        }
-        return part;
-      });
-
-      elements.push(
-        <p key={`p-${i}`} className="text-[11px] sm:text-[12px] font-medium text-slate-600 leading-relaxed my-2 text-justify">
-          {parsedText}
-        </p>
-      );
     }
 
-    // final flushes
-    flushLists("end");
-    flushTable("end");
+    flushLists("final");
+    flushTable("final");
 
     return elements;
   };
 
-  // Themes list for paper preview
   const paperThemeStyles = {
     classic: {
-      card: "border-red-200 bg-white",
-      accentText: "text-red-800",
-      accentBg: "bg-red-50"
+      card: "border-slate-200 bg-white shadow-sm",
+      accentText: "text-red-900",
+      accentBg: "bg-red-50/50"
     },
     minimal: {
       card: "border-slate-300 bg-white shadow-none",
@@ -700,39 +771,53 @@ Kepanitiaan HUT RI Ke-81 RW 04 Ngabean
       {/* Header Banner */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/80 shadow-sm">
         <div>
-          <span className="px-2 py-0.5 bg-red-100 text-[#e61d1d] text-[10px] font-extrabold rounded-md uppercase tracking-wider">
-            PHASE 2 • ADMINISTRASI RAPAT
-          </span>
+          <div className="flex items-center gap-2">
+            <span className="px-2 py-0.5 bg-red-100 text-[#e61d1d] text-[10px] font-extrabold rounded-md uppercase tracking-wider">
+              ADMINISTRASI RAPAT & TATA KELOLA KEPUTUSAN
+            </span>
+            <span className="text-[10px] font-bold text-slate-400 bg-slate-100 px-2 py-0.5 rounded-md">
+              {notulensi.length} Berita Acara Tersimpan
+            </span>
+          </div>
           <h1 className="text-lg font-extrabold text-slate-800 mt-1 uppercase tracking-wide">
-            Notulensi Rapat Profesional
+            Notulensi & Risalah Musyawarah
           </h1>
           <p className="text-[11px] text-slate-500 mt-0.5 max-w-2xl">
-            Tulis, formulasikan, dan simpan berita acara rapat kemandirian RT/RW serta hasil musyawarah panitia secara instan dibantu Kecerdasan Buatan (Gemini AI).
+            Pencatatan resmi berita acara rapat, keputusan mufakat panitia, tautan perubahan/realokasi anggaran, dan rencana tindak lanjut (Action Plan) dengan asistensi AI.
           </p>
         </div>
         {viewMode === "list" && (
-          <button
-            id="btn-add-notulensi"
-            onClick={() => {
-              setFormId("");
-              setTitle("Rapat Koordinasi Pleno I");
-              setDate("Senin, 6 Juli 2026");
-              setTime("19:30 - 22:00 WIB");
-              setLocation("Balai Warga RW 04 Ngabean");
-              setLeader("");
-              setAttendeesCount(15);
-              setAttendeesList("Sekretaris, Humas, Acara, Keamanan");
-              setAgenda("1. Evaluasi Anggaran (RKBA) HUT RI Ke-81\n2. Pembagian Tugas Seksi Lapangan\n3. Pembahasan Swadaya Natura Warga");
-              setNotesRaw("- Panitia menyepakati pembukaan lomba dimulai 10 Agustus 2026.\n- Seksi Acara merancang draf rundown umum.\n- Anggaran Seksi Perlengkapan disetujui Rp 2.000.000.");
-              setDecisions("- Pengesahan pagu anggaran Seksi Acara dan Perlengkapan.\n- Penetapan jadwal gladi bersih pada 9 Agustus 2026.");
-              setActionItems([]);
-              setViewMode("create");
-            }}
-            className="flex items-center gap-1.5 bg-[#e61d1d] hover:bg-red-700 text-white font-extrabold text-xs px-4 py-2.5 rounded-xl shadow-md transition-all duration-150 border border-transparent uppercase tracking-wider shrink-0 cursor-pointer"
-          >
-            <Plus className="w-4 h-4" />
-            Tulis Notulen Baru
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              id="btn-add-notulensi"
+              onClick={() => {
+                const autoNum = `NR-2026-${String(notulensi.length + 1).padStart(3, '0')}`;
+                setFormId("");
+                setMinutesNumber(autoNum);
+                setTitle("Rapat Koordinasi Pleno I");
+                setDate("Senin, 6 Juli 2026");
+                setTime("19:30 - 22:00 WIB");
+                setLocation("Balai Warga RW 04 Ngabean");
+                setLeader("");
+                setAttendeesCount(15);
+                setAttendeesList("Sekretaris, Humas, Acara, Keamanan, Perwakilan RT 01-05");
+                setAgenda("1. Evaluasi Anggaran (RKBA) HUT RI Ke-81\n2. Pembahasan Usulan Perubahan & Realokasi Anggaran\n3. Pembagian Tugas Seksi Lapangan\n4. Swadaya Warga & Pelaksanaan Lomba");
+                setNotesRaw("- Panitia menyepakati pembukaan lomba dimulai 10 Agustus 2026.\n- Seksi Acara merancang draf rundown umum.\n- Anggaran Seksi Perlengkapan disetujui Rp 2.000.000.\n- Penyesuaian pagu untuk hadiah disepakati melalui rapat pleno.");
+                setDecisions("- Pengesahan pagu anggaran Seksi Acara dan Perlengkapan.\n- Penetapan jadwal gladi bersih pada 9 Agustus 2026.\n- Menyetujui usulan perubahan dan pergeseran anggaran yang diajukan.");
+                setActionItems([
+                  { task: "Menyusun draf rundown detail pembukaan", pic: "Acara", deadline: "12 Juli 2026" },
+                  { task: "Membeli perlengkapan hadiah lomba anak-anak", pic: "Lomba", deadline: "20 Juli 2026" }
+                ]);
+                setSelectedBudgetChanges([]);
+                setSelectedReallocations([]);
+                setViewMode("create");
+              }}
+              className="flex items-center gap-1.5 bg-[#e61d1d] hover:bg-red-700 text-white font-extrabold text-xs px-4 py-2.5 rounded-xl shadow-md transition-all duration-150 border border-transparent uppercase tracking-wider shrink-0 cursor-pointer"
+            >
+              <Plus className="w-4 h-4" />
+              Tulis Notulen Baru
+            </button>
+          </div>
         )}
         {viewMode !== "list" && (
           <button
@@ -754,19 +839,20 @@ Kepanitiaan HUT RI Ke-81 RW 04 Ngabean
           
           {/* Filter Toolbar */}
           <div className="flex flex-col sm:flex-row gap-3">
-            <div className="flex-1">
+            <div className="flex-1 relative">
+              <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
               <input
                 type="text"
-                placeholder="Cari berita acara rapat, agenda, atau pimpinan..."
+                placeholder="Cari risalah rapat, nomor dokumen (NR-2026-xxx), agenda, atau pimpinan..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full text-xs border border-slate-200 focus:border-red-500 focus:ring-1 focus:ring-red-500 focus:outline-none rounded-xl px-3.5 py-2.5 bg-white font-medium text-slate-700 shadow-sm"
+                className="w-full text-xs border border-slate-200 focus:border-red-500 focus:ring-1 focus:ring-red-500 focus:outline-none rounded-xl pl-9 pr-3.5 py-2.5 bg-white font-medium text-slate-700 shadow-sm"
               />
             </div>
             {searchTerm && (
               <button
                 onClick={() => setSearchTerm("")}
-                className="text-xs text-slate-400 hover:text-slate-600 bg-slate-100 border border-slate-200 px-3 py-2 rounded-xl"
+                className="text-xs text-slate-500 hover:text-slate-700 bg-slate-100 border border-slate-200 px-3.5 py-2 rounded-xl font-bold cursor-pointer"
               >
                 Reset Filter
               </button>
@@ -793,101 +879,134 @@ Kepanitiaan HUT RI Ke-81 RW 04 Ngabean
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {[...filteredNotulensi]
                 .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-                .map((item) => (
-                <div 
-                  key={item.id} 
-                  className="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-4 flex flex-col justify-between hover:shadow-md transition-all duration-200 group"
-                >
-                  <div className="space-y-3">
-                    <div className="flex justify-between items-start">
-                      <span className="text-[9px] font-bold text-red-600 uppercase bg-red-50 px-2 py-0.5 rounded">
-                        {item.date.split(",")[0] || "Rapat"}
-                      </span>
-                      <span className="text-[9px] font-mono text-slate-400">
-                        {new Date(item.createdAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })}
-                      </span>
-                    </div>
+                .map((item) => {
+                  const linkedBC = budgetChanges.filter(bc => (item.linkedBudgetChanges || []).includes(bc.id));
+                  const linkedBR = budgetReallocations.filter(br => (item.linkedReallocations || []).includes(br.id));
+                  
+                  return (
+                    <div 
+                      key={item.id} 
+                      className="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-4 flex flex-col justify-between hover:shadow-md transition-all duration-200 group"
+                    >
+                      <div className="space-y-3">
+                        <div className="flex justify-between items-start">
+                          <span className="text-[9px] font-mono font-extrabold text-red-700 bg-red-50 border border-red-200/60 px-2 py-0.5 rounded">
+                            {item.minutesNumber || "NR-2026-001"}
+                          </span>
+                          <span className="text-[9px] font-mono text-slate-400">
+                            {new Date(item.createdAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
+                          </span>
+                        </div>
 
-                    <div>
-                      <h3 className="text-xs font-black text-slate-800 line-clamp-2 uppercase group-hover:text-red-600 transition-colors">
-                        {item.title}
-                      </h3>
-                      <div className="flex items-center gap-1.5 text-[10px] text-slate-400 mt-1.5">
-                        <User className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                        <span className="truncate">Pimpinan: <strong>{item.leader || "Ketua Panitia"}</strong></span>
+                        <div>
+                          <h3 className="text-xs font-black text-slate-800 line-clamp-2 uppercase group-hover:text-red-600 transition-colors">
+                            {item.title}
+                          </h3>
+                          <div className="flex items-center gap-1.5 text-[10px] text-slate-500 mt-1.5">
+                            <User className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                            <span className="truncate">Pimpinan: <strong>{item.leader || "Ketua Panitia"}</strong></span>
+                          </div>
+                          <div className="flex items-center gap-1.5 text-[10px] text-slate-500 mt-1">
+                            <Calendar className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                            <span className="truncate">{item.date} • {item.time}</span>
+                          </div>
+                          <div className="flex items-center gap-1.5 text-[10px] text-slate-500 mt-1">
+                            <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                            <span className="truncate">{item.location}</span>
+                          </div>
+                        </div>
+
+                        {/* Linked Financial Badges */}
+                        {(linkedBC.length > 0 || linkedBR.length > 0) && (
+                          <div className="bg-amber-50/60 border border-amber-200/60 rounded-xl p-2 space-y-1">
+                            <span className="text-[9px] font-black text-amber-800 uppercase tracking-wider flex items-center gap-1">
+                              <Link2 className="w-3 h-3 text-amber-600" />
+                              Keputusan Anggaran Terkait:
+                            </span>
+                            <div className="flex flex-wrap gap-1">
+                              {linkedBC.length > 0 && (
+                                <span className="text-[9px] font-bold bg-amber-100 text-amber-900 px-1.5 py-0.5 rounded flex items-center gap-1">
+                                  <FileDiff className="w-2.5 h-2.5 text-amber-700" />
+                                  {linkedBC.length} Perubahan Pagu
+                                </span>
+                              )}
+                              {linkedBR.length > 0 && (
+                                <span className="text-[9px] font-bold bg-purple-100 text-purple-900 px-1.5 py-0.5 rounded flex items-center gap-1">
+                                  <ArrowRightLeft className="w-2.5 h-2.5 text-purple-700" />
+                                  {linkedBR.length} Realokasi Antar Pos
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        )}
+
+                        <div className="border-t border-slate-100 pt-2.5">
+                          <h4 className="text-[10px] font-extrabold text-slate-600 uppercase tracking-wider mb-1">Agenda Utama:</h4>
+                          <p className="text-[11px] text-slate-500 line-clamp-2 leading-relaxed whitespace-pre-line font-medium bg-slate-50 p-2 rounded-lg border border-slate-100">
+                            {item.agenda}
+                          </p>
+                        </div>
+
+                        {item.actionItems && item.actionItems.length > 0 && (
+                          <div className="flex items-center gap-1 text-[10px] text-slate-500">
+                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                            <span>Memiliki <strong>{item.actionItems.length} rencana tindak lanjut (Action Items)</strong></span>
+                          </div>
+                        )}
                       </div>
-                      <div className="flex items-center gap-1.5 text-[10px] text-slate-400 mt-1">
-                        <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                        <span className="truncate">{item.location}</span>
+
+                      <div className="flex gap-2 border-t border-slate-100 pt-3 mt-4">
+                        <button
+                          onClick={() => {
+                            setSelectedNotulensi(item);
+                            setViewMode("view");
+                          }}
+                          className="flex-1 flex items-center justify-center gap-1.5 bg-slate-50 hover:bg-slate-100 text-slate-700 font-extrabold text-[10px] py-2 rounded-lg border border-slate-200 uppercase tracking-wide cursor-pointer"
+                        >
+                          Buka Risalah
+                          <ChevronRight className="w-3.5 h-3.5 text-slate-500" />
+                        </button>
+                        <button
+                          onClick={() => exportPDFFileFor(item)}
+                          disabled={isExportingPDF}
+                          className="p-2 hover:bg-red-50 text-[#e61d1d] hover:text-red-700 rounded-lg border border-transparent hover:border-red-200 transition-all cursor-pointer disabled:opacity-50"
+                          title="Unduh PDF Resmi"
+                        >
+                          <Printer className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          onClick={() => exportDOCFileFor(item)}
+                          disabled={isExportingDOC}
+                          className="p-2 hover:bg-blue-50 text-blue-600 hover:text-blue-700 rounded-lg border border-transparent hover:border-blue-200 transition-all cursor-pointer disabled:opacity-50"
+                          title="Unduh DOC Resmi"
+                        >
+                          <FileText className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          onClick={() => downloadTxt(item)}
+                          className="p-2 hover:bg-slate-50 text-slate-500 hover:text-slate-700 rounded-lg border border-transparent hover:border-slate-200 transition-all cursor-pointer"
+                          title="Unduh Berkas Teks (.txt)"
+                        >
+                          <Download className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          onClick={() => handleEditInit(item)}
+                          className="p-2 hover:bg-amber-50 text-amber-600 hover:text-amber-700 rounded-lg border border-transparent hover:border-amber-200 transition-all cursor-pointer"
+                          title="Edit Notulensi"
+                        >
+                          <Edit2 className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          onClick={() => handleDelete(item)}
+                          className="p-2 hover:bg-red-50 text-red-600 hover:text-red-700 rounded-lg border border-transparent hover:border-red-200 transition-all cursor-pointer"
+                          title="Hapus"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
                       </div>
                     </div>
-
-                    <div className="border-t border-slate-100 pt-2.5">
-                      <h4 className="text-[10px] font-extrabold text-slate-600 uppercase tracking-wider mb-1">Agenda Utama:</h4>
-                      <p className="text-[11px] text-slate-500 line-clamp-3 leading-relaxed whitespace-pre-line font-medium bg-slate-50 p-2 rounded-lg border border-slate-100">
-                        {item.agenda}
-                      </p>
-                    </div>
-
-                    {item.actionItems && item.actionItems.length > 0 && (
-                      <div className="flex items-center gap-1 text-[10px] text-slate-400">
-                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-                        <span>Memiliki <strong>{item.actionItems.length} rencana kerja lanjutan</strong></span>
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="flex gap-2 border-t border-slate-100 pt-3 mt-4">
-                    <button
-                      onClick={() => {
-                        setSelectedNotulensi(item);
-                        setViewMode("view");
-                      }}
-                      className="flex-1 flex items-center justify-center gap-1.5 bg-slate-50 hover:bg-slate-100 text-slate-700 font-extrabold text-[10px] py-2 rounded-lg border border-slate-200 uppercase tracking-wide cursor-pointer"
-                    >
-                      Buka Dokumen
-                      <ChevronRight className="w-3.5 h-3.5 text-slate-500" />
-                    </button>
-                    <button
-                      onClick={() => exportPDFFileFor(item)}
-                      disabled={isExportingPDF}
-                      className="p-2 hover:bg-red-50 text-[#e61d1d] hover:text-red-700 rounded-lg border border-transparent hover:border-red-200 transition-all cursor-pointer disabled:opacity-50"
-                      title="Unduh PDF Resmi"
-                    >
-                      <Printer className="w-3.5 h-3.5" />
-                    </button>
-                    <button
-                      onClick={() => exportDOCFileFor(item)}
-                      disabled={isExportingDOC}
-                      className="p-2 hover:bg-blue-50 text-blue-600 hover:text-blue-700 rounded-lg border border-transparent hover:border-blue-200 transition-all cursor-pointer disabled:opacity-50"
-                      title="Unduh DOC Resmi"
-                    >
-                      <FileText className="w-3.5 h-3.5" />
-                    </button>
-                    <button
-                      onClick={() => downloadTxt(item)}
-                      className="p-2 hover:bg-slate-50 text-slate-500 hover:text-slate-700 rounded-lg border border-transparent hover:border-slate-200 transition-all cursor-pointer"
-                      title="Unduh Berkas Teks (.txt)"
-                    >
-                      <Download className="w-3.5 h-3.5" />
-                    </button>
-                    <button
-                      onClick={() => handleEditInit(item)}
-                      className="p-2 hover:bg-amber-50 text-amber-600 hover:text-amber-700 rounded-lg border border-transparent hover:border-amber-200 transition-all cursor-pointer"
-                      title="Edit Notulensi"
-                    >
-                      <Edit2 className="w-3.5 h-3.5" />
-                    </button>
-                    <button
-                      onClick={() => handleDelete(item)}
-                      className="p-2 hover:bg-red-50 text-red-600 hover:text-red-700 rounded-lg border border-transparent hover:border-red-200 transition-all cursor-pointer"
-                      title="Hapus"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
-                </div>
-              ))}
+                  );
+                })}
             </div>
           )}
         </div>
@@ -900,11 +1019,23 @@ Kepanitiaan HUT RI Ke-81 RW 04 Ngabean
           {/* Main Input Form */}
           <div className="lg:col-span-7 space-y-5 bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm">
             
-            <div className="flex items-center gap-2 border-b border-slate-100 pb-2.5">
-              <FileSpreadsheet className="w-4 h-4 text-red-600" />
-              <h2 className="text-xs font-extrabold text-slate-800 uppercase tracking-wide">
-                {formId ? "Modifikasi Dokumen Notulen" : "Form Input Berita Acara Rapat"}
-              </h2>
+            <div className="flex items-center justify-between border-b border-slate-100 pb-2.5">
+              <div className="flex items-center gap-2">
+                <FileSpreadsheet className="w-4 h-4 text-red-600" />
+                <h2 className="text-xs font-extrabold text-slate-800 uppercase tracking-wide">
+                  {formId ? "Modifikasi Berita Acara Notulen" : "Form Input Berita Acara Rapat"}
+                </h2>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] font-bold text-slate-400">Nomor Risalah:</span>
+                <input
+                  type="text"
+                  value={minutesNumber}
+                  onChange={(e) => setMinutesNumber(e.target.value)}
+                  placeholder="NR-2026-001"
+                  className="text-xs font-mono font-bold text-red-700 bg-red-50 border border-red-200 rounded px-2 py-0.5 w-28 text-center"
+                />
+              </div>
             </div>
 
             {/* Identitas Section */}
@@ -918,7 +1049,7 @@ Kepanitiaan HUT RI Ke-81 RW 04 Ngabean
                     type="text"
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
-                    placeholder="Contoh: Rapat Pleno I Panitia HUT RI"
+                    placeholder="Contoh: Rapat Koordinasi Pleno I Panitia"
                     className="w-full text-xs border border-slate-200 focus:border-red-500 focus:outline-none rounded-lg px-3 py-2 bg-slate-50 font-semibold text-slate-700"
                   />
                 </div>
@@ -934,8 +1065,8 @@ Kepanitiaan HUT RI Ke-81 RW 04 Ngabean
                       <option key={p.id} value={`${p.name} (${p.role})`}>{p.name} - {p.role}</option>
                     ))}
                     <option value="Ketua Panitia RW 04">Ketua Panitia RW 04</option>
-                    <option value="Sekretaris Panitia RW 04">Sekretaris Panitia</option>
-                    <option value="Ketua RW 04">Ketua RW 04</option>
+                    <option value="Sekretaris Panitia RW 04">Sekretaris Panitia RW 04</option>
+                    <option value="Ketua RW 04 Ngabean">Ketua RW 04 Ngabean</option>
                   </select>
                 </div>
               </div>
@@ -947,26 +1078,27 @@ Kepanitiaan HUT RI Ke-81 RW 04 Ngabean
                     type="text"
                     value={date}
                     onChange={(e) => setDate(e.target.value)}
-                    placeholder="Hari, Tanggal Bulan Tahun"
+                    placeholder="Senin, 6 Juli 2026"
                     className="w-full text-xs border border-slate-200 focus:border-red-500 focus:outline-none rounded-lg px-3 py-2 bg-slate-50 font-semibold text-slate-700"
                   />
                 </div>
                 <div>
-                  <label className="block text-[10px] font-extrabold text-slate-500 uppercase mb-1">Waktu</label>
+                  <label className="block text-[10px] font-extrabold text-slate-500 uppercase mb-1">Waktu Pelaksanaan</label>
                   <input
                     type="text"
                     value={time}
                     onChange={(e) => setTime(e.target.value)}
-                    placeholder="Contoh: 19:30 - Selesai"
+                    placeholder="19:30 - 22:00 WIB"
                     className="w-full text-xs border border-slate-200 focus:border-red-500 focus:outline-none rounded-lg px-3 py-2 bg-slate-50 font-semibold text-slate-700"
                   />
                 </div>
                 <div>
-                  <label className="block text-[10px] font-extrabold text-slate-500 uppercase mb-1">Tempat/Lokasi</label>
+                  <label className="block text-[10px] font-extrabold text-slate-500 uppercase mb-1">Tempat / Lokasi</label>
                   <input
                     type="text"
                     value={location}
                     onChange={(e) => setLocation(e.target.value)}
+                    placeholder="Balai Warga RW 04 Ngabean"
                     className="w-full text-xs border border-slate-200 focus:border-red-500 focus:outline-none rounded-lg px-3 py-2 bg-slate-50 font-semibold text-slate-700"
                   />
                 </div>
@@ -974,7 +1106,7 @@ Kepanitiaan HUT RI Ke-81 RW 04 Ngabean
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5">
                 <div>
-                  <label className="block text-[10px] font-extrabold text-slate-500 uppercase mb-1">Jumlah Peserta Hadir</label>
+                  <label className="block text-[10px] font-extrabold text-slate-500 uppercase mb-1">Jumlah Hadir (Orang)</label>
                   <input
                     type="number"
                     value={attendeesCount}
@@ -988,7 +1120,7 @@ Kepanitiaan HUT RI Ke-81 RW 04 Ngabean
                     type="text"
                     value={attendeesList}
                     onChange={(e) => setAttendeesList(e.target.value)}
-                    placeholder="Humas, Acara, Lomba, Perlengkapan, perwakilan RT"
+                    placeholder="Humas, Acara, Lomba, Perlengkapan, perwakilan RT 01-05"
                     className="w-full text-xs border border-slate-200 focus:border-red-500 focus:outline-none rounded-lg px-3 py-2 bg-slate-50 font-semibold text-slate-700"
                   />
                 </div>
@@ -1037,6 +1169,151 @@ Kepanitiaan HUT RI Ke-81 RW 04 Ngabean
               </div>
             </div>
 
+            {/* Cross-Link Section: Budget Changes & Reallocations */}
+            <div className="space-y-3.5 pt-3.5 border-t border-slate-100">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Link2 className="w-4 h-4 text-red-600" />
+                  <h3 className="text-[10px] font-black text-slate-800 uppercase tracking-wider">
+                    IV. Tautkan Keputusan Anggaran (Perubahan & Realokasi)
+                  </h3>
+                </div>
+                <span className="text-[9px] text-slate-400 font-bold">Opsional tapi Direkomendasikan</span>
+              </div>
+              <p className="text-[10px] text-slate-500 leading-snug">
+                Pilih usulan perubahan atau pergeseran anggaran yang telah dibahas & disetujui dalam rapat ini agar tercatat resmi di naskah risalah notulen.
+              </p>
+
+              {/* Perubahan Anggaran Multi-select */}
+              <div className="bg-slate-50 p-3 rounded-xl border border-slate-200 space-y-2">
+                <div className="flex justify-between items-center">
+                  <span className="text-[10px] font-extrabold text-slate-700 uppercase tracking-wide flex items-center gap-1.5">
+                    <FileDiff className="w-3.5 h-3.5 text-amber-600" />
+                    Pilih Perubahan Anggaran ({budgetChanges.length} Tersedia):
+                  </span>
+                  {selectedBudgetChanges.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => setSelectedBudgetChanges([])}
+                      className="text-[9px] text-red-600 hover:underline font-bold"
+                    >
+                      Batal Semua
+                    </button>
+                  )}
+                </div>
+
+                {budgetChanges.length === 0 ? (
+                  <p className="text-[10px] text-slate-400 italic">Belum ada dokumen Perubahan Anggaran yang dibuat.</p>
+                ) : (
+                  <div className="max-h-36 overflow-y-auto space-y-1.5 pr-1">
+                    {budgetChanges.map((bc) => {
+                      const isSelected = selectedBudgetChanges.includes(bc.id);
+                      return (
+                        <label
+                          key={bc.id}
+                          className={`flex items-center justify-between p-2 rounded-lg border text-[11px] cursor-pointer transition-all ${
+                            isSelected 
+                              ? "bg-amber-50 border-amber-300 text-amber-900 font-bold shadow-2xs" 
+                              : "bg-white border-slate-200 text-slate-600 hover:bg-slate-100/60"
+                          }`}
+                        >
+                          <div className="flex items-center gap-2">
+                            <input
+                              type="checkbox"
+                              checked={isSelected}
+                              onChange={(e) => {
+                                if (e.target.checked) {
+                                  setSelectedBudgetChanges([...selectedBudgetChanges, bc.id]);
+                                } else {
+                                  setSelectedBudgetChanges(selectedBudgetChanges.filter(id => id !== bc.id));
+                                }
+                              }}
+                              className="rounded text-red-600 focus:ring-red-500"
+                            />
+                            <div>
+                              <span className="font-mono text-[10px] text-slate-500 mr-1.5">{bc.changeNumber}</span>
+                              <span>{bc.activityName}</span>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className={`text-[10px] font-black ${bc.changeType === 'DITAMBAHKAN' ? 'text-emerald-600' : 'text-rose-600'}`}>
+                              {bc.changeType === 'DITAMBAHKAN' ? '+' : bc.changeType === 'DITIADAKAN' ? '-' : ''} Rp {(bc.changeAmount || bc.revisedAmount || 0).toLocaleString('id-ID')}
+                            </span>
+                            <span className="text-[9px] px-1.5 py-0.5 rounded bg-slate-200 text-slate-700 uppercase font-extrabold">{bc.status}</span>
+                          </div>
+                        </label>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+
+              {/* Realokasi Anggaran Multi-select */}
+              <div className="bg-slate-50 p-3 rounded-xl border border-slate-200 space-y-2">
+                <div className="flex justify-between items-center">
+                  <span className="text-[10px] font-extrabold text-slate-700 uppercase tracking-wide flex items-center gap-1.5">
+                    <ArrowRightLeft className="w-3.5 h-3.5 text-purple-600" />
+                    Pilih Realokasi / Pergeseran Anggaran ({budgetReallocations.length} Tersedia):
+                  </span>
+                  {selectedReallocations.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => setSelectedReallocations([])}
+                      className="text-[9px] text-red-600 hover:underline font-bold"
+                    >
+                      Batal Semua
+                    </button>
+                  )}
+                </div>
+
+                {budgetReallocations.length === 0 ? (
+                  <p className="text-[10px] text-slate-400 italic">Belum ada dokumen Realokasi Anggaran yang dibuat.</p>
+                ) : (
+                  <div className="max-h-36 overflow-y-auto space-y-1.5 pr-1">
+                    {budgetReallocations.map((br) => {
+                      const isSelected = selectedReallocations.includes(br.id);
+                      return (
+                        <label
+                          key={br.id}
+                          className={`flex items-center justify-between p-2 rounded-lg border text-[11px] cursor-pointer transition-all ${
+                            isSelected 
+                              ? "bg-purple-50 border-purple-300 text-purple-900 font-bold shadow-2xs" 
+                              : "bg-white border-slate-200 text-slate-600 hover:bg-slate-100/60"
+                          }`}
+                        >
+                          <div className="flex items-center gap-2">
+                            <input
+                              type="checkbox"
+                              checked={isSelected}
+                              onChange={(e) => {
+                                if (e.target.checked) {
+                                  setSelectedReallocations([...selectedReallocations, br.id]);
+                                } else {
+                                  setSelectedReallocations(selectedReallocations.filter(id => id !== br.id));
+                                }
+                              }}
+                              className="rounded text-purple-600 focus:ring-purple-500"
+                            />
+                            <div>
+                              <span className="font-mono text-[10px] text-slate-500 mr-1.5">{br.reallocationNumber}</span>
+                              <span>{br.sourceActivityName} ➔ {br.targetActivityName}</span>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className="text-[10px] font-black text-purple-700">
+                              Rp {br.amount.toLocaleString('id-ID')}
+                            </span>
+                            <span className="text-[9px] px-1.5 py-0.5 rounded bg-slate-200 text-slate-700 uppercase font-extrabold">{br.status}</span>
+                          </div>
+                        </label>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+
+            </div>
+
           </div>
 
           {/* Side Panel: Action Plan & Generation */}
@@ -1048,7 +1325,7 @@ Kepanitiaan HUT RI Ke-81 RW 04 Ngabean
               <div className="flex items-center gap-2 border-b border-slate-100 pb-2.5">
                 <TrendingUp className="w-4 h-4 text-emerald-600" />
                 <h3 className="text-xs font-extrabold text-slate-800 uppercase tracking-wide">
-                  IV. Action Plan / Tindak Lanjut
+                  V. Action Plan / Tindak Lanjut
                 </h3>
               </div>
 
@@ -1074,6 +1351,7 @@ Kepanitiaan HUT RI Ke-81 RW 04 Ngabean
                     ))}
                     <option value="Kepanitiaan">Kepanitiaan</option>
                     <option value="Ketua RT">Ketua RT</option>
+                    <option value="Koordinator RW">Koordinator RW</option>
                   </select>
                   <input
                     type="text"
@@ -1098,23 +1376,23 @@ Kepanitiaan HUT RI Ke-81 RW 04 Ngabean
                 <h4 className="text-[9px] font-extrabold text-slate-500 uppercase tracking-wider">Daftar Tindak Lanjut Aktif ({actionItems.length}):</h4>
                 {actionItems.length === 0 ? (
                   <p className="text-[10px] text-slate-400 italic text-center py-2 bg-slate-50/50 rounded border border-dashed border-slate-100">
-                    Belum ada rencana tindak lanjut spesifik yang ditambahkan.
+                    Belum ada rencana tindak lanjut yang dicatat.
                   </p>
                 ) : (
-                  <div className="max-h-56 overflow-y-auto space-y-1.5 pr-1">
+                  <div className="space-y-1.5 max-h-48 overflow-y-auto">
                     {actionItems.map((item, idx) => (
-                      <div key={idx} className="flex justify-between items-center bg-emerald-50/40 p-2.5 rounded border border-emerald-100/40 text-[10px] leading-relaxed">
-                        <div className="flex-1 min-w-0 pr-2">
-                          <p className="font-bold text-slate-800 line-clamp-2">{item.task}</p>
-                          <div className="flex items-center gap-3 mt-1 text-[9px] text-slate-400">
-                            <span>Seksi: <strong className="text-emerald-700 font-extrabold">{item.pic}</strong></span>
-                            <span>Batas: <strong className="text-slate-600">{item.deadline}</strong></span>
+                      <div key={idx} className="flex items-center justify-between p-2 rounded-lg bg-slate-50 border border-slate-200 text-xs">
+                        <div className="space-y-0.5 flex-1 pr-2">
+                          <p className="font-semibold text-slate-800 line-clamp-1">{item.task}</p>
+                          <div className="flex gap-2 text-[10px] text-slate-400">
+                            <span className="font-bold text-red-600">PIC: {item.pic}</span>
+                            <span>• Target: {item.deadline}</span>
                           </div>
                         </div>
                         <button
+                          type="button"
                           onClick={() => removeActionItem(idx)}
-                          className="p-1 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded"
-                          title="Hapus"
+                          className="text-slate-400 hover:text-red-600 p-1 cursor-pointer"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
                         </button>
@@ -1126,27 +1404,27 @@ Kepanitiaan HUT RI Ke-81 RW 04 Ngabean
 
             </div>
 
-            {/* Document compilation and save action buttons */}
-            <div className="bg-gradient-to-br from-slate-900 to-slate-950 p-5 rounded-2xl border border-slate-800 shadow-xl text-white space-y-4">
+            {/* AI Assistant & Action Buttons */}
+            <div className="bg-slate-950 p-5 rounded-2xl border border-slate-800 shadow-md text-white space-y-4">
               
               <div>
-                <span className="px-2 py-0.5 bg-red-700/50 border border-red-500/30 text-red-400 text-[8px] font-bold rounded-md uppercase tracking-wider">
-                  AI FORMULATOR ENGINE
-                </span>
-                <h3 className="text-xs font-black uppercase tracking-wide mt-1.5">
-                  Rumuskan & Terbitkan Notulensi
-                </h3>
+                <div className="flex items-center gap-2">
+                  <Sparkles className="w-4 h-4 text-amber-400 animate-pulse" />
+                  <h3 className="text-xs font-black uppercase tracking-wider text-amber-400">
+                    Formulasi Cerdas Gemini AI
+                  </h3>
+                </div>
                 <p className="text-[10px] text-slate-400 mt-1 leading-relaxed">
-                  Kami merekomendasikan integrasi Gemini AI untuk mengolah catatan mentah Anda di samping menjadi berita acara rapat formal dengan tata bahasa yang prima.
+                  Kecerdasan Buatan akan merapikan draf mentah musyawarah menjadi naskah notulensi formal standar sekretariat dengan tabel keputusan anggaran dan Action Plan.
                 </p>
               </div>
 
-              {/* Console terminal logs block */}
+              {/* Console Step Progress Terminal */}
               {showConsole && (
-                <div className="bg-slate-900 border border-slate-800 rounded-xl p-3 font-mono text-[9px] text-emerald-400 space-y-1.5">
-                  <div className="flex items-center gap-1.5 border-b border-slate-800 pb-1.5">
-                    <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>
-                    <span className="text-slate-400 font-bold uppercase tracking-wider text-[8px]">SEMS AI Formulator Console</span>
+                <div className="bg-black/80 rounded-xl p-3 border border-slate-800 font-mono text-[10px] text-slate-300 space-y-2">
+                  <div className="flex items-center justify-between border-b border-slate-800 pb-1 text-slate-500 font-bold">
+                    <span>TERMINAL FORMULASI SEKRETARIAT</span>
+                    <span>AI LIVE LOG</span>
                   </div>
                   <div className="space-y-1 max-h-40 overflow-y-auto">
                     {consoleSteps.map((step, idx) => (
@@ -1197,7 +1475,7 @@ Kepanitiaan HUT RI Ke-81 RW 04 Ngabean
               <div className="flex items-start gap-2 bg-amber-500/10 p-2.5 rounded-xl border border-amber-500/20 text-[10px] text-amber-300">
                 <Info className="w-3.5 h-3.5 text-amber-400 shrink-0 mt-0.5" />
                 <span className="leading-snug">
-                  <strong>Peringatan Offline:</strong> Apabila kunci API Gemini Anda belum di-set di pengaturan, tombol 'Format Standar Lokal' akan menyusun dokumen dengan instan menggunakan database lokal secara aman.
+                  <strong>Peringatan Offline:</strong> Apabila kunci API Gemini Anda belum di-set di pengaturan, tombol 'Format Standar Lokal' akan menyusun dokumen secara instan menggunakan database lokal yang aman.
                 </span>
               </div>
 
@@ -1263,16 +1541,17 @@ Kepanitiaan HUT RI Ke-81 RW 04 Ngabean
 
               {/* Bottom metadata tag */}
               <div className="bg-slate-50 p-3 text-[9px] text-slate-400 border-t border-slate-100 font-bold tracking-wider uppercase text-center font-mono">
-                *Notulensi Resmi Konsolidasi SEMS digital • ID: {selectedNotulensi.id} • Dibuat: {new Date(selectedNotulensi.createdAt).toLocaleString('id-ID')}
+                *Dokumen Notulensi Digital SEMS • No: {selectedNotulensi.minutesNumber || selectedNotulensi.id} • Dibuat: {new Date(selectedNotulensi.createdAt).toLocaleString('id-ID')}
               </div>
 
             </div>
 
           </div>
 
-          {/* Export Action Controls */}
+          {/* Export Action Controls & Cross Link Sidebar */}
           <div className="lg:col-span-4 space-y-4">
             
+            {/* Action Card */}
             <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm space-y-4">
               
               <div className="border-b border-slate-100 pb-2.5">
@@ -1280,7 +1559,7 @@ Kepanitiaan HUT RI Ke-81 RW 04 Ngabean
                   Menu Ekspor & Aksi
                 </h3>
                 <p className="text-[10px] text-slate-500 mt-0.5">
-                  Unduh hasil rumusan berita acara ini untuk dicetak, dibagikan di grup WhatsApp warga, atau diarsip.
+                  Unduh hasil rumusan berita acara ini untuk dicetak, dibagikan di WhatsApp warga, atau diarsip.
                 </p>
               </div>
 
@@ -1343,15 +1622,84 @@ Kepanitiaan HUT RI Ke-81 RW 04 Ngabean
 
             </div>
 
-            <div className="bg-[#fdeeee] border border-red-200 p-4 rounded-2xl space-y-2">
-              <div className="flex items-center gap-2 text-[#e61d1d]">
-                <AlertTriangle className="w-4 h-4 shrink-0" />
-                <h4 className="text-[11px] font-extrabold uppercase tracking-wide">Tips Cetak Rapi:</h4>
+            {/* Linked Decisions & Quick Jump */}
+            <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm space-y-3">
+              <div className="flex items-center gap-2 border-b border-slate-100 pb-2">
+                <Link2 className="w-4 h-4 text-red-600" />
+                <h4 className="text-xs font-extrabold text-slate-800 uppercase tracking-wide">
+                  Tindakan Lanjutan & Tata Kelola
+                </h4>
               </div>
-              <p className="text-[10px] text-slate-600 leading-relaxed font-medium">
-                Gunakan menu <strong>Unduh Dokumen PDF Resmi</strong> untuk mendapatkan lembar cetakan dengan kop surat dan tata letak print-friendly beresolusi tinggi tanpa terpotong batas browser.
+
+              <p className="text-[10px] text-slate-500">
+                Lakukan pengajuan anggaran resmi atau buka modul tata kelola anggaran berdasarkan hasil keputusan musyawarah rapat ini:
               </p>
+
+              <div className="space-y-2">
+                {onNavigateView && (
+                  <>
+                    <button
+                      onClick={() => onNavigateView("perubahan-anggaran")}
+                      className="w-full flex items-center justify-between p-2.5 rounded-xl border border-amber-200 bg-amber-50/50 hover:bg-amber-100/70 text-amber-900 font-bold text-xs transition-colors cursor-pointer"
+                    >
+                      <div className="flex items-center gap-2">
+                        <FileDiff className="w-4 h-4 text-amber-600" />
+                        <span>Buka Perubahan Anggaran</span>
+                      </div>
+                      <ChevronRight className="w-3.5 h-3.5 text-amber-600" />
+                    </button>
+
+                    <button
+                      onClick={() => onNavigateView("realokasi-anggaran")}
+                      className="w-full flex items-center justify-between p-2.5 rounded-xl border border-purple-200 bg-purple-50/50 hover:bg-purple-100/70 text-purple-900 font-bold text-xs transition-colors cursor-pointer"
+                    >
+                      <div className="flex items-center gap-2">
+                        <ArrowRightLeft className="w-4 h-4 text-purple-600" />
+                        <span>Buka Realokasi Anggaran</span>
+                      </div>
+                      <ChevronRight className="w-3.5 h-3.5 text-purple-600" />
+                    </button>
+
+                    <button
+                      onClick={() => onNavigateView("rkba")}
+                      className="w-full flex items-center justify-between p-2.5 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-700 font-bold text-xs transition-colors cursor-pointer"
+                    >
+                      <div className="flex items-center gap-2">
+                        <FileSpreadsheet className="w-4 h-4 text-slate-500" />
+                        <span>Lihat Master RKBA Baseline</span>
+                      </div>
+                      <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
+                    </button>
+                  </>
+                )}
+              </div>
             </div>
+
+            {/* Audit History Log */}
+            {auditTrails.filter(a => a.entityId === selectedNotulensi.id || a.entityType === 'NOTULENSI').length > 0 && (
+              <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-sm space-y-2.5">
+                <div className="flex items-center gap-1.5 border-b border-slate-100 pb-2">
+                  <History className="w-3.5 h-3.5 text-slate-500" />
+                  <h4 className="text-[10px] font-extrabold text-slate-700 uppercase tracking-wider">
+                    Riwayat Jejak Audit Dokumen
+                  </h4>
+                </div>
+                <div className="space-y-1.5 max-h-36 overflow-y-auto text-[10px]">
+                  {auditTrails
+                    .filter(a => a.entityId === selectedNotulensi.id || a.entityType === 'NOTULENSI')
+                    .slice(0, 5)
+                    .map(trail => (
+                      <div key={trail.id} className="p-1.5 bg-slate-50 rounded border border-slate-100">
+                        <div className="flex justify-between items-center text-slate-400">
+                          <span className="font-bold text-slate-600">{trail.actor}</span>
+                          <span>{new Date(trail.timestamp).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}</span>
+                        </div>
+                        <p className="text-slate-600 mt-0.5">{trail.details}</p>
+                      </div>
+                    ))}
+                </div>
+              </div>
+            )}
 
           </div>
 

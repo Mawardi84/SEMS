@@ -10,12 +10,11 @@ import {
   Award,
   X,
   BookOpen,
-  FileText,
   FolderOpen,
-  Mail,
   Ticket,
-  IdCard,
-  Gift
+  FileDiff,
+  ArrowRightLeft,
+  FileText
 } from "lucide-react";
 
 interface SidebarProps {
@@ -37,28 +36,27 @@ export default function Sidebar({ currentView, onViewChange, onResetData, isRese
       ]
     },
     {
-      title: "Administrasi & Arsip",
+      title: "Administrasi & Risalah",
       items: [
         { id: "proposal", label: "Dokumen Proposal", icon: FileSpreadsheet },
-        { id: "undangan", label: "Surat Undangan", icon: Mail },
-        { id: "notulensi", label: "Notulensi Rapat", icon: FileText },
+        { id: "notulensi", label: "Notulensi & Risalah", icon: FileText },
         { id: "documents", label: "Arsip Dokumen", icon: FolderOpen },
       ]
     },
     {
-      title: "Keuangan & Progres",
+      title: "Tata Kelola Anggaran",
       items: [
-        { id: "rkba", label: "RKBA (Anggaran)", icon: FileSpreadsheet },
-        { id: "keuangan", label: "Arus Kas Keuangan", icon: Wallet },
+        { id: "rkba", label: "RAB Awal (Baseline)", icon: FileSpreadsheet },
+        { id: "perubahan-anggaran", label: "Perubahan Anggaran", icon: FileDiff },
+        { id: "realokasi-anggaran", label: "Realokasi Anggaran", icon: ArrowRightLeft },
+        { id: "keuangan", label: "Arus Kas & Realisasi", icon: Wallet },
         { id: "monitoring", label: "Monitoring & LPJ", icon: TrendingUp },
       ]
     },
     {
-      title: "Perayaan & Undian",
+      title: "Kupon & Atribut",
       items: [
         { id: "coupon", label: "Cetak Kupon Jalan Sehat", icon: Ticket },
-        { id: "idcard", label: "Cetak ID Card Panitia", icon: IdCard },
-        { id: "doorprize", label: "Undian Doorprize Digital", icon: Gift },
       ]
     },
     {
