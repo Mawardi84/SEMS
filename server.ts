@@ -56,55 +56,92 @@ const currentDirname = (() => {
 })();
 
 const DB_PATH = path.join(currentDirname, "db.json");
+const MD_BACKUP_PATH = path.join(currentDirname, "DATA_MASTER_SEMS_RW04.md");
+const JSON_BACKUP_PATH = path.join(currentDirname, "backup_database_rw04.json");
 
-// Local DB Helper
+// Helper to extract JSON data from Markdown code block
+function extractDataFromMarkdownFile(filePath: string): SEMSData | null {
+  try {
+    if (!fs.existsSync(filePath)) return null;
+    const content = fs.readFileSync(filePath, "utf8");
+    const jsonMatch = content.match(/```json\s*([\s\S]*?)\s*```/);
+    if (jsonMatch && jsonMatch[1]) {
+      const parsed = JSON.parse(jsonMatch[1]);
+      if (parsed && parsed.settings) {
+        return parsed as SEMSData;
+      }
+    }
+  } catch (err) {
+    console.error(`Error parsing markdown backup from ${filePath}:`, err);
+  }
+  return null;
+}
+
+// Local DB Helper with Auto-Restore from MD / Backup JSON
 function readDB(): SEMSData {
   try {
-    if (!fs.existsSync(DB_PATH)) {
-      fs.writeFileSync(DB_PATH, JSON.stringify(initialData, null, 2), "utf8");
-      return initialData;
-    }
-    const raw = fs.readFileSync(DB_PATH, "utf8");
-    const parsed = JSON.parse(raw);
-    if (!parsed.notulensi) {
-      parsed.notulensi = [];
-    }
-    if (!parsed.documents) {
-      parsed.documents = [];
-    }
-    if (!parsed.undangan) {
-      parsed.undangan = [];
-    }
-    if (!parsed.budgetChanges) {
-      parsed.budgetChanges = [];
-    }
-    if (!parsed.budgetReallocations) {
-      parsed.budgetReallocations = [];
-    }
-    if (!parsed.auditTrails) {
-      parsed.auditTrails = [];
-    }
-    if (!parsed.lpj) {
-      parsed.lpj = initialData.lpj;
+    if (fs.existsSync(DB_PATH)) {
+      const raw = fs.readFileSync(DB_PATH, "utf8");
+      if (raw && raw.trim().length > 0) {
+        const parsed = JSON.parse(raw);
+        if (parsed && parsed.settings) {
+          if (!parsed.notulensi) parsed.notulensi = [];
+          if (!parsed.documents) parsed.documents = [];
+          if (!parsed.undangan) parsed.undangan = [];
+          if (!parsed.budgetChanges) parsed.budgetChanges = [];
+          if (!parsed.budgetReallocations) parsed.budgetReallocations = [];
+          if (!parsed.auditTrails) parsed.auditTrails = [];
+          if (!parsed.lpj) parsed.lpj = initialData.lpj;
+
+          // Ensure backwards-compatible activityCode and baseline locking for existing RKBA items
+          if (Array.isArray(parsed.rkba)) {
+            parsed.rkba = parsed.rkba.map((item: any, idx: number) => {
+              const activityCode = item.activityCode || `ACT-${String(idx + 1).padStart(3, '0')}`;
+              const activityStatus = item.activityStatus || (item.status === 'Disetujui' || item.status === 'Belanja' ? 'BERJALAN' : 'RENCANA');
+              return {
+                ...item,
+                activityCode,
+                activityStatus,
+                isLockedBaseline: item.isLockedBaseline !== undefined ? item.isLockedBaseline : (item.status === 'Disetujui' || item.status === 'Belanja')
+              };
+            });
+          }
+
+          return parsed;
+        }
+      }
     }
 
-    // Ensure backwards-compatible activityCode and baseline locking for existing RKBA items
-    if (Array.isArray(parsed.rkba)) {
-      parsed.rkba = parsed.rkba.map((item: any, idx: number) => {
-        const activityCode = item.activityCode || `ACT-${String(idx + 1).padStart(3, '0')}`;
-        const activityStatus = item.activityStatus || (item.status === 'Disetujui' || item.status === 'Belanja' ? 'BERJALAN' : 'RENCANA');
-        return {
-          ...item,
-          activityCode,
-          activityStatus,
-          isLockedBaseline: item.isLockedBaseline !== undefined ? item.isLockedBaseline : (item.status === 'Disetujui' || item.status === 'Belanja')
-        };
-      });
+    // Auto-Recovery Strategy: If db.json is missing or corrupted:
+    console.log("Database db.json not found or empty. Initiating auto-recovery from Master Markdown/Backup...");
+    
+    // 1. Try reading from DATA_MASTER_SEMS_RW04.md
+    const fromMd = extractDataFromMarkdownFile(MD_BACKUP_PATH) || 
+                   extractDataFromMarkdownFile(path.join(process.cwd(), "DATA_MASTER_SEMS_RW04.md")) ||
+                   extractDataFromMarkdownFile(path.join(currentDirname, "src/data/DATA_MASTER_SEMS_RW04.md"));
+    if (fromMd) {
+      console.log("Successfully restored database from DATA_MASTER_SEMS_RW04.md!");
+      writeDB(fromMd);
+      return fromMd;
     }
 
-    return parsed;
+    // 2. Try reading from backup_database_rw04.json
+    if (fs.existsSync(JSON_BACKUP_PATH)) {
+      const backupRaw = fs.readFileSync(JSON_BACKUP_PATH, "utf8");
+      const backupParsed = JSON.parse(backupRaw);
+      if (backupParsed && backupParsed.settings) {
+        console.log("Successfully restored database from backup_database_rw04.json!");
+        writeDB(backupParsed);
+        return backupParsed;
+      }
+    }
+
+    // 3. Fallback to initialData
+    console.log("Restoring database from initialData default dataset...");
+    writeDB(initialData);
+    return initialData;
   } catch (error) {
-    console.error("Error reading db.json, returning initialData:", error);
+    console.error("Error reading db.json, falling back to master data:", error);
     return initialData;
   }
 }
@@ -180,6 +217,44 @@ const app = express();
   app.post("/api/sems/reset", (req, res) => {
     writeDB(initialData);
     res.json({ success: true, message: "Database berhasil direset ke kondisi awal." });
+  });
+
+  // API - Restore from Master Markdown file
+  app.post("/api/sems/restore-from-md", (req, res) => {
+    try {
+      const fromMd = extractDataFromMarkdownFile(MD_BACKUP_PATH) || 
+                     extractDataFromMarkdownFile(path.join(process.cwd(), "DATA_MASTER_SEMS_RW04.md")) ||
+                     extractDataFromMarkdownFile(path.join(currentDirname, "src/data/DATA_MASTER_SEMS_RW04.md"));
+      if (fromMd) {
+        writeDB(fromMd);
+        return res.json({ success: true, message: "Database berhasil dipulihkan dari file Master Markdown!", data: fromMd });
+      }
+      // Fallback
+      writeDB(initialData);
+      res.json({ success: true, message: "Database dipulihkan menggunakan data master bawaan.", data: initialData });
+    } catch (err: any) {
+      res.status(500).json({ success: false, error: "Gagal memulihkan dari Markdown: " + err.message });
+    }
+  });
+
+  // API - Download Master Markdown
+  app.get("/api/sems/download-backup-md", (req, res) => {
+    const filePath = fs.existsSync(MD_BACKUP_PATH) ? MD_BACKUP_PATH : path.join(process.cwd(), "DATA_MASTER_SEMS_RW04.md");
+    if (fs.existsSync(filePath)) {
+      res.setHeader('Content-Disposition', 'attachment; filename=DATA_MASTER_SEMS_RW04.md');
+      res.setHeader('Content-Type', 'text/markdown; charset=utf-8');
+      res.sendFile(filePath);
+    } else {
+      res.status(404).json({ success: false, error: "File Markdown Master tidak ditemukan." });
+    }
+  });
+
+  // API - Download JSON Backup
+  app.get("/api/sems/download-backup-json", (req, res) => {
+    const db = readDB();
+    res.setHeader('Content-Disposition', `attachment; filename=backup_database_rw04_${new Date().toISOString().slice(0, 10)}.json`);
+    res.setHeader('Content-Type', 'application/json; charset=utf-8');
+    res.send(JSON.stringify(db, null, 2));
   });
 
   // API - Update Settings
@@ -662,12 +737,12 @@ const app = express();
       logAudit(
         db,
         'LPJ',
-        db.lpj.id,
+        db.lpj?.id || 'LPJ-MASTER',
         'UPDATE',
         actor || 'Admin Panitia',
         `Menyimpan pembaruan dokumen LPJ Master. Alasan: ${reason || 'Pembaruan data laporan'}`,
         undefined,
-        db.lpj.status
+        db.lpj?.status
       );
 
       writeDB(db);
@@ -1130,6 +1205,23 @@ Berikan hasil analisis dalam format Markdown dengan bahasa yang profesional, teg
     res.json({ success: true, tasks: db.tasks });
   });
 
+  // API - Quick Toggle Task Status
+  app.post("/api/sems/tasks/toggle", (req, res) => {
+    const db = readDB();
+    const { id } = req.body as { id: string };
+    
+    db.tasks = db.tasks.map(t => {
+      if (t.id === id) {
+        const nextStatusMap = { 'Belum': 'Proses', 'Proses': 'Selesai', 'Selesai': 'Belum' } as const;
+        return { ...t, status: nextStatusMap[t.status] };
+      }
+      return t;
+    });
+    
+    writeDB(db);
+    res.json({ success: true, tasks: db.tasks });
+  });
+
   // API - AI-powered LPJ Generation using Gemini API
   app.post("/api/sems/generate-lpj-ai", async (req, res) => {
     try {
@@ -1222,7 +1314,7 @@ PANDUAN KHUSUS UNTUK TEMPLATE "${templateType}":
   ---
   Halaman 8: ### BAB III. PELAKSANAAN KEGIATAN (Uraian detail perlombaan, tirakatan, jalan sehat, dan persentase capaian)
   ---
-  Halaman 9: ### BAB IV. PERTANGGUNGJAWABAN KEUANGAN (Uraian posisi kas, pengelolaan dana talangan awal dari Pamsimas yang telah dikembalikan seiring terkumpulnya iuran RT, JANGAN buat tabel keuangan/realisasi, sistem otomatis menyisipkan tabel realisasi seksi, RT, dan neraca saldo di bawah)
+  Halaman 9: ### BAB IV. PERTANGGUNGJAWABAN KEUANGAN (Uraian posisi kas, penjelasan penerimaan Pamsimas total Rp 10.000.000 yang terdiri dari Sumbangan Pamsimas Rp 2.000.000 dan Dana Talangan 4 RT Rp 8.000.000 di mana panitia mengembalikan SPJ nota belanja riil Rp 2.000.000 per RT dan masing-masing pengurus RT yang mengganti/menyetorkan dana iuran langsung ke kas Pamsimas, JANGAN buat tabel keuangan/realisasi, sistem otomatis menyisipkan tabel realisasi seksi, RT, dan neraca saldo di bawah)
   ---
   Halaman 10: ### BAB V. EVALUASI (Analisis kendala lapangan, solusi taktis, dan rekomendasi kepanitiaan mendatang)
   ---

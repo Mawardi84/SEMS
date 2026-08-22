@@ -318,7 +318,7 @@ export default function GuideBookView() {
               <strong>Daftar Seksi Kepanitiaan (Seksi List):</strong> Tambah, kurangi, atau ubah seksi yang bertugas (contoh: <code>Acara, Perlengkapan, Konsumsi, Humas & Dokumentasi, Keamanan</code>).
             </li>
             <li>
-              <strong>Target Iuran per RT (Rp):</strong> Atur target setoran kas yang disepakati untuk setiap RT (contoh: <code>Rp1.500.000</code>). Indikator pencapaian target di dashboard akan dihitung berdasarkan angka ini.
+              <strong>Target Iuran per RT (Rp):</strong> Atur target setoran kas yang disepakati untuk setiap RT (contoh: <code>Rp2.000.000</code>). Indikator pencapaian target di dashboard akan dihitung berdasarkan angka ini.
             </li>
             <li>
               <strong>Pagu Anggaran Seksi (Pagu Limit):</strong> Alokasikan batas nominal maksimal pengeluaran untuk setiap seksi guna mencegah pemborosan kas utama.
@@ -345,48 +345,52 @@ export default function GuideBookView() {
             <div className="p-4 bg-red-50/50 border border-red-200 rounded-lg space-y-3.5">
               <h5 className="font-extrabold text-red-800 text-[11px] uppercase tracking-wide flex items-center gap-1.5">
                 <Sparkles className="w-4 h-4 text-red-600 animate-pulse" />
-                Q: Bagaimana Alur Pengembalian Dana Talangan Pamsimas?
+                Q: Bagaimana Rincian Dana Pamsimas Rp 10.000.000 (Talangan Rp 8 Juta & Sumbangan Rp 2 Juta)?
               </h5>
               <div className="space-y-3 text-[11px] text-slate-600 leading-relaxed">
                 <p>
-                  Mengingat saldo kas awal kepanitiaan adalah <strong>Rp 0</strong> saat pembentukan, panitia mengandalkan pinjaman lunak awal dari pihak <strong>Pamsimas RW 04 Ngabean</strong> sebagai jembatan pembiayaan mendesak (pembelian ATK, panjar panggung, DP perlengkapan). Berikut adalah alur pertanggungjawaban & pelunasan dana talangan secara tertib di sistem:
+                  Penerimaan kas awal sebesar <strong>Rp 10.000.000,00</strong> dari <strong>Pamsimas RW 04 Ngabean</strong> terbagi atas dua komponen:
                 </p>
-                
-                <div className="relative pl-4 border-l-2 border-red-500 space-y-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 my-1">
+                  <div className="p-2.5 bg-amber-50 border border-amber-200 rounded-lg">
+                    <span className="font-bold text-amber-900 block text-[11px]">1. Dana Talangan Operasional 4 RT (Rp 8.000.000)</span>
+                    <p className="text-amber-800 text-[10px] mt-0.5">Alokasi talangan @ Rp 2.000.000 untuk 4 RT (RT 01 s.d. RT 04). Panitia mengembalikan berkas SPJ nota belanja ke masing-masing RT, dan RT yang mengganti kas ke Pamsimas.</p>
+                  </div>
+                  <div className="p-2.5 bg-emerald-50 border border-emerald-200 rounded-lg">
+                    <span className="font-bold text-emerald-900 block text-[11px]">2. Sumbangan / Donasi Pamsimas (Rp 2.000.000)</span>
+                    <p className="text-emerald-800 text-[10px] mt-0.5">Merupakan murni sumbangan/donasi sukarela dari Pamsimas untuk mendukung kesuksesan HUT RI Ke-81 (tidak perlu dikembalikan).</p>
+                  </div>
+                </div>
+
+                <div className="relative pl-4 border-l-2 border-red-500 space-y-3 mt-3">
                   <div>
-                    <span className="font-bold text-slate-800 block">1. Pencatatan Pinjaman Masuk (Awal)</span>
+                    <span className="font-bold text-slate-800 block">1. Penerimaan Dana Kas Pamsimas (Total Rp 10.000.000)</span>
                     <p className="text-slate-500 text-[10.5px]">
-                      Saat dana diterima dari kas Pamsimas, bendahara menginput pemasukan kas dengan nominal pinjaman tersebut (misal Rp 1.500.000) menggunakan kategori <strong className="text-slate-700">"Dana Talangan / Pinjaman"</strong>. Ini merefleksikan posisi kewajiban hutang aktif panitia.
+                      Pamsimas mentransfer total <strong className="text-slate-700">Rp 10.000.000,00</strong> kepada panitia, mencakup <strong>Rp 8.000.000</strong> dana talangan 4 RT dan <strong>Rp 2.000.000</strong> sumbangan/donasi langsung Pamsimas.
                     </p>
                   </div>
                   <div>
-                    <span className="font-bold text-slate-800 block">2. Realisasi Pengeluaran Awal</span>
+                    <span className="font-bold text-slate-800 block">2. Realisasi Belanja & Pengumpulan Nota Bukti Riil</span>
                     <p className="text-slate-500 text-[10.5px]">
-                      Dana tersebut dibelanjakan untuk urusan persiapan awal. Seluruh transaksi dicatat rapi melalui RKBA atau langsung di menu Buku Kas Pengeluaran.
+                      Panitia membelanjakan dana untuk seluruh rangkaian kegiatan (lomba, jalan sehat, tirakatan, konsumsi, panggung, dll) dengan pencatatan bukti kuitansi belanja asli secara tertib.
                     </p>
                   </div>
                   <div>
-                    <span className="font-bold text-slate-800 block">3. Akumulasi Iuran Swadaya Warga (RT 01 - RT 04)</span>
+                    <span className="font-bold text-slate-800 block">3. Penyerahan Berkas SPJ Nota Belanja per RT (@ Rp 2.000.000)</span>
                     <p className="text-slate-500 text-[10.5px]">
-                      Iuran sukarela/wajib per RT mulai ditarik dan disetor oleh masing-masing Koordinator RT ke Bendahara. Begitu terkumpul, posisi kas utama panitia meningkat dan memiliki sisa saldo aman (net surplus).
+                      Untuk porsi talangan Rp 8.000.000, panitia <strong>hanya mengembalikan bundel berkas SPJ / nota bukti belanja riil</strong> senilai <strong className="text-slate-700">Rp 2.000.000 per RT</strong> kepada masing-masing pengurus RT (RT 01 s.d. RT 04).
                     </p>
                   </div>
                   <div>
-                    <span className="font-bold text-slate-800 block">4. Pembayaran Balik ke Pamsimas (Reimbursement)</span>
+                    <span className="font-bold text-slate-800 block">4. Penggantian / Pelunasan ke Pamsimas oleh Masing-Masing RT</span>
                     <p className="text-slate-500 text-[10.5px]">
-                      Bendahara menarik tunai dari saldo kas utama sebesar nominal pinjaman awal untuk diserahkan kembali secara resmi kepada pengelola Pamsimas.
+                      Masing-masing pengurus RT (RT 01 s.d. RT 04) yang mengumpulkan iuran warga sebesar <strong className="text-emerald-700 font-semibold">Rp 2.000.000 per RT</strong> selanjutnya <strong>langsung menyetorkan/mengganti dana tersebut ke kas Pamsimas</strong> sebagai pelunasan dana talangan awal, dengan bukti pendukung berupa berkas nota belanja dari panitia.
                     </p>
                   </div>
                   <div>
-                    <span className="font-bold text-slate-800 block">5. Pencatatan Pelunasan di Menu Keuangan SEMS</span>
+                    <span className="font-bold text-slate-800 block">5. Pertanggungjawaban di LPJ & Rekonsiliasi Kas</span>
                     <p className="text-slate-500 text-[10.5px]">
-                      Untuk menyeimbangkan saldo akhir, bendahara wajib mencatat satu baris transaksi <strong className="text-rose-600 font-semibold">Kas Keluar</strong> sebesar nominal talangan tersebut dengan kategori <strong className="text-slate-700">"Pengembalian Dana Talangan"</strong> dan keterangan <em className="text-slate-500">"Pelunasan dana talangan awal Pamsimas RW 04"</em>.
-                    </p>
-                  </div>
-                  <div>
-                    <span className="font-bold text-slate-800 block">6. Verifikasi Rekonsiliasi Otomatis pada LPJ</span>
-                    <p className="text-slate-500 text-[10.5px]">
-                      Sistem monitoring akan mendeteksi transaksi pengeluaran tersebut dan secara otomatis menetapkan status hutang talangan menjadi <strong className="text-emerald-600 uppercase font-extrabold text-[10px]">LUNAS (Rp 0)</strong> di BAB IV (Pertanggungjawaban Keuangan) Laporan Pertanggungjawaban (LPJ).
+                      Sumbangan Pamsimas Rp 2.000.000 dibukukan sebagai pemasukan donasi/sponsorship resmi, sedangkan kewajiban talangan Rp 8.000.000 dinyatakan <strong className="text-emerald-600 uppercase font-extrabold text-[10px]">TUNTAS & SELESAI</strong> melalui serah terima SPJ nota belanja kepada seluruh RT.
                     </p>
                   </div>
                 </div>

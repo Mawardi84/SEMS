@@ -19,25 +19,20 @@
     "targetIuranPerRT": 2000000,
     "paguAnggaranSeksi": {
       "Sekretaris": 1150000,
-      "Acara": 1500000,
+      "Acara": 3000000,
       "Seksi Lomba": 1500000,
       "Seksi Pentas Seni": 1500000,
-      "Perlengkapan": 2300000,
-      "Konsumsi": 2800000,
-      "Seksi Hadiah Dan Doorprize": 4500000,
-      "Bendahara": 0,
-      "Humas": 0,
-      "Keamanan dan Kebersihan": 0,
-      "Seksi Dokumentasi dan Publikasi": 0,
-      "Seksi Dana Usaha": 0
+      "Perlengkapan": 3000000,
+      "Konsumsi": 2000000,
+      "Seksi Hadiah Dan Doorprize": 4500000
     },
     "sheetId": "1SEMS_RW04_NGABEAN_SPREADSHEET_ID_XYZ123",
     "sheetApiKey": "AIzaSyFakeKey_SEMS_GoogleSheetsAPI_2026",
     "themeColor": "red",
     "kopLine1": "PANITIA PERINGATAN HARI ULANG TAHUN KEMERDEKAAN RI KE-81",
-    "kopLine2": "RUKUN WARGA 04 NGABEAN",
-    "kopLine3": "Kecamatan Gunungpati, Kota Semarang, Jawa Tengah",
-    "kopLine4": "Sekretariat: Balai RW 04 Ngabean, Telp: - | Kode Pos: 50225",
+    "kopLine2": "RUKUN WARGA 04 KELURAHAN NGABEAN",
+    "kopLine3": "Kecamatan Semarang Barat, Kota Semarang, Jawa Tengah",
+    "kopLine4": "Sekretariat: Balai RW 04 Ngabean, Telp: +62 812-3456-7890 | Kode Pos: 50141",
     "logoStyle": "flag",
     "logoUrl": "",
     "kopStyle": "classic-centered",
@@ -52,201 +47,69 @@
   "panitia": [
     {
       "id": "p-1",
-      "name": "Karto",
-      "role": "Penanggung Jawab",
-      "phone": "-",
-      "rt": "",
-      "seksi": "Penanggung Jawab"
+      "name": "Ketua Panitia",
+      "role": "Ketua Panitia",
+      "phone": "081234567890",
+      "rt": "RT 01",
+      "seksi": "Acara"
     },
     {
       "id": "p-2",
-      "name": "Muh Zaenun",
-      "role": "Ketua",
-      "phone": "-",
-      "rt": "",
-      "seksi": "Acara"
-    },
-    {
-      "id": "p-3",
-      "name": "Faldan",
-      "role": "Wakil",
-      "phone": "-",
-      "rt": "",
-      "seksi": "Acara"
-    },
-    {
-      "id": "p-4",
-      "name": "Mawardi",
+      "name": "Sekretaris Panitia",
       "role": "Sekretaris",
-      "phone": "-",
-      "rt": "",
+      "phone": "081234567891",
+      "rt": "RT 02",
       "seksi": "Sekretaris"
     },
     {
-      "id": "p-5",
-      "name": "Dias Ayu",
+      "id": "p-3",
+      "name": "Bendahara Panitia",
       "role": "Bendahara",
-      "phone": "-",
-      "rt": "",
+      "phone": "081234567892",
+      "rt": "RT 03",
       "seksi": "Bendahara"
-    },
-    {
-      "id": "p-6",
-      "name": "Ade Rahmat",
-      "role": "Koordinator",
-      "phone": "-",
-      "rt": "",
-      "seksi": "Acara"
-    },
-    {
-      "id": "p-22",
-      "name": "Jihan",
-      "role": "Anggota",
-      "phone": "-",
-      "rt": "",
-      "seksi": "Acara"
-    },
-    {
-      "id": "p-7",
-      "name": "Gunarso",
-      "role": "Koordinator",
-      "phone": "-",
-      "rt": "",
-      "seksi": "Seksi Lomba"
-    },
-    {
-      "id": "p-8",
-      "name": "Teddy",
-      "role": "Koordinator",
-      "phone": "-",
-      "rt": "",
-      "seksi": "Seksi Hadiah Dan Doorprize"
-    },
-    {
-      "id": "p-9",
-      "name": "Indra",
-      "role": "Anggota",
-      "phone": "-",
-      "rt": "",
-      "seksi": "Seksi Hadiah Dan Doorprize"
-    },
-    {
-      "id": "p-10",
-      "name": "Eva",
-      "role": "Koordinator",
-      "phone": "-",
-      "rt": "",
-      "seksi": "Seksi Pentas Seni"
-    },
-    {
-      "id": "p-11",
-      "name": "Rika",
-      "role": "Anggota",
-      "phone": "-",
-      "rt": "",
-      "seksi": "Seksi Pentas Seni"
-    },
-    {
-      "id": "p-12",
-      "name": "Sandy",
-      "role": "Koordinator",
-      "phone": "-",
-      rt: "",
-      "seksi": "Perlengkapan"
-    },
-    {
-      "id": "p-13",
-      "name": "Tatak",
-      "role": "Anggota",
-      "phone": "-",
-      "rt": "",
-      "seksi": "Perlengkapan"
-    },
-    {
-      "id": "p-14",
-      "name": "Yogo",
-      "role": "Anggota",
-      "phone": "-",
-      "rt": "",
-      "seksi": "Perlengkapan"
-    },
-    {
-      "id": "p-15",
-      "name": "Dea",
-      "role": "Koordinator",
-      "phone": "-",
-      "rt": "",
-      "seksi": "Konsumsi"
-    },
-    {
-      "id": "p-16",
-      "name": "Dita",
-      "role": "Koordinator",
-      "phone": "-",
-      "rt": "",
-      "seksi": "Humas"
-    },
-    {
-      "id": "p-17",
-      "name": "Ervan",
-      "role": "Koordinator",
-      "phone": "-",
-      "rt": "",
-      "seksi": "Seksi Dana Usaha"
-    },
-    {
-      "id": "p-18",
-      "name": "Wenny",
-      "role": "Koordinator",
-      "phone": "-",
-      "rt": "",
-      "seksi": "Seksi Dokumentasi dan Publikasi"
-    },
-    {
-      "id": "p-19",
-      "name": "Winne",
-      "role": "Anggota",
-      "phone": "-",
-      "rt": "",
-      "seksi": "Seksi Dokumentasi dan Publikasi"
-    },
-    {
-      "id": "p-20",
-      "name": "Agung",
-      "role": "Koordinator",
-      "phone": "-",
-      "rt": "",
-      "seksi": "Keamanan dan Kebersihan"
-    },
-    {
-      "id": "p-21",
-      "name": "Rio",
-      "role": "Anggota",
-      "phone": "-",
-      "rt": "",
-      "seksi": "Keamanan dan Kebersihan"
     }
   ],
   "kegiatan": [
     {
       "id": "keg-1",
       "activityCode": "ACT-001",
-      "name": "Jalan Sehat",
-      "date": "2026-08-23",
-      "time": "06:30 - 11:30 WIB",
-      "location": "Rute Keliling RW 04 & Panggung Utama",
-      "description": "Jalan sehat warga RW 04 disertai pembagian doorprize",
-      "status": "TERENCANA"
+      "name": "Lomba Anak & Remaja",
+      "date": "2026-08-09",
+      "time": "08:00 - 16:00 WIB",
+      "location": "Lapangan RW 04",
+      "description": "Perlombaan kemerdekaan kategori anak-anak dan remaja",
+      "status": "SELESAI"
     },
     {
       "id": "keg-2",
       "activityCode": "ACT-002",
-      "name": "Resepsi",
-      "date": "2026-08-23",
+      "name": "Malam Tirakatan",
+      "date": "2026-08-16",
+      "time": "19:30 - 22:00 WIB",
+      "location": "Balai RW 04",
+      "description": "Malam tirakatan, doa bersama, dan tumpengan",
+      "status": "SELESAI"
+    },
+    {
+      "id": "keg-3",
+      "activityCode": "ACT-003",
+      "name": "Jalan Sehat & Doorprize",
+      "date": "2026-08-17",
+      "time": "06:30 - 11:30 WIB",
+      "location": "Rute Keliling RW 04 & Panggung Utama",
+      "description": "Jalan sehat warga RW 04 disertai pembagian doorprize",
+      "status": "SELESAI"
+    },
+    {
+      "id": "keg-4",
+      "activityCode": "ACT-004",
+      "name": "Resepsi & Pentas Seni Tarling",
+      "date": "2026-08-22",
       "time": "19:00 - 23:00 WIB",
       "location": "Panggung Utama Balai RW 04",
-      "description": "Resepsi penutupan HUT RI, pembagian hadiah, dan pentas seni",
-      "status": "TERENCANA"
+      "description": "Resepsi penutupan HUT RI, pembagian hadiah, dan pentas seni Tarling",
+      "status": "SELESAI"
     }
   ],
   "rkba": [
@@ -406,18 +269,18 @@
     {
       "id": "rkba-10",
       "activityCode": "ACT-010",
-      "kegiatanId": "keg-2",
-      "name": "Sewa Kostum & Pentas Seni",
+      "kegiatanId": "keg-4",
+      "name": "Tarling / Tarting Resepsi",
       "seksi": "Seksi Pentas Seni",
       "qty": 1,
-      "unit": "Paket",
-      "price": 0,
-      "total": 0,
+      "unit": "Grup",
+      "price": 1500000,
+      "total": 1500000,
       "fundingSource": "Kas Utama",
       "status": "Disetujui",
-      "activityStatus": "RENCANA",
+      "activityStatus": "SELESAI",
       "isLockedBaseline": true,
-      "notes": "Belum dibelanjakan (Pagu Rp 1.500.000)",
+      "notes": "RAB Rp 1.500.000 | Realisasi Riil Rp 1.500.000 (Sesuai)",
       "dateAdded": "2026-07-02"
     },
     {
@@ -1023,88 +886,7 @@
       "vendor": "Toko Mainan Anak"
     }
   ],
-  "tasks": [
-    {
-      "id": "task-01",
-      "seksi": "Acara",
-      "taskName": "Penyusunan Rundown & Koordinasi MC Tirakatan dan Pentas Seni",
-      "status": "Selesai",
-      "assignedTo": "Ketua Panitia / Sie Acara",
-      "deadline": "2026-08-05"
-    },
-    {
-      "id": "task-02",
-      "seksi": "Seksi Lomba",
-      "taskName": "Pelaksanaan & Penjurian Lomba Kemerdekaan Anak dan Remaja",
-      "status": "Selesai",
-      "assignedTo": "Koordinator Lomba",
-      "deadline": "2026-08-09"
-    },
-    {
-      "id": "task-03",
-      "seksi": "Seksi Hadiah Dan Doorprize",
-      "taskName": "Pengadaan & Pembungkusan Hadiah Lomba serta Doorprize Utama",
-      "status": "Selesai",
-      "assignedTo": "Sie Hadiah & Doorprize",
-      "deadline": "2026-08-14"
-    },
-    {
-      "id": "task-04",
-      "seksi": "Perlengkapan",
-      "taskName": "Pemasangan Tratak Panggung, Sound System, dan Tenda Acara",
-      "status": "Selesai",
-      "assignedTo": "Koordinator Perlengkapan",
-      "deadline": "2026-08-15"
-    },
-    {
-      "id": "task-05",
-      "seksi": "Sekretaris",
-      "taskName": "Pencetakan & Distribusi Kupon Doorprize Jalan Sehat ke 4 RT",
-      "status": "Selesai",
-      "assignedTo": "Sekretaris Panitia",
-      "deadline": "2026-08-10"
-    },
-    {
-      "id": "task-06",
-      "seksi": "Konsumsi",
-      "taskName": "Penyediaan Konsumsi Snack Jalan Sehat & Nasi Box Resepsi",
-      "status": "Selesai",
-      "assignedTo": "Koordinator Konsumsi",
-      "deadline": "2026-08-17"
-    },
-    {
-      "id": "task-07",
-      "seksi": "Seksi Pentas Seni",
-      "taskName": "Koordinasi Pengisi Acara & Penampilan Kesenian Tarling",
-      "status": "Selesai",
-      "assignedTo": "Sie Pentas Seni",
-      "deadline": "2026-08-20"
-    },
-    {
-      "id": "task-08",
-      "seksi": "Seksi Dokumentasi dan Publikasi",
-      "taskName": "Pencetakan MMT Banner Panggung, Dokumentasi Foto & Video",
-      "status": "Selesai",
-      "assignedTo": "Sie Publikasi & Dok.",
-      "deadline": "2026-08-08"
-    },
-    {
-      "id": "task-09",
-      "seksi": "Keamanan dan Kebersihan",
-      "taskName": "Pengamanan Jalur Rute Jalan Sehat & Pengelolaan Sampah Lokasi",
-      "status": "Selesai",
-      "assignedTo": "Sie Keamanan & Linmas",
-      "deadline": "2026-08-22"
-    },
-    {
-      "id": "task-10",
-      "seksi": "Bendahara",
-      "taskName": "Konsolidasi Laporan Keuangan, Pengumpulan Nota SPJ & LPJ Final",
-      "status": "Selesai",
-      "assignedTo": "Bendahara Panitia",
-      "deadline": "2026-08-25"
-    }
-  ],
+  "tasks": [],
   "notulensi": [
     {
       "id": "notulensi_seed_1",

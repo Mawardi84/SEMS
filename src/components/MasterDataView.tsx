@@ -11,25 +11,35 @@ import {
   Phone, 
   MapPin, 
   Clock, 
-  Layers 
+  Layers,
+  CheckSquare,
+  ListTodo,
+  Check,
+  CalendarCheck
 } from "lucide-react";
-import { Panitia, Kegiatan, SystemSetting } from "../types";
+import { Panitia, Kegiatan, SystemSetting, SeksiTask } from "../types";
 import OrgChart from "./OrgChart";
 
 interface MasterDataViewProps {
   panitia: Panitia[];
   kegiatan: Kegiatan[];
+  tasks?: SeksiTask[];
   settings: SystemSetting;
   onSavePanitia: (action: 'add' | 'edit' | 'delete', data: Panitia) => Promise<void>;
   onSaveKegiatan: (action: 'add' | 'edit' | 'delete', data: Kegiatan) => Promise<void>;
+  onSaveTask?: (action: 'add' | 'edit' | 'delete' | 'toggle', data: any) => Promise<void>;
+  onToggleTaskStatus?: (taskId: string) => Promise<void>;
 }
 
 export default function MasterDataView({
   panitia,
   kegiatan,
+  tasks = [],
   settings,
   onSavePanitia,
-  onSaveKegiatan
+  onSaveKegiatan,
+  onSaveTask,
+  onToggleTaskStatus
 }: MasterDataViewProps) {
   // Safety checks
   const safeSettings = {
@@ -37,7 +47,7 @@ export default function MasterDataView({
     seksiList: settings?.seksiList || []
   };
 
-  const [activeSubTab, setActiveSubTab] = useState<'panitia' | 'kegiatan' | 'bagan'>('panitia');
+  const [activeSubTab, setActiveSubTab] = useState<'panitia' | 'kegiatan' | 'proker' | 'bagan'>('panitia');
   
   // Modals / Form States
   const [showPanitiaModal, setShowPanitiaModal] = useState(false);
@@ -59,6 +69,17 @@ export default function MasterDataView({
     location: "RW 04 Ngabean",
     description: "",
     status: "Perencanaan"
+  });
+
+  // Task / Program Kerja modal & form
+  const [showTaskModal, setShowTaskModal] = useState(false);
+  const [editingTask, setEditingTask] = useState<SeksiTask | null>(null);
+  const [taskForm, setTaskForm] = useState<Omit<SeksiTask, 'id'>>({
+    seksi: safeSettings.seksiList[0] || "Acara",
+    taskName: "",
+    status: "Selesai",
+    assignedTo: "",
+    deadline: new Date().toISOString().split('T')[0]
   });
 
   // Panitia CRUD handlers
@@ -157,18 +178,62 @@ export default function MasterDataView({
     }
   };
 
+  // Program Kerja (Task) CRUD Handlers
+  const handleOpenAddTask = () => {
+    setEditingTask(null);
+    setTaskForm({
+      seksi: safeSettings.seksiList[0] || "Acara",
+      taskName: "",
+      status: "Selesai",
+      assignedTo: "",
+      deadline: new Date().toISOString().split('T')[0]
+    });
+    setShowTaskModal(true);
+  };
+
+  const handleOpenEditTask = (t: SeksiTask) => {
+    setEditingTask(t);
+    setTaskForm({
+      seksi: t.seksi,
+      taskName: t.taskName,
+      status: t.status,
+      assignedTo: t.assignedTo,
+      deadline: t.deadline
+    });
+    setShowTaskModal(true);
+  };
+
+  const handleTaskSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!onSaveTask) return;
+    const action = editingTask ? 'edit' : 'add';
+    const payload: SeksiTask = {
+      ...taskForm,
+      id: editingTask ? editingTask.id : ""
+    };
+    await onSaveTask(action, payload);
+    setShowTaskModal(false);
+  };
+
+  const handleDeleteTask = async (t: SeksiTask) => {
+    if (!onSaveTask) return;
+    if (confirm(`Apakah Anda yakin ingin menghapus program kerja '${t.taskName}'?`)) {
+      await onSaveTask('delete', t);
+    }
+  };
+
   return (
     <div className="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
       
       {/* Tab Selectors & Header */}
       <div className="px-4 py-3 border-b border-slate-200 bg-slate-50 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h2 className="text-sm font-extrabold text-slate-800 uppercase tracking-wide">Master Data Kepanitiaan & Kegiatan</h2>
+          <h2 className="text-sm font-extrabold text-slate-800 uppercase tracking-wide">Master Data Kepanitiaan, Kegiatan & Program Kerja</h2>
           <p className="text-[11px] text-slate-500 mt-0.5">
-            Kelola panitia pelaksana RW 04 Ngabean Semarang dan daftar kegiatan perayaan HUT RI Ke-81.
+            Kelola panitia pelaksana, agenda kegiatan resmi, dan program kerja per seksi HUT RI Ke-81 RW 04 Ngabean.
           </p>
         </div>
-        <div className="flex bg-slate-200/60 p-0.5 rounded self-start sm:self-auto border border-slate-200">
+        <div className="flex bg-slate-200/60 p-0.5 rounded self-start sm:self-auto border border-slate-200 flex-wrap">
           <button
             onClick={() => setActiveSubTab('panitia')}
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded text-[11px] font-bold font-sans transition-all duration-150 ${
@@ -190,6 +255,17 @@ export default function MasterDataView({
           >
             <Calendar className="w-3.5 h-3.5" />
             Agenda Kegiatan ({kegiatan.length})
+          </button>
+          <button
+            onClick={() => setActiveSubTab('proker')}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded text-[11px] font-bold font-sans transition-all duration-150 ${
+              activeSubTab === 'proker'
+                ? "bg-white text-slate-800 shadow-xs"
+                : "text-slate-500 hover:text-slate-800"
+            }`}
+          >
+            <ListTodo className="w-3.5 h-3.5 text-red-600" />
+            Program Kerja / Tugas ({tasks.length})
           </button>
           <button
             onClick={() => setActiveSubTab('bagan')}
@@ -362,6 +438,107 @@ export default function MasterDataView({
                   Belum ada agenda kegiatan terdaftar.
                 </div>
               )}
+            </div>
+          </div>
+        )}
+
+        {activeSubTab === 'proker' && (
+          <div className="space-y-3.5">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+              <div>
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Daftar Program Kerja & Penugasan Tiap Seksi</span>
+                <p className="text-[11px] text-slate-500">Klik tombol status untuk mengubah progres (Belum &rarr; Proses &rarr; Selesai)</p>
+              </div>
+              <button
+                id="btn-add-task"
+                onClick={handleOpenAddTask}
+                className="flex items-center gap-1 bg-red-700 hover:bg-red-800 text-white text-[11px] font-bold px-2.5 py-1.5 rounded shadow-xs transition-all duration-150 uppercase tracking-wide self-start sm:self-auto"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                Tambah Program Kerja
+              </button>
+            </div>
+
+            <div className="border border-slate-200 rounded-lg overflow-hidden shadow-sm">
+              <table className="w-full text-left border-collapse bg-white">
+                <thead>
+                  <tr className="bg-slate-50 text-slate-500 font-sans text-[10px] uppercase tracking-wider border-b border-slate-200 font-bold">
+                    <th className="px-4 py-2 font-bold text-slate-600">Seksi / Bidang</th>
+                    <th className="px-4 py-2 font-bold text-slate-600">Program Kerja & Uraian Tugas</th>
+                    <th className="px-4 py-2 font-bold text-slate-600">Penanggung Jawab (PIC)</th>
+                    <th className="px-4 py-2 font-bold text-slate-600">Tenggat Waktu</th>
+                    <th className="px-4 py-2 font-bold text-slate-600 text-center">Status Progres</th>
+                    <th className="px-4 py-2 font-bold text-slate-600 text-right">Aksi</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100 text-xs font-sans">
+                  {tasks.map((t) => {
+                    const statusClass = 
+                      t.status === "Selesai" 
+                        ? "bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100" 
+                        : t.status === "Proses" 
+                        ? "bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100" 
+                        : "bg-slate-100 text-slate-600 border-slate-200 hover:bg-slate-200";
+
+                    return (
+                      <tr key={t.id} className="hover:bg-slate-50/70 transition-colors">
+                        <td className="px-4 py-2.5 font-bold text-slate-800 whitespace-nowrap">
+                          <span className="bg-slate-100 text-slate-700 px-2 py-0.5 rounded text-[11px] border border-slate-200">
+                            {t.seksi}
+                          </span>
+                        </td>
+                        <td className="px-4 py-2.5 font-medium text-slate-700">
+                          {t.taskName}
+                        </td>
+                        <td className="px-4 py-2.5 text-slate-600 font-medium whitespace-nowrap">
+                          {t.assignedTo || "-"}
+                        </td>
+                        <td className="px-4 py-2.5 text-slate-500 font-mono text-[11px] whitespace-nowrap">
+                          {t.deadline || "-"}
+                        </td>
+                        <td className="px-4 py-2.5 text-center whitespace-nowrap">
+                          <button
+                            id={`toggle-task-${t.id}`}
+                            onClick={() => onToggleTaskStatus && onToggleTaskStatus(t.id)}
+                            title="Klik untuk ubah progres"
+                            className={`inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded border transition-all ${statusClass}`}
+                          >
+                            {t.status === "Selesai" && <Check className="w-3 h-3 text-emerald-600" />}
+                            {t.status}
+                          </button>
+                        </td>
+                        <td className="px-4 py-2.5 text-right whitespace-nowrap">
+                          <div className="flex items-center justify-end gap-1">
+                            <button
+                              id={`edit-task-${t.id}`}
+                              onClick={() => handleOpenEditTask(t)}
+                              className="p-1 hover:bg-slate-100 text-slate-500 hover:text-slate-700 rounded transition-colors"
+                              title="Edit Tugas"
+                            >
+                              <Edit className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              id={`delete-task-${t.id}`}
+                              onClick={() => handleDeleteTask(t)}
+                              className="p-1 hover:bg-red-50 text-slate-400 hover:text-red-600 rounded transition-colors"
+                              title="Hapus Tugas"
+                            >
+                              <Trash className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                  {tasks.length === 0 && (
+                    <tr>
+                      <td colSpan={6} className="px-4 py-8 text-center text-slate-400 font-sans">
+                        Belum ada program kerja terdaftar. Klik tombol &ldquo;Tambah Program Kerja&rdquo; untuk menambahkan.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
             </div>
           </div>
         )}
@@ -587,6 +764,105 @@ export default function MasterDataView({
                   className="px-3 py-1.5 bg-red-700 hover:bg-red-800 text-white text-xs font-bold rounded shadow-xs transition-colors"
                 >
                   {editingKegiatan ? "Simpan Perubahan" : "Tambah Kegiatan"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL 3: ADD/EDIT PROGRAM KERJA (TASK) */}
+      {showTaskModal && (
+        <div className="fixed inset-0 bg-slate-900/60 flex items-center justify-center z-50 p-4 backdrop-blur-xs">
+          <div className="bg-white rounded-lg w-full max-w-md shadow-2xl overflow-hidden border border-slate-200 animate-in fade-in zoom-in-95 duration-200">
+            <div className="bg-red-750 text-white px-4 py-3 border-b border-red-850 flex justify-between items-center">
+              <h3 className="font-sans font-bold text-xs uppercase tracking-wider">
+                {editingTask ? "Ubah Program Kerja" : "Tambah Program Kerja Seksi"}
+              </h3>
+              <button 
+                id="close-task-modal"
+                onClick={() => setShowTaskModal(false)}
+                className="text-white/85 hover:text-white font-bold text-sm"
+              >
+                ✕
+              </button>
+            </div>
+            <form onSubmit={handleTaskSubmit} className="p-4 space-y-3.5">
+              <div>
+                <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Seksi / Bidang</label>
+                <select
+                  value={taskForm.seksi}
+                  onChange={(e) => setTaskForm({ ...taskForm, seksi: e.target.value })}
+                  className="w-full text-xs border border-slate-200 focus:border-red-500 focus:outline-none rounded p-1.5 bg-slate-50"
+                >
+                  {safeSettings.seksiList.map(s => (
+                    <option key={s} value={s}>{s}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Nama Program Kerja / Rincian Tugas</label>
+                <textarea
+                  required
+                  value={taskForm.taskName}
+                  onChange={(e) => setTaskForm({ ...taskForm, taskName: e.target.value })}
+                  className="w-full text-xs border border-slate-200 focus:border-red-500 focus:outline-none rounded p-1.5 bg-slate-50 h-20 resize-none"
+                  placeholder="Misal: Pemasangan Tratak Panggung, Sound System, dan Tenda Acara"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Penanggung Jawab (PIC)</label>
+                  <input
+                    type="text"
+                    required
+                    value={taskForm.assignedTo}
+                    onChange={(e) => setTaskForm({ ...taskForm, assignedTo: e.target.value })}
+                    className="w-full text-xs border border-slate-200 focus:border-red-500 focus:outline-none rounded p-1.5 bg-slate-50"
+                    placeholder="Misal: Sie Perlengkapan"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Tenggat Waktu</label>
+                  <input
+                    type="date"
+                    required
+                    value={taskForm.deadline}
+                    onChange={(e) => setTaskForm({ ...taskForm, deadline: e.target.value })}
+                    className="w-full text-xs border border-slate-200 focus:border-red-500 focus:outline-none rounded p-1.5 bg-slate-50"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Status Progres</label>
+                <select
+                  value={taskForm.status}
+                  onChange={(e) => setTaskForm({ ...taskForm, status: e.target.value as any })}
+                  className="w-full text-xs border border-slate-200 focus:border-red-500 focus:outline-none rounded p-1.5 bg-slate-50"
+                >
+                  <option value="Belum">Belum Mulai</option>
+                  <option value="Proses">Sedang Berjalan (Proses)</option>
+                  <option value="Selesai">Selesai (Tuntas)</option>
+                </select>
+              </div>
+
+              <div className="flex justify-end gap-2 pt-3 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => setShowTaskModal(false)}
+                  className="px-3 py-1.5 border border-slate-200 hover:bg-slate-100 text-slate-600 text-xs font-bold rounded transition-colors"
+                >
+                  Batal
+                </button>
+                <button
+                  type="submit"
+                  id="btn-submit-task"
+                  className="px-3 py-1.5 bg-red-700 hover:bg-red-800 text-white text-xs font-bold rounded shadow-xs transition-colors"
+                >
+                  {editingTask ? "Simpan Perubahan" : "Tambah Program Kerja"}
                 </button>
               </div>
             </form>

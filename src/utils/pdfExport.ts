@@ -115,14 +115,16 @@ export async function exportToPDF(elementId: string, filename: string) {
             }
           });
 
-          // Disable modern filters and backdrop-filters which are not supported
+          // Disable box-shadows, text-shadows, filters, and backdrop-filters which are not supported
           // by html2canvas and often render as solid black blocks/rectangles.
-          // Note: box-shadows are kept to ensure the PDF design matches the web view.
           const styleOverride = clonedDoc.createElement("style");
           styleOverride.textContent = `
-            * {
+            *, *::before, *::after {
+              box-shadow: none !important;
+              text-shadow: none !important;
               filter: none !important;
               backdrop-filter: none !important;
+              mix-blend-mode: normal !important;
             }
           `;
           clonedDoc.head.appendChild(styleOverride);

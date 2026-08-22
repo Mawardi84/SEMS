@@ -13,7 +13,9 @@ import {
   Flag,
   Image as ImageIcon,
   Download,
-  Database
+  Database,
+  FileText,
+  RefreshCw
 } from "lucide-react";
 import { SystemSetting, SEMSData } from "../types";
 
@@ -54,10 +56,46 @@ export default function SettingView({ settings, onSaveSettings, semsData, onImpo
   // States for backup and restore
   const [isExporting, setIsExporting] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
+  const [isRestoringMD, setIsRestoringMD] = useState(false);
   const [importError, setImportError] = useState("");
   const [importSuccess, setImportSuccess] = useState(false);
   const [showPasteArea, setShowPasteArea] = useState(false);
   const [pastedJson, setPastedJson] = useState("");
+
+  // Handler for 1-click restore from Master Markdown file
+  const handleRestoreFromMasterMD = async () => {
+    if (!window.confirm("Apakah Anda yakin ingin memulihkan database dari file Master Markdown (DATA_MASTER_SEMS_RW04.md)? Semua data akan disinkronkan kembali ke database master.")) {
+      return;
+    }
+
+    setIsRestoringMD(true);
+    setImportError("");
+    setImportSuccess(false);
+
+    try {
+      const response = await fetch("/api/sems/restore-from-md", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" }
+      });
+      const result = await response.json();
+      if (result.success && result.data) {
+        await onImportSuccess(result.data);
+        setImportSuccess(true);
+        setRtListStr(result.data.settings?.rtList?.join(", ") || "");
+        setSeksiListStr(result.data.settings?.seksiList?.join(", ") || "");
+        setTargetIuran(result.data.settings?.targetIuranPerRT || 2000000);
+        setPaguBudgets({ ...result.data.settings?.paguAnggaranSeksi });
+        setTimeout(() => setImportSuccess(false), 5000);
+      } else {
+        throw new Error(result.error || "Gagal memulihkan dari Markdown.");
+      }
+    } catch (err: any) {
+      setImportError(err.message || "Gagal memulihkan dari Master Markdown.");
+      setTimeout(() => setImportError(""), 6000);
+    } finally {
+      setIsRestoringMD(false);
+    }
+  };
 
   // Handler for exporting database as JSON
   const handleExportData = () => {
@@ -114,7 +152,7 @@ export default function SettingView({ settings, onSaveSettings, semsData, onImpo
           setImportSuccess(true);
           setRtListStr(parsed.settings.rtList?.join(", ") || "");
           setSeksiListStr(parsed.settings.seksiList?.join(", ") || "");
-          setTargetIuran(parsed.settings.targetIuranPerRT || 1500000);
+          setTargetIuran(parsed.settings.targetIuranPerRT || 2000000);
           setPaguBudgets({ ...parsed.settings.paguAnggaranSeksi });
           setKopLine1(parsed.settings.kopLine1 || "");
           setKopLine2(parsed.settings.kopLine2 || "");
@@ -190,7 +228,7 @@ export default function SettingView({ settings, onSaveSettings, semsData, onImpo
         setShowPasteArea(false);
         setRtListStr(parsed.settings.rtList?.join(", ") || "");
         setSeksiListStr(parsed.settings.seksiList?.join(", ") || "");
-        setTargetIuran(parsed.settings.targetIuranPerRT || 1500000);
+        setTargetIuran(parsed.settings.targetIuranPerRT || 2000000);
         setPaguBudgets({ ...parsed.settings.paguAnggaranSeksi });
         setKopLine1(parsed.settings.kopLine1 || "");
         setKopLine2(parsed.settings.kopLine2 || "");
@@ -1148,12 +1186,12 @@ export default function SettingView({ settings, onSaveSettings, semsData, onImpo
                     type="file"
                     accept=".json"
                     onChange={handleImportData}
-                    disabled={isImporting}
+                    disabled={isImporting || isRestoringMD}
                     className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10 disabled:cursor-not-allowed"
                   />
                   <button
                     type="button"
-                    disabled={isImporting}
+                    disabled={isImporting || isRestoringMD}
                     className="w-full bg-emerald-600 hover:bg-emerald-700 disabled:bg-emerald-300 text-white font-bold text-xs py-2 rounded-lg transition-all flex items-center justify-center gap-1.5 shadow-3xs cursor-pointer"
                   >
                     <Upload className="w-3.5 h-3.5" />
@@ -1198,6 +1236,50 @@ export default function SettingView({ settings, onSaveSettings, semsData, onImpo
             </div>
 
           </div>
+
+          {/* CARD 3: Master Markdown Auto-Recovery & Backup System */}
+          <div className="bg-gradient-to-r from-slate-900 to-indigo-950 p-4.5 rounded-xl border border-indigo-900 text-white space-y-3.5 shadow-sm mt-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-indigo-800/60 pb-3">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-lg bg-indigo-500/20 border border-indigo-400/30 flex items-center justify-center text-indigo-300">
+                  <FileText className="w-4 h-4" />
+                </div>
+                <div>
+                  <h4 className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-2">
+                    Master Backup Markdown & Pemulihan Instan
+                    <span className="bg-emerald-500/20 text-emerald-300 text-[9px] px-2 py-0.5 rounded-full font-mono border border-emerald-400/30 font-semibold">
+                      Resilient Engine
+                    </span>
+                  </h4>
+                  <p className="text-[11px] text-slate-300 mt-0.5">
+                    File master <code>DATA_MASTER_SEMS_RW04.md</code> tersimpan di dalam sistem. Jika file database sewaktu-waktu terhapus, server akan otomatis memulihkan data dari file Markdown ini tanpa perlu upload ulang.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+              <button
+                type="button"
+                onClick={handleRestoreFromMasterMD}
+                disabled={isRestoringMD || isImporting}
+                className="bg-emerald-600 hover:bg-emerald-500 disabled:bg-emerald-900 text-white font-bold text-xs py-2.5 px-4 rounded-lg transition-all flex items-center justify-center gap-2 cursor-pointer shadow-md"
+              >
+                <RefreshCw className={`w-3.5 h-3.5 ${isRestoringMD ? 'animate-spin' : ''}`} />
+                {isRestoringMD ? "Sedang Memulihkan Database..." : "Pulihkan Instan dari Master Markdown (.md)"}
+              </button>
+
+              <a
+                href="/api/sems/download-backup-md"
+                download="DATA_MASTER_SEMS_RW04.md"
+                className="bg-slate-800 hover:bg-slate-700 border border-slate-700 text-white font-bold text-xs py-2.5 px-4 rounded-lg transition-all flex items-center justify-center gap-2 text-center"
+              >
+                <Download className="w-3.5 h-3.5 text-indigo-400" />
+                Unduh Master File Markdown (.md)
+              </a>
+            </div>
+          </div>
+
         </div>
       </div>
     </div>

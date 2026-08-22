@@ -45,6 +45,7 @@ interface PerubahanAnggaranViewProps {
   settings: SystemSetting;
   onSaveBudgetChange: (action: 'add' | 'edit' | 'submit' | 'approve' | 'reject' | 'cancel', data: BudgetChange, actor?: string) => Promise<void>;
   onNavigateView?: (viewName: string, params?: any) => void;
+  isReadOnly?: boolean;
 }
 
 export default function PerubahanAnggaranView({
@@ -53,7 +54,8 @@ export default function PerubahanAnggaranView({
   notulensi = [],
   settings,
   onSaveBudgetChange,
-  onNavigateView
+  onNavigateView,
+  isReadOnly = false
 }: PerubahanAnggaranViewProps) {
   // Safety checks
   const safeSeksiList = settings?.seksiList || [
@@ -459,13 +461,15 @@ export default function PerubahanAnggaranView({
             Ekspor PDF
           </button>
           
-          <button
-            onClick={() => handleOpenAdd()}
-            className="flex items-center gap-1.5 px-3.5 py-1.5 bg-sky-600 hover:bg-sky-700 text-white text-xs font-bold rounded-lg transition-colors shadow-xs hover:shadow-md cursor-pointer"
-          >
-            <Plus className="w-4 h-4" />
-            Ajukan Perubahan Anggaran
-          </button>
+          {!isReadOnly && (
+            <button
+              onClick={() => handleOpenAdd()}
+              className="flex items-center gap-1.5 px-3.5 py-1.5 bg-sky-600 hover:bg-sky-700 text-white text-xs font-bold rounded-lg transition-colors shadow-xs hover:shadow-md cursor-pointer"
+            >
+              <Plus className="w-4 h-4" />
+              Ajukan Perubahan Anggaran
+            </button>
+          )}
         </div>
       </div>
 
@@ -807,7 +811,7 @@ export default function PerubahanAnggaranView({
                         </button>
 
                         {/* DRAFT: Ajukan, Edit, Batalkan */}
-                        {isDraft && (
+                        {!isReadOnly && isDraft && (
                           <>
                             <button
                               onClick={() => handleWorkflowSubmit(item)}
@@ -835,7 +839,7 @@ export default function PerubahanAnggaranView({
                         )}
 
                         {/* DIAJUKAN: Setujui, Tolak, Batalkan */}
-                        {isSubmitted && (
+                        {!isReadOnly && isSubmitted && (
                           <>
                             <button
                               onClick={() => handleWorkflowApprove(item)}

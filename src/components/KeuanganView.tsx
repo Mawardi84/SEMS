@@ -26,12 +26,14 @@ interface KeuanganViewProps {
   keuangan: KeuanganTransaction[];
   settings: SystemSetting;
   onSaveKeuangan: (action: 'add' | 'edit' | 'delete', data: KeuanganTransaction) => Promise<void>;
+  isReadOnly?: boolean;
 }
 
 export default function KeuanganView({
   keuangan,
   settings,
-  onSaveKeuangan
+  onSaveKeuangan,
+  isReadOnly = false
 }: KeuanganViewProps) {
   const [filterType, setFilterType] = useState<string>("Semua");
   const [filterCategory, setFilterCategory] = useState<string>("Semua");
@@ -182,7 +184,7 @@ export default function KeuanganView({
               <th className="px-4 py-2 font-bold text-slate-600">Keterangan / Deskripsi</th>
               <th className="px-4 py-2 font-bold text-slate-600">Ref RKBA</th>
               <th className="px-4 py-2 font-bold text-slate-600 text-right">Nominal (Rp)</th>
-              <th className="px-4 py-2 font-bold text-slate-600 text-center">Aksi</th>
+              {!isReadOnly && <th className="px-4 py-2 font-bold text-slate-600 text-center">Aksi</th>}
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100 text-xs text-slate-700">
@@ -219,12 +221,14 @@ export default function KeuanganView({
                   }`}>
                     {isIncome ? "+" : "-"} {formatRp(t.amount)}
                   </td>
-                  <td className="px-4 py-2 text-center">
-                    <div className="flex gap-2 justify-center">
-                      <button onClick={() => handleOpenEdit(t)} className="text-[10px] text-blue-600 font-bold hover:underline">Edit</button>
-                      <button onClick={() => handleDelete(t)} className="text-[10px] text-red-600 font-bold hover:underline">Hapus</button>
-                    </div>
-                  </td>
+                  {!isReadOnly && (
+                    <td className="px-4 py-2 text-center">
+                      <div className="flex gap-2 justify-center">
+                        <button onClick={() => handleOpenEdit(t)} className="text-[10px] text-blue-600 font-bold hover:underline">Edit</button>
+                        <button onClick={() => handleDelete(t)} className="text-[10px] text-red-600 font-bold hover:underline">Hapus</button>
+                      </div>
+                    </td>
+                  )}
                 </tr>
               );
             })}
@@ -378,14 +382,16 @@ export default function KeuanganView({
             <Download className="w-3.5 h-3.5" />
             Unduh DOC
           </button>
-          <button
-            id="btn-add-keuangan"
-            onClick={handleOpenAdd}
-            className="flex items-center gap-1 bg-red-700 hover:bg-red-800 text-white text-[11px] font-bold px-3 py-1.5 rounded shadow-xs transition-all duration-150 uppercase tracking-wide cursor-pointer"
-          >
-            <Plus className="w-3.5 h-3.5" />
-            Pencatatan Transaksi Manual
-          </button>
+          {!isReadOnly && (
+            <button
+              id="btn-add-keuangan"
+              onClick={handleOpenAdd}
+              className="flex items-center gap-1 bg-red-700 hover:bg-red-800 text-white text-[11px] font-bold px-3 py-1.5 rounded shadow-xs transition-all duration-150 uppercase tracking-wide cursor-pointer"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              Pencatatan Transaksi Manual
+            </button>
+          )}
         </div>
       </div>
 

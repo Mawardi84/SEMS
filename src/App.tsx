@@ -17,10 +17,31 @@ import UndanganRapatView from "./components/UndanganRapatView";
 import FestiveEventView from "./components/FestiveEventView";
 import PerubahanAnggaranView from "./components/PerubahanAnggaranView";
 import RealokasiAnggaranView from "./components/RealokasiAnggaranView";
+import ShareAnggaranModal from "./components/ShareAnggaranModal";
+import AdminPinModal from "./components/AdminPinModal";
 import { SEMSData, SystemSetting, Panitia, Kegiatan, RKBAItem, KeuanganTransaction, Notulensi, DigitalDocument, UndanganRapat, BudgetChange, BudgetReallocation } from "./types";
-import { Award, AlertTriangle, RefreshCw, Menu, Clock } from "lucide-react";
+import { Award, AlertTriangle, RefreshCw, Menu, Clock, Share2, Eye, ShieldCheck, Lock, ArrowLeft } from "lucide-react";
 
 export default function App() {
+  // Check if mode is budget-view from URL parameter or localStorage
+  const [isBudgetViewOnly, setIsBudgetViewOnly] = useState<boolean>(() => {
+    try {
+      if (typeof window !== "undefined") {
+        const params = new URLSearchParams(window.location.search);
+        const mode = params.get("mode");
+        if (mode === "budget-view" || mode === "view" || params.get("view_only") === "true") {
+          return true;
+        }
+        return localStorage.getItem("sems_budget_view_only") === "true";
+      }
+      return false;
+    } catch (e) {
+      return false;
+    }
+  });
+
+  const [isShareModalOpen, setIsShareModalOpen] = useState<boolean>(false);
+
   const [currentView, setCurrentView] = useState<string>(() => {
     try {
       const saved = localStorage.getItem("sems_current_view");
@@ -57,6 +78,43 @@ export default function App() {
       // Ignore errors if localStorage is not accessible
     }
   }, [currentView]);
+
+  // If in budget-view only mode, restrict access to administrative views
+  useEffect(() => {
+    if (isBudgetViewOnly) {
+      const allowedViews = ["dashboard", "panduan", "rkba", "perubahan-anggaran", "realokasi-anggaran", "keuangan", "monitoring"];
+      if (!allowedViews.includes(currentView)) {
+        setCurrentView("dashboard");
+      }
+    }
+  }, [isBudgetViewOnly, currentView]);
+
+  const [isAdminPinModalOpen, setIsAdminPinModalOpen] = useState<boolean>(false);
+
+  const handleToggleBudgetViewOnly = (enabled: boolean) => {
+    if (!enabled && isBudgetViewOnly) {
+      // Trying to switch from view-only to admin mode requires Admin PIN
+      setIsAdminPinModalOpen(true);
+      return;
+    }
+
+    setIsBudgetViewOnly(enabled);
+    try {
+      localStorage.setItem("sems_budget_view_only", enabled ? "true" : "false");
+      if (typeof window !== "undefined") {
+        const url = new URL(window.location.href);
+        if (enabled) {
+          url.searchParams.set("mode", "budget-view");
+        } else {
+          url.searchParams.delete("mode");
+          url.searchParams.delete("view_only");
+        }
+        window.history.replaceState({}, "", url.toString());
+      }
+    } catch (e) {
+      // Ignore URL manipulation error in restrictive iframe
+    }
+  };
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [isResetting, setIsResetting] = useState<boolean>(false);
   const [errorMessage, setErrorMessage] = useState<string>("");
@@ -239,7 +297,6 @@ export default function App() {
       }
     } catch (error: any) {
       alert(error.message || "Gagal menyimpan konfigurasi.");
-      throw error;
     }
   };
 
@@ -325,7 +382,7 @@ export default function App() {
     }
   };
 
-  // 7. TASK STATUS TOGGLE (Belum -> Proses -> Selesai)
+  // 7. TASK STATUS TOGGLE & CRUD (Belum -> Proses -> Selesai)
   const handleToggleTaskStatus = async (taskId: string) => {
     try {
       const response = await fetch("/api/sems/tasks/toggle", {
@@ -334,6 +391,25 @@ export default function App() {
         body: JSON.stringify({ id: taskId })
       });
       if (!response.ok) throw new Error("Gagal mengubah progres program kerja.");
+      const result = await response.json();
+      if (result.success && semsData) {
+        setSemsData({ ...semsData, tasks: result.tasks });
+      } else {
+        throw new Error(result.error);
+      }
+    } catch (error: any) {
+      alert(error.message);
+    }
+  };
+
+  const handleSaveTask = async (action: 'add' | 'edit' | 'delete' | 'toggle', data: any) => {
+    try {
+      const response = await fetch("/api/sems/tasks", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action, data })
+      });
+      if (!response.ok) throw new Error("Gagal menyimpan program kerja.");
       const result = await response.json();
       if (result.success && semsData) {
         setSemsData({ ...semsData, tasks: result.tasks });
@@ -459,7 +535,6 @@ export default function App() {
       }
     } catch (error: any) {
       alert(error.message || "Gagal memproses perubahan anggaran.");
-      throw error;
     }
   };
 
@@ -485,7 +560,6 @@ export default function App() {
       }
     } catch (error: any) {
       alert(error.message || "Gagal memproses realokasi anggaran.");
-      throw error;
     }
   };
 
@@ -511,7 +585,6 @@ export default function App() {
       }
     } catch (error: any) {
       alert(error.message);
-      throw error;
     }
   };
 
@@ -536,7 +609,6 @@ export default function App() {
       return result.lpj;
     } catch (error: any) {
       alert(error.message);
-      throw error;
     }
   };
 
@@ -560,7 +632,6 @@ export default function App() {
       }
     } catch (error: any) {
       alert(error.message);
-      throw error;
     }
   };
 
@@ -586,7 +657,6 @@ export default function App() {
       }
     } catch (error: any) {
       alert(error.message);
-      throw error;
     }
   };
 
@@ -609,7 +679,6 @@ export default function App() {
       }
     } catch (error: any) {
       alert(error.message);
-      throw error;
     }
   };
 
@@ -681,6 +750,7 @@ export default function App() {
           isResetting={isResetting}
           isOpen={isSidebarOpen}
           onClose={() => setIsSidebarOpen(false)}
+          isBudgetViewOnly={isBudgetViewOnly}
         />
       </div>
 
@@ -701,11 +771,29 @@ export default function App() {
               <span className="px-2.5 py-1 bg-red-50 text-red-600 text-[10px] font-black rounded-lg uppercase tracking-wide border border-red-100 shadow-3xs">
                 HUT RI KE-81 RW 04 NGABEAN
               </span>
+              {isBudgetViewOnly && (
+                <span className="hidden sm:inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-bold border border-emerald-200">
+                  <Eye className="w-3 h-3 text-emerald-600" />
+                  Mode Transparansi Publik (View-Only)
+                </span>
+              )}
             </div>
           </div>
 
-          {/* Center-Right Live Countdown and Sync Indicators */}
-          <div className="flex items-center gap-3">
+          {/* Center-Right Live Countdown, Share Button, and Sync Indicators */}
+          <div className="flex items-center gap-2 sm:gap-3">
+            {/* Share Budget Transparency Link Button */}
+            <button
+              id="btn-share-anggaran"
+              onClick={() => setIsShareModalOpen(true)}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-red-700 hover:bg-red-800 text-white rounded-lg text-xs font-bold transition-all shadow-xs hover:shadow-md cursor-pointer"
+              title="Bagikan Tautan Transparansi Anggaran (Hanya Lihat)"
+            >
+              <Share2 className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Bagikan Anggaran</span>
+              <span className="sm:hidden">Bagikan</span>
+            </button>
+
             {/* Beautiful Countdown Pill */}
             <div className="hidden md:flex items-center gap-2 px-3 py-1.5 bg-gradient-to-r from-red-600/5 to-amber-500/5 hover:from-red-600/10 hover:to-amber-500/10 rounded-full border border-red-200/50 text-[11px] font-bold text-slate-700 shadow-3xs transition-all">
               <span className="flex h-2 w-2 relative">
@@ -743,6 +831,50 @@ export default function App() {
         {/* Main Panel Content Container with AnimatePresence transitions */}
         <main className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 sm:space-y-6 print:overflow-visible print:h-auto print:p-0 print:space-y-0 print:block bg-slate-50/50 relative">
           
+          {/* Public Transparency Banner when in isBudgetViewOnly mode */}
+          {isBudgetViewOnly && (
+            <div className="bg-gradient-to-r from-emerald-900 via-teal-900 to-slate-900 text-white rounded-2xl p-4 shadow-sm border border-emerald-700/40 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 animate-fade-in shrink-0">
+              <div className="flex items-start gap-3">
+                <div className="p-2 bg-emerald-600/30 text-emerald-300 rounded-xl border border-emerald-500/30 shrink-0 mt-0.5">
+                  <ShieldCheck className="w-5 h-5 text-emerald-400" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="px-2 py-0.5 rounded bg-emerald-400 text-slate-950 text-[9px] font-black uppercase tracking-wider">
+                      Mode Publik Transparansi Anggaran
+                    </span>
+                    <span className="text-[10px] font-mono text-emerald-200">
+                      Akses: Hanya Lihat (View-Only)
+                    </span>
+                  </div>
+                  <h4 className="text-xs sm:text-sm font-bold text-white mt-1">
+                    Portal Keterbukaan Informasi Keuangan & Anggaran RW 04 Ngabean
+                  </h4>
+                  <p className="text-[11px] text-emerald-100/90 leading-relaxed mt-0.5 max-w-3xl">
+                    Anda sedang melihat laporan realisasi, transparansi kas Pamsimas, dan rancangan anggaran belanja. Hak perubahan data, edit, dan menu administratif dinonaktifkan untuk melindungi integritas data.
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2 self-start md:self-auto shrink-0">
+                <button
+                  onClick={() => setIsShareModalOpen(true)}
+                  className="bg-emerald-700 hover:bg-emerald-600 text-white text-xs font-bold px-3 py-2 rounded-xl transition-colors cursor-pointer flex items-center gap-1.5 shadow-xs"
+                >
+                  <Share2 className="w-3.5 h-3.5" />
+                  <span>Info Link</span>
+                </button>
+                <button
+                  onClick={() => handleToggleBudgetViewOnly(false)}
+                  className="bg-white/10 hover:bg-white/20 text-emerald-100 text-xs font-bold px-3 py-2 rounded-xl border border-white/20 transition-colors cursor-pointer flex items-center gap-1.5"
+                  title="Kembali ke Mode Administrator"
+                >
+                  <Lock className="w-3.5 h-3.5" />
+                  <span>Mode Admin</span>
+                </button>
+              </div>
+            </div>
+          )}
+
           {/* Mobile-only countdown bar */}
           <div className="md:hidden flex items-center justify-between p-3 bg-white rounded-xl border border-slate-200 shadow-2xs mb-2">
             <span className="text-[10px] font-extrabold text-red-600 uppercase tracking-widest flex items-center gap-1.5">
@@ -809,6 +941,7 @@ export default function App() {
                   onBelanjaItem={handleBelanjaItem}
                   isRecordingBelanjaId={isRecordingBelanjaId}
                   onNavigateView={(view) => setCurrentView(view)}
+                  isReadOnly={isBudgetViewOnly}
                 />
               )}
 
@@ -820,6 +953,7 @@ export default function App() {
                   settings={semsData.settings}
                   onSaveBudgetChange={handleSaveBudgetChange}
                   onNavigateView={(view) => setCurrentView(view)}
+                  isReadOnly={isBudgetViewOnly}
                 />
               )}
 
@@ -831,6 +965,7 @@ export default function App() {
                   settings={semsData.settings}
                   onSaveBudgetReallocation={handleSaveBudgetReallocation}
                   onNavigateView={(view) => setCurrentView(view)}
+                  isReadOnly={isBudgetViewOnly}
                 />
               )}
 
@@ -854,6 +989,7 @@ export default function App() {
                   keuangan={semsData.keuangan}
                   settings={semsData.settings} 
                   onSaveKeuangan={handleSaveKeuangan} 
+                  isReadOnly={isBudgetViewOnly}
                 />
               )}
 
@@ -903,9 +1039,12 @@ export default function App() {
                 <MasterDataView 
                   panitia={semsData.panitia || []} 
                   kegiatan={semsData.kegiatan || []} 
+                  tasks={semsData.tasks || []}
                   settings={semsData.settings}
                   onSavePanitia={handleSavePanitia}
                   onSaveKegiatan={handleSaveKegiatan}
+                  onSaveTask={handleSaveTask}
+                  onToggleTaskStatus={handleToggleTaskStatus}
                 />
               )}
 
@@ -943,6 +1082,32 @@ export default function App() {
           </AnimatePresence>
         </main>
       </div>
+
+      {/* Share Budget Transparency Modal */}
+      <ShareAnggaranModal
+        isOpen={isShareModalOpen}
+        onClose={() => setIsShareModalOpen(false)}
+        isBudgetViewOnly={isBudgetViewOnly}
+        onToggleBudgetViewOnly={handleToggleBudgetViewOnly}
+      />
+
+      {/* Admin PIN Unlock Modal */}
+      <AdminPinModal
+        isOpen={isAdminPinModalOpen}
+        onClose={() => setIsAdminPinModalOpen(false)}
+        onSuccess={() => {
+          setIsBudgetViewOnly(false);
+          try {
+            localStorage.setItem("sems_budget_view_only", "false");
+            if (typeof window !== "undefined") {
+              const url = new URL(window.location.href);
+              url.searchParams.delete("mode");
+              url.searchParams.delete("view_only");
+              window.history.replaceState({}, "", url.toString());
+            }
+          } catch (e) {}
+        }}
+      />
     </div>
   );
 }

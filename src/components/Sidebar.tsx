@@ -14,7 +14,9 @@ import {
   Ticket,
   FileDiff,
   ArrowRightLeft,
-  FileText
+  FileText,
+  Eye,
+  ShieldCheck
 } from "lucide-react";
 
 interface SidebarProps {
@@ -24,25 +26,36 @@ interface SidebarProps {
   isResetting: boolean;
   isOpen?: boolean;
   onClose?: () => void;
+  isBudgetViewOnly?: boolean;
 }
 
-export default function Sidebar({ currentView, onViewChange, onResetData, isResetting, isOpen = false, onClose }: SidebarProps) {
-  const sections = [
+export default function Sidebar({ 
+  currentView, 
+  onViewChange, 
+  onResetData, 
+  isResetting, 
+  isOpen = false, 
+  onClose,
+  isBudgetViewOnly = false
+}: SidebarProps) {
+  const allSections = [
     {
-      title: "Informasi Utama",
+      title: isBudgetViewOnly ? "Informasi Transparansi" : "Informasi Utama",
       items: [
         { id: "dashboard", label: "Dashboard Executive", icon: LayoutDashboard },
         { id: "panduan", label: "Buku Panduan", icon: BookOpen },
       ]
     },
-    {
-      title: "Administrasi & Risalah",
-      items: [
-        { id: "proposal", label: "Dokumen Proposal", icon: FileSpreadsheet },
-        { id: "notulensi", label: "Notulensi & Risalah", icon: FileText },
-        { id: "documents", label: "Arsip Dokumen", icon: FolderOpen },
-      ]
-    },
+    ...(!isBudgetViewOnly ? [
+      {
+        title: "Administrasi & Risalah",
+        items: [
+          { id: "proposal", label: "Dokumen Proposal", icon: FileSpreadsheet },
+          { id: "notulensi", label: "Notulensi & Risalah", icon: FileText },
+          { id: "documents", label: "Arsip Dokumen", icon: FolderOpen },
+        ]
+      }
+    ] : []),
     {
       title: "Tata Kelola Anggaran",
       items: [
@@ -53,20 +66,22 @@ export default function Sidebar({ currentView, onViewChange, onResetData, isRese
         { id: "monitoring", label: "Monitoring & LPJ", icon: TrendingUp },
       ]
     },
-    {
-      title: "Kupon & Atribut",
-      items: [
-        { id: "coupon", label: "Cetak Kupon Jalan Sehat", icon: Ticket },
-      ]
-    },
-    {
-      title: "Konfigurasi & Sinkronisasi",
-      items: [
-        { id: "master", label: "Data Master", icon: Users },
-        { id: "sheets", label: "Google Sheets Sync", icon: FileSpreadsheet },
-        { id: "setting", label: "Pengaturan Sistem", icon: Settings },
-      ]
-    }
+    ...(!isBudgetViewOnly ? [
+      {
+        title: "Kupon & Atribut",
+        items: [
+          { id: "coupon", label: "Cetak Kupon Jalan Sehat", icon: Ticket },
+        ]
+      },
+      {
+        title: "Konfigurasi & Sinkronisasi",
+        items: [
+          { id: "master", label: "Data Master", icon: Users },
+          { id: "sheets", label: "Google Sheets Sync", icon: FileSpreadsheet },
+          { id: "setting", label: "Pengaturan Sistem", icon: Settings },
+        ]
+      }
+    ] : [])
   ];
 
   return (
@@ -90,7 +105,9 @@ export default function Sidebar({ currentView, onViewChange, onResetData, isRese
             </div>
             <div>
               <h1 className="text-xs font-black text-white leading-tight uppercase tracking-wider">SEMS RW 04</h1>
-              <p className="text-[9px] text-red-400 font-extrabold uppercase tracking-widest leading-none mt-0.5">HUT RI Ke-81 Ngabean</p>
+              <p className="text-[9px] text-red-400 font-extrabold uppercase tracking-widest leading-none mt-0.5">
+                {isBudgetViewOnly ? "Transparansi Anggaran" : "HUT RI Ke-81 Ngabean"}
+              </p>
             </div>
           </div>
           
@@ -105,9 +122,17 @@ export default function Sidebar({ currentView, onViewChange, onResetData, isRese
           )}
         </div>
 
+        {/* Public View Indicator Badge if active */}
+        {isBudgetViewOnly && (
+          <div className="mx-3 mt-3 p-2 bg-emerald-950/60 border border-emerald-500/30 rounded-xl text-[10px] text-emerald-300 flex items-center gap-2">
+            <Eye className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+            <span className="font-bold leading-tight">Mode Transparansi Publik (Hanya Lihat)</span>
+          </div>
+        )}
+
       {/* Navigation List grouped by sections */}
       <nav className="flex-1 p-3 space-y-4 overflow-y-auto custom-scrollbar">
-        {sections.map((section) => (
+        {allSections.map((section) => (
           <div key={section.title} className="space-y-1">
             <div className="text-[9px] font-extrabold text-slate-500 uppercase tracking-[0.2em] mb-1.5 px-2">
               {section.title}
@@ -141,28 +166,34 @@ export default function Sidebar({ currentView, onViewChange, onResetData, isRese
         ))}
       </nav>
 
-      {/* Footer Info & Reset */}
+      {/* Footer Info & Controls */}
       <div className="p-3 border-t border-slate-800 bg-slate-950 space-y-2">
         <div className="bg-slate-900 p-2.5 rounded-xl text-[10px] text-slate-400 leading-relaxed font-sans border border-slate-800 shadow-inner">
           <div className="flex justify-between items-center text-slate-300 font-bold mb-1">
-            <span className="uppercase text-[8px] tracking-[0.15em] text-slate-500">System Status</span>
+            <span className="uppercase text-[8px] tracking-[0.15em] text-slate-500">Status Akses</span>
             <span className="flex items-center gap-1">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-              <span className="text-[8px] text-emerald-400 font-bold uppercase tracking-wider">Fully Synced</span>
+              <span className="text-[8px] text-emerald-400 font-bold uppercase tracking-wider">
+                {isBudgetViewOnly ? "View-Only" : "Admin Aktif"}
+              </span>
             </span>
           </div>
-          <p className="font-mono text-[9px] text-slate-500">Database: Sheets Local Sync</p>
+          <p className="font-mono text-[9px] text-slate-500">
+            {isBudgetViewOnly ? "Hak Akses: Warga / Publik (Anggaran)" : "Database: Sheets Local Sync"}
+          </p>
         </div>
 
-        <button
-          id="btn-reset-db"
-          onClick={onResetData}
-          disabled={isResetting}
-          className="w-full flex items-center justify-center gap-1.5 px-2.5 py-1.5 border border-slate-800 hover:border-slate-700 bg-slate-900 hover:bg-slate-850 rounded-lg text-[10px] font-mono text-slate-400 hover:text-white transition-all duration-200 disabled:opacity-50 shadow-sm cursor-pointer"
-        >
-          <RefreshCw className={`w-3 h-3 ${isResetting ? "animate-spin text-red-500" : "text-slate-500"}`} />
-          {isResetting ? "Mereset..." : "Reset Database"}
-        </button>
+        {!isBudgetViewOnly && (
+          <button
+            id="btn-reset-db"
+            onClick={onResetData}
+            disabled={isResetting}
+            className="w-full flex items-center justify-center gap-1.5 px-2.5 py-1.5 border border-slate-800 hover:border-slate-700 bg-slate-900 hover:bg-slate-850 rounded-lg text-[10px] font-mono text-slate-400 hover:text-white transition-all duration-200 disabled:opacity-50 shadow-sm cursor-pointer"
+          >
+            <RefreshCw className={`w-3 h-3 ${isResetting ? "animate-spin text-red-500" : "text-slate-500"}`} />
+            {isResetting ? "Mereset..." : "Reset Database"}
+          </button>
+        )}
       </div>
     </aside>
   </>

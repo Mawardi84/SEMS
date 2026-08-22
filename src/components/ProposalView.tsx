@@ -129,12 +129,22 @@ export default function ProposalView({
 
   // 1. Compute RT Contributions
   const rtCollections = (settings?.rtList || []).map((rtName) => {
-    const collected = (keuangan || [])
+    const directCollected = (keuangan || [])
       .filter((t) => t.type === "Masuk" && t.category === "Iuran RT" && (t.notes || "").toLowerCase().includes(rtName.toLowerCase()))
       .reduce((sum, t) => sum + t.amount, 0);
 
-    const naturaValue = 0;
+    // Cek apakah ter-cover oleh Dana Talangan Pamsimas (Rp 8.000.000 untuk 4 RT -> @ Rp 2.000.000 per RT)
+    const hasTalangan = (keuangan || []).some(
+      (t) => t.type === "Masuk" && (
+        t.category === "Dana Talangan / Pinjaman" || 
+        (t.notes || "").toLowerCase().includes("talangan") || 
+        (t.notes || "").toLowerCase().includes("pamsimas")
+      )
+    );
+    const talanganPerRT = hasTalangan ? (settings?.targetIuranPerRT || 2000000) : 0;
+    const collected = directCollected > 0 ? directCollected : talanganPerRT;
 
+    const naturaValue = 0;
     const totalContribution = collected + naturaValue;
     const targetIuran = settings?.targetIuranPerRT || 0;
     const percent = targetIuran > 0 ? Math.min(100, Math.round((collected / targetIuran) * 100)) : 0;
@@ -142,7 +152,7 @@ export default function ProposalView({
     let status = "Belum Mulai";
     let statusClass = "bg-slate-100 text-slate-500 border-slate-200";
     if (targetIuran > 0 && collected >= targetIuran) {
-      status = "LUNAS";
+      status = directCollected > 0 ? "LUNAS" : "LUNAS (Talangan)";
       statusClass = "bg-emerald-100 text-emerald-700 border-emerald-200";
     } else if (collected > 0) {
       status = "Kurang";
@@ -156,7 +166,8 @@ export default function ProposalView({
       totalContribution,
       percent,
       status,
-      statusClass
+      statusClass,
+      isTalangan: directCollected === 0 && talanganPerRT > 0
     };
   });
 

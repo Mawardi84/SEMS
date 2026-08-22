@@ -33,7 +33,10 @@ import {
   ArrowDownRight,
   Scale,
   Clock,
-  ExternalLink
+  ExternalLink,
+  Coins,
+  Landmark,
+  Info
 } from "lucide-react";
 import {
   BarChart,
@@ -121,9 +124,20 @@ export default function DashboardView({ data, onNavigateView }: DashboardViewPro
   // 3. RT Collection Tracker
   const rtCollections = (settings?.rtList || []).map((rtName) => {
     // Find all income transactions of type "Iuran RT" matching this RT name in description/notes
-    const collected = keuangan
+    const directCollected = keuangan
       .filter((t) => t.type === "Masuk" && t.category === "Iuran RT" && (t.notes || "").toLowerCase().includes(rtName.toLowerCase()))
       .reduce((sum, t) => sum + t.amount, 0);
+
+    // Cek apakah ter-cover oleh Dana Talangan Pamsimas (Rp 8.000.000 untuk 4 RT -> @ Rp 2.000.000 per RT)
+    const hasTalangan = keuangan.some(
+      (t) => t.type === "Masuk" && (
+        t.category === "Dana Talangan / Pinjaman" || 
+        (t.notes || "").toLowerCase().includes("talangan") || 
+        (t.notes || "").toLowerCase().includes("pamsimas")
+      )
+    );
+    const talanganPerRT = hasTalangan ? (settings?.targetIuranPerRT || 2000000) : 0;
+    const collected = directCollected > 0 ? directCollected : talanganPerRT;
 
     const percentCash = Math.min(100, Math.round((collected / (settings?.targetIuranPerRT || 1)) * 100));
 
@@ -131,12 +145,39 @@ export default function DashboardView({ data, onNavigateView }: DashboardViewPro
       name: rtName,
       collected,
       percent: percentCash,
+      isTalangan: directCollected === 0 && talanganPerRT > 0
     };
   });
 
   const totalRTTarget = (settings?.targetIuranPerRT || 0) * (settings?.rtList || []).length;
   const totalRTCashCollected = rtCollections.reduce((sum, r) => sum + r.collected, 0);
   const totalRTPercent = totalRTTarget > 0 ? Math.round((totalRTCashCollected / totalRTTarget) * 100) : 0;
+
+  // 3b. PAMSIMAS Transparency Breakdown (Rp 8.000.000 Talangan vs Rp 2.000.000 Donasi)
+  const pamsimasTrx = keuangan.find(
+    (t) => t.type === "Masuk" && (
+      t.category === "Dana Talangan / Pinjaman" || 
+      (t.notes || "").toLowerCase().includes("pamsimas") ||
+      t.proofNumber === "BKM-BU-01"
+    )
+  );
+
+  const totalPamsimasAmount = pamsimasTrx ? pamsimasTrx.amount : 10000000;
+  const pamsimasTalanganAmount = 8000000; // Rp 8.000.000 (Cover 4 RT @ Rp 2.000.000)
+  const pamsimasDonasiAmount = 2000000;  // Rp 2.000.000 (Sumbangan/Donasi Murni Pamsimas)
+  const pamsimasTalanganPercent = totalPamsimasAmount > 0 ? Math.round((pamsimasTalanganAmount / totalPamsimasAmount) * 100) : 80;
+  const pamsimasDonasiPercent = totalPamsimasAmount > 0 ? Math.round((pamsimasDonasiAmount / totalPamsimasAmount) * 100) : 20;
+
+  // Other general donor collections
+  const externalDonations = keuangan.filter(
+    (t) => t.type === "Masuk" && t.id !== pamsimasTrx?.id && (
+      t.category.toLowerCase().includes("donasi") || 
+      (t.notes || "").toLowerCase().includes("donasi") ||
+      (t.notes || "").toLowerCase().includes("sumbangan")
+    )
+  );
+  const totalExternalDonationsAmount = externalDonations.reduce((sum, t) => sum + t.amount, 0);
+  const totalAllDonationsAmount = pamsimasDonasiAmount + totalExternalDonationsAmount;
 
   // 4. Seksi Budget Utilization
   const seksiBudgets = (settings?.seksiList || []).map((seksi) => {
@@ -394,7 +435,7 @@ export default function DashboardView({ data, onNavigateView }: DashboardViewPro
             {/* KPI 1: Kas Utama */}
             <div id="card-bento-kpi-kas" className="bg-white p-4 rounded-xl shadow-sm border border-slate-200/80 border-l-4 border-red-600 flex items-center justify-between hover:shadow-md transition-all duration-200 group">
               <div className="space-y-1">
-                <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest block">Saldo Kas Utama RW</span>
+                <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest block">Dana Kas Utama</span>
                 <span className="text-xl font-mono font-extrabold text-slate-800 tracking-tight block group-hover:text-red-600 transition-colors">
                   {formatRp(netBalance)}
                 </span>
@@ -452,6 +493,174 @@ export default function DashboardView({ data, onNavigateView }: DashboardViewPro
               </div>
               <div className="bg-emerald-50 p-2.5 rounded-xl border border-emerald-100 shrink-0 group-hover:scale-105 transition-transform">
                 <CheckCircle2 className="w-5 h-5 text-emerald-600" />
+              </div>
+            </div>
+          </div>
+
+          {/* ========================================================================= */}
+          {/* TRANSPARANSI SUMBER KAS PAMSIMAS: TALANGAN (8 JT) VS DONASI (2 JT) */}
+          {/* ========================================================================= */}
+          <div id="card-pamsimas-transparency-hub" className="bg-white rounded-2xl p-4 sm:p-5 shadow-sm border border-slate-200 overflow-hidden space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-3 border-b border-slate-100 gap-3">
+              <div className="flex items-start sm:items-center gap-3">
+                <div className="p-2.5 bg-blue-50 text-blue-700 rounded-xl border border-blue-100 shrink-0">
+                  <Landmark className="w-5 h-5 text-blue-600" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="px-2 py-0.5 rounded bg-blue-100 text-blue-800 text-[10px] font-bold uppercase tracking-wider border border-blue-200">
+                      Transparansi Kas Pamsimas RW 04
+                    </span>
+                    <span className="text-[10px] font-mono text-slate-500 bg-slate-100 px-2 py-0.5 rounded border border-slate-200">
+                      Ref: BKM-BU-01 • 18 Juli 2026
+                    </span>
+                  </div>
+                  <h3 className="text-base font-extrabold text-slate-800 tracking-tight mt-1">
+                    Struktur Penerimaan Kas Pamsimas: {formatRp(totalPamsimasAmount)}
+                  </h3>
+                  <p className="text-[11px] text-slate-500">
+                    Pemisahan akuntabel antara Dana Talangan Kas Muka 4 RT (Rp 8.000.000) dan Hibah Donasi Murni Pamsimas (Rp 2.000.000).
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2 self-start sm:self-auto bg-slate-50 px-3.5 py-2 rounded-xl border border-slate-200 shrink-0">
+                <div className="text-right">
+                  <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest block">Total Kas Diterima</span>
+                  <span className="text-sm font-mono font-extrabold text-slate-800">{formatRp(totalPamsimasAmount)}</span>
+                </div>
+                <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
+              </div>
+            </div>
+
+            {/* Visual Split Ratio Progress Bar */}
+            <div className="space-y-1.5 bg-slate-50/70 p-3 rounded-xl border border-slate-100">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between text-xs font-bold gap-1">
+                <span className="flex items-center gap-1.5 text-blue-800">
+                  <span className="w-3 h-3 rounded-sm bg-blue-600 inline-block shadow-2xs"></span>
+                  Dana Talangan 4 RT: <strong className="font-mono text-blue-900">{formatRp(pamsimasTalanganAmount)}</strong> ({pamsimasTalanganPercent}%)
+                </span>
+                <span className="flex items-center gap-1.5 text-emerald-800">
+                  <span className="w-3 h-3 rounded-sm bg-emerald-500 inline-block shadow-2xs"></span>
+                  Dana Donasi Pamsimas: <strong className="font-mono text-emerald-900">{formatRp(pamsimasDonasiAmount)}</strong> ({pamsimasDonasiPercent}%)
+                </span>
+              </div>
+
+              <div className="w-full h-3.5 bg-slate-200/80 rounded-full overflow-hidden flex shadow-inner border border-slate-300/60 p-0.5">
+                <div 
+                  style={{ width: `${pamsimasTalanganPercent}%` }} 
+                  className="bg-gradient-to-r from-blue-600 via-blue-500 to-indigo-600 h-full rounded-l-full transition-all duration-700 relative group cursor-pointer" 
+                  title={`Dana Talangan 4 RT: ${formatRp(pamsimasTalanganAmount)} (${pamsimasTalanganPercent}%)`}
+                />
+                <div 
+                  style={{ width: `${pamsimasDonasiPercent}%` }} 
+                  className="bg-gradient-to-r from-emerald-500 via-emerald-400 to-teal-500 h-full rounded-r-full transition-all duration-700 relative group cursor-pointer" 
+                  title={`Dana Donasi Pamsimas: ${formatRp(pamsimasDonasiAmount)} (${pamsimasDonasiPercent}%)`}
+                />
+              </div>
+            </div>
+
+            {/* 2-Column Detail Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Panel 1: Dana Talangan Pamsimas (Rp 8.000.000) */}
+              <div className="bg-gradient-to-b from-blue-50/70 to-blue-50/20 rounded-xl p-4 border border-blue-200 space-y-3 relative overflow-hidden">
+                <div className="flex justify-between items-start">
+                  <div className="space-y-0.5">
+                    <div className="flex items-center gap-1.5">
+                      <span className="px-2 py-0.5 rounded bg-blue-600 text-white text-[9px] font-bold uppercase tracking-wider">
+                        1. Dana Talangan Pokok (80%)
+                      </span>
+                      <span className="text-[10px] text-blue-700 font-bold bg-blue-100 px-1.5 py-0.2 rounded border border-blue-200">
+                        Cover 4 RT
+                      </span>
+                    </div>
+                    <span className="text-xl font-mono font-extrabold text-blue-950 tracking-tight block pt-1">
+                      {formatRp(pamsimasTalanganAmount)}
+                    </span>
+                  </div>
+                  <div className="bg-white p-2.5 rounded-xl border border-blue-200 shadow-2xs">
+                    <Coins className="w-5 h-5 text-blue-600" />
+                  </div>
+                </div>
+
+                <p className="text-[11px] text-slate-600 leading-relaxed">
+                  Dana talangan kas muka dari Pamsimas sebesar <strong>Rp 2.000.000 per RT</strong> untuk membiayai belanja awal kepanitiaan tanpa harus menunggu penarikan iuran warga selesai.
+                </p>
+
+                {/* 4 RT Grid Allocation Status */}
+                <div className="bg-white rounded-lg p-3 border border-blue-100 shadow-2xs space-y-2">
+                  <div className="flex justify-between items-center">
+                    <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">
+                      Rincian Talangan Per Rukun Tetangga:
+                    </span>
+                    <span className="text-[9px] font-bold text-blue-600 font-mono">@ Rp 2.000.000</span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-1.5 text-[11px]">
+                    {(safeSettings.rtList || ["RT 01", "RT 02", "RT 03", "RT 04"]).map((rtName) => (
+                      <div key={rtName} className="flex items-center justify-between bg-blue-50/80 px-2 py-1.5 rounded border border-blue-100">
+                        <span className="font-bold text-blue-900">{rtName}</span>
+                        <span className="font-mono text-blue-700 font-bold text-[10px]">{formatRp(safeSettings.targetIuranPerRT || 2000000)}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-1.5 text-[10px] font-bold text-blue-800 bg-blue-100/60 p-2 rounded-lg border border-blue-200/60">
+                  <CheckCircle2 className="w-4 h-4 text-blue-600 shrink-0" />
+                  <span>Status: 100% Likuid & Terdistribusi untuk Belanja Operasional Panitia</span>
+                </div>
+              </div>
+
+              {/* Panel 2: Dana Donasi Pamsimas (Rp 2.000.000) */}
+              <div className="bg-gradient-to-b from-emerald-50/70 to-emerald-50/20 rounded-xl p-4 border border-emerald-200 space-y-3 relative overflow-hidden">
+                <div className="flex justify-between items-start">
+                  <div className="space-y-0.5">
+                    <div className="flex items-center gap-1.5">
+                      <span className="px-2 py-0.5 rounded bg-emerald-600 text-white text-[9px] font-bold uppercase tracking-wider">
+                        2. Dana Donasi / Hibah (20%)
+                      </span>
+                      <span className="text-[10px] text-emerald-700 font-bold bg-emerald-100 px-1.5 py-0.2 rounded border border-emerald-200">
+                        Sumbangan Murni
+                      </span>
+                    </div>
+                    <span className="text-xl font-mono font-extrabold text-emerald-950 tracking-tight block pt-1">
+                      {formatRp(pamsimasDonasiAmount)}
+                    </span>
+                  </div>
+                  <div className="bg-white p-2.5 rounded-xl border border-emerald-200 shadow-2xs">
+                    <Gift className="w-5 h-5 text-emerald-600" />
+                  </div>
+                </div>
+
+                <p className="text-[11px] text-slate-600 leading-relaxed">
+                  Sumbangan sukarela murni dari kas pengelola Pamsimas RW 04 sebagai bentuk partisipasi sosial kemasyarakatan <strong>tanpa kewajiban pengembalian</strong>.
+                </p>
+
+                {/* Recap Total Donatur Panitia */}
+                <div className="bg-white rounded-lg p-3 border border-emerald-100 shadow-2xs space-y-2">
+                  <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">
+                    Rekapitulasi Sumber Donasi Kas HUT RI:
+                  </span>
+                  <div className="space-y-1.5 text-[11px]">
+                    <div className="flex justify-between items-center text-slate-600">
+                      <span>• Donasi Pamsimas RW 04</span>
+                      <span className="font-mono font-bold text-emerald-700">{formatRp(pamsimasDonasiAmount)}</span>
+                    </div>
+                    <div className="flex justify-between items-center text-slate-600">
+                      <span>• Donatur Warga & Sponsor ({externalDonations.length} Pihak)</span>
+                      <span className="font-mono font-bold text-emerald-700">{formatRp(totalExternalDonationsAmount)}</span>
+                    </div>
+                    <div className="flex justify-between items-center pt-1 border-t border-slate-100 font-bold text-slate-800">
+                      <span>Total Seluruh Donasi Kas</span>
+                      <span className="font-mono text-emerald-800 font-extrabold">{formatRp(totalAllDonationsAmount)}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-1.5 text-[10px] font-bold text-emerald-800 bg-emerald-100/60 p-2 rounded-lg border border-emerald-200/60">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                  <span>Status: Hibah Bebas Alokasi untuk Hadiah Lomba, Doorprize & Panggung Tarling</span>
+                </div>
               </div>
             </div>
           </div>
@@ -1165,59 +1374,87 @@ export default function DashboardView({ data, onNavigateView }: DashboardViewPro
 
           {/* Tab Content 1: CASHFLOW */}
           {analyticalTab === "cashflow" && (
-            <div className="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden">
-              <div className="px-4 py-3 bg-slate-50 border-b border-slate-200 flex justify-between items-center">
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Detail Aliran Kas Buku Besar</span>
-                <span className="text-[10px] font-mono text-slate-500 font-bold">Total: {keuangan.length} Transaksi</span>
+            <div className="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden space-y-4 p-4">
+              {/* Highlight Banner for Pamsimas Transaction */}
+              <div className="bg-gradient-to-r from-blue-50 via-slate-50 to-emerald-50 rounded-xl p-3.5 border border-blue-200/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="flex items-start sm:items-center gap-2.5">
+                  <div className="p-2 bg-blue-100/80 text-blue-800 rounded-lg shrink-0">
+                    <Landmark className="w-4 h-4 text-blue-700" />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-[11px] font-bold text-slate-800">
+                        Catatan Khusus BKM-BU-01 (Kas Masuk Pamsimas RW 04):
+                      </span>
+                      <span className="text-[10px] font-mono font-bold text-blue-700 bg-white px-2 py-0.5 rounded border border-blue-200">
+                        Total {formatRp(totalPamsimasAmount)}
+                      </span>
+                    </div>
+                    <p className="text-[10px] text-slate-600 mt-0.5">
+                      Terbagi atas <strong className="text-blue-800">Rp 8.000.000</strong> (Dana Talangan Pokok 4 RT @ Rp 2 Jt) + <strong className="text-emerald-700">Rp 2.000.000</strong> (Sumbangan Hibah Murni Pamsimas).
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 shrink-0 self-start sm:self-auto text-[10px] font-mono">
+                  <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded font-bold">Talangan: 80%</span>
+                  <span className="px-2 py-1 bg-emerald-100 text-emerald-800 rounded font-bold">Donasi: 20%</span>
+                </div>
               </div>
-              <div className="overflow-x-auto">
-                <table className="w-full text-left border-collapse">
-                  <thead>
-                    <tr className="bg-slate-50 text-slate-500 font-sans text-[10px] uppercase tracking-wider border-b border-slate-200 font-bold">
-                      <th className="px-4 py-2.5">ID</th>
-                      <th className="px-4 py-2.5">Arus</th>
-                      <th className="px-4 py-2.5">Tanggal</th>
-                      <th className="px-4 py-2.5">Kategori</th>
-                      <th className="px-4 py-2.5">Nominal</th>
-                      <th className="px-4 py-2.5">Keterangan</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100 text-xs text-slate-700">
-                    {keuangan
-                      .filter(t => 
-                        (t.category || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
-                        (t.notes || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
-                        (t.id || "").toLowerCase().includes(searchQuery.toLowerCase())
-                      )
-                      .map((t) => (
-                        <tr key={t.id} className="hover:bg-slate-50/50 transition-colors">
-                          <td className="px-4 py-2 font-mono text-[10px] text-slate-400">{t.id}</td>
-                          <td className="px-4 py-2">
-                            <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide border ${
-                              t.type === "Masuk" 
-                                ? "bg-emerald-50 text-emerald-700 border-emerald-100" 
-                                : "bg-red-50 text-red-700 border-red-100"
-                            }`}>
-                              {t.type}
-                            </span>
-                          </td>
-                          <td className="px-4 py-2 font-mono text-slate-500">{t.date}</td>
-                          <td className="px-4 py-2 font-semibold text-slate-600">{t.category}</td>
-                          <td className={`px-4 py-2 font-mono font-bold ${t.type === "Masuk" ? "text-emerald-600" : "text-red-600"}`}>
-                            {t.type === "Masuk" ? "+" : "-"} {formatRp(t.amount)}
-                          </td>
-                          <td className="px-4 py-2 text-slate-600 italic font-sans max-w-xs truncate" title={t.notes}>{t.notes}</td>
-                        </tr>
-                      ))}
-                    {keuangan.length === 0 && (
-                      <tr>
-                        <td colSpan={6} className="text-center py-6 text-slate-400 font-sans">
-                          Tidak ditemukan transaksi kas terdaftar.
-                        </td>
+
+              <div className="border border-slate-200 rounded-lg overflow-hidden">
+                <div className="px-4 py-3 bg-slate-50 border-b border-slate-200 flex justify-between items-center">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Detail Aliran Kas Buku Besar</span>
+                  <span className="text-[10px] font-mono text-slate-500 font-bold">Total: {keuangan.length} Transaksi</span>
+                </div>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left border-collapse">
+                    <thead>
+                      <tr className="bg-slate-50 text-slate-500 font-sans text-[10px] uppercase tracking-wider border-b border-slate-200 font-bold">
+                        <th className="px-4 py-2.5">ID</th>
+                        <th className="px-4 py-2.5">Arus</th>
+                        <th className="px-4 py-2.5">Tanggal</th>
+                        <th className="px-4 py-2.5">Kategori</th>
+                        <th className="px-4 py-2.5">Nominal</th>
+                        <th className="px-4 py-2.5">Keterangan</th>
                       </tr>
-                    )}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100 text-xs text-slate-700">
+                      {keuangan
+                        .filter(t => 
+                          (t.category || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
+                          (t.notes || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
+                          (t.id || "").toLowerCase().includes(searchQuery.toLowerCase())
+                        )
+                        .map((t) => (
+                          <tr key={t.id} className="hover:bg-slate-50/50 transition-colors">
+                            <td className="px-4 py-2 font-mono text-[10px] text-slate-400">{t.id}</td>
+                            <td className="px-4 py-2">
+                              <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide border ${
+                                t.type === "Masuk" 
+                                  ? "bg-emerald-50 text-emerald-700 border-emerald-100" 
+                                  : "bg-red-50 text-red-700 border-red-100"
+                              }`}>
+                                {t.type}
+                              </span>
+                            </td>
+                            <td className="px-4 py-2 font-mono text-slate-500">{t.date}</td>
+                            <td className="px-4 py-2 font-semibold text-slate-600">{t.category}</td>
+                            <td className={`px-4 py-2 font-mono font-bold ${t.type === "Masuk" ? "text-emerald-600" : "text-red-600"}`}>
+                              {t.type === "Masuk" ? "+" : "-"} {formatRp(t.amount)}
+                            </td>
+                            <td className="px-4 py-2 text-slate-600 italic font-sans max-w-xs truncate" title={t.notes}>{t.notes}</td>
+                          </tr>
+                        ))}
+                      {keuangan.length === 0 && (
+                        <tr>
+                          <td colSpan={6} className="text-center py-6 text-slate-400 font-sans">
+                            Tidak ditemukan transaksi kas terdaftar.
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
               </div>
             </div>
           )}
@@ -1277,43 +1514,65 @@ export default function DashboardView({ data, onNavigateView }: DashboardViewPro
 
           {/* Tab Content 3: RT KOLEKTIF */}
           {analyticalTab === "rt" && (
-            <div className="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden">
-              <div className="px-4 py-3 bg-slate-50 border-b border-slate-200">
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Tabel Audit Iuran & Kontribusi Swadaya RT</span>
+            <div className="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden space-y-4 p-4">
+              {/* Pamsimas RT Coverage Transparency Banner */}
+              <div className="bg-blue-50/80 rounded-xl p-3.5 border border-blue-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="flex items-start sm:items-center gap-2.5">
+                  <div className="p-2 bg-blue-100 text-blue-800 rounded-lg shrink-0">
+                    <ShieldCheck className="w-4 h-4 text-blue-700" />
+                  </div>
+                  <div>
+                    <span className="text-[11px] font-bold text-blue-900 block">
+                      Proteksi Dana Talangan Pamsimas untuk 4 Rukun Tetangga (Total Rp 8.000.000)
+                    </span>
+                    <p className="text-[10px] text-slate-600 mt-0.5">
+                      Setiap RT telah dijamin likuiditasnya sebesar <strong>Rp 2.000.000</strong> dari dana talangan Pamsimas agar belanja seksi dapat segera berjalan.
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-1.5 shrink-0 self-start sm:self-auto text-[10px] font-mono bg-white px-2.5 py-1 rounded-lg border border-blue-200 text-blue-800 font-bold">
+                  <span>Talangan 4 RT @ Rp 2 Jt = Rp 8 Jt</span>
+                </div>
               </div>
-              <div className="overflow-x-auto">
-                <table className="w-full text-left border-collapse">
-                  <thead>
-                    <tr className="bg-slate-50 text-slate-500 font-sans text-[10px] uppercase tracking-wider border-b border-slate-200 font-bold">
-                      <th className="px-4 py-2.5">Rukun Tetangga (RT)</th>
-                      <th className="px-4 py-2.5 text-right">Kas Tunai Masuk</th>
-                      <th className="px-4 py-2.5 text-right">Target Iuran RT</th>
-                      <th className="px-4 py-2.5">Progres Kas Riil</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100 text-xs text-slate-700">
-                    {rtCollections
-                      .filter(r => r.name.toLowerCase().includes(searchQuery.toLowerCase()))
-                      .map((r) => (
-                        <tr key={r.name} className="hover:bg-slate-50/50 transition-colors">
-                          <td className="px-4 py-3 font-bold text-slate-800">{r.name} Ngabean</td>
-                          <td className="px-4 py-3 text-right font-mono font-bold text-slate-700">{formatRp(r.collected)}</td>
-                          <td className="px-4 py-3 text-right font-mono text-slate-400">{formatRp(safeSettings.targetIuranPerRT)}</td>
-                          <td className="px-4 py-3">
-                            <div className="flex items-center gap-2">
-                              <span className="font-mono text-[10px] font-bold w-8">{r.percent}%</span>
-                              <div className="w-24 h-1.5 bg-slate-100 rounded overflow-hidden">
-                                <div 
-                                  className="h-full bg-emerald-500" 
-                                  style={{ width: `${r.percent}%` }}
-                                />
+
+              <div className="border border-slate-200 rounded-lg overflow-hidden">
+                <div className="px-4 py-3 bg-slate-50 border-b border-slate-200">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Tabel Audit Iuran & Kontribusi Swadaya RT</span>
+                </div>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left border-collapse">
+                    <thead>
+                      <tr className="bg-slate-50 text-slate-500 font-sans text-[10px] uppercase tracking-wider border-b border-slate-200 font-bold">
+                        <th className="px-4 py-2.5">Rukun Tetangga (RT)</th>
+                        <th className="px-4 py-2.5 text-right">Kas Tunai Masuk</th>
+                        <th className="px-4 py-2.5 text-right">Target Iuran RT</th>
+                        <th className="px-4 py-2.5">Progres Kas Riil</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100 text-xs text-slate-700">
+                      {rtCollections
+                        .filter(r => r.name.toLowerCase().includes(searchQuery.toLowerCase()))
+                        .map((r) => (
+                          <tr key={r.name} className="hover:bg-slate-50/50 transition-colors">
+                            <td className="px-4 py-3 font-bold text-slate-800">{r.name} Ngabean</td>
+                            <td className="px-4 py-3 text-right font-mono font-bold text-slate-700">{formatRp(r.collected)}</td>
+                            <td className="px-4 py-3 text-right font-mono text-slate-400">{formatRp(safeSettings.targetIuranPerRT)}</td>
+                            <td className="px-4 py-3">
+                              <div className="flex items-center gap-2">
+                                <span className="font-mono text-[10px] font-bold w-8">{r.percent}%</span>
+                                <div className="w-24 h-1.5 bg-slate-100 rounded overflow-hidden">
+                                  <div 
+                                    className="h-full bg-emerald-500" 
+                                    style={{ width: `${r.percent}%` }}
+                                  />
+                                </div>
                               </div>
-                            </div>
-                          </td>
-                        </tr>
-                      ))}
-                  </tbody>
-                </table>
+                            </td>
+                          </tr>
+                        ))}
+                    </tbody>
+                  </table>
+                </div>
               </div>
             </div>
           )}
@@ -1380,6 +1639,53 @@ export default function DashboardView({ data, onNavigateView }: DashboardViewPro
               </span>
             </div>
 
+          </div>
+
+          {/* Projector Mode: Pamsimas Financial Breakdown Banner */}
+          <div className="bg-slate-800 p-5 rounded-lg border border-slate-700 space-y-3">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 border-b border-slate-700 pb-3">
+              <div className="flex items-center gap-2.5">
+                <Landmark className="w-5 h-5 text-blue-400" />
+                <span className="text-sm font-extrabold uppercase tracking-wide text-white">
+                  Transparansi Dana Masuk Pamsimas RW 04: {formatRp(totalPamsimasAmount)}
+                </span>
+              </div>
+              <span className="text-[10px] font-mono text-slate-400 bg-slate-900 px-2.5 py-1 rounded border border-slate-700">
+                Bukti: BKM-BU-01 (18 Juli 2026)
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="bg-blue-950/40 p-3.5 rounded-lg border border-blue-500/30 flex justify-between items-center">
+                <div>
+                  <span className="text-[10px] font-bold text-blue-400 uppercase tracking-wider block">
+                    1. Dana Talangan 4 RT (80%)
+                  </span>
+                  <span className="text-xl font-mono font-extrabold text-blue-300 block mt-0.5">
+                    {formatRp(pamsimasTalanganAmount)}
+                  </span>
+                  <span className="text-[10px] text-slate-400 block mt-0.5">
+                    Menalangi 4 RT @ Rp 2.000.000 untuk belanja awal
+                  </span>
+                </div>
+                <Coins className="w-7 h-7 text-blue-400 shrink-0 opacity-80" />
+              </div>
+
+              <div className="bg-emerald-950/40 p-3.5 rounded-lg border border-emerald-500/30 flex justify-between items-center">
+                <div>
+                  <span className="text-[10px] font-bold text-emerald-400 uppercase tracking-wider block">
+                    2. Sumbangan / Donasi Murni (20%)
+                  </span>
+                  <span className="text-xl font-mono font-extrabold text-emerald-300 block mt-0.5">
+                    {formatRp(pamsimasDonasiAmount)}
+                  </span>
+                  <span className="text-[10px] text-slate-400 block mt-0.5">
+                    Hibah kas Pamsimas tanpa kewajiban pengembalian
+                  </span>
+                </div>
+                <Gift className="w-7 h-7 text-emerald-400 shrink-0 opacity-80" />
+              </div>
+            </div>
           </div>
 
           {/* High Contrast Projector Visual Analytics */}

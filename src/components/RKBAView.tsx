@@ -39,6 +39,7 @@ interface RKBAViewProps {
   onBelanjaItem: (rkbaId: string) => Promise<void>;
   isRecordingBelanjaId: string | null;
   onNavigateView?: (viewName: string, params?: any) => void;
+  isReadOnly?: boolean;
 }
 
 export default function RKBAView({
@@ -49,7 +50,8 @@ export default function RKBAView({
   onSaveRKBA,
   onBelanjaItem,
   isRecordingBelanjaId,
-  onNavigateView
+  onNavigateView,
+  isReadOnly = false
 }: RKBAViewProps) {
   // Safety checks
   const safeSettings = {
@@ -193,7 +195,7 @@ export default function RKBAView({
                   tickLine={false}
                 />
                 <Tooltip 
-                  formatter={(value: number) => formatRp(value)}
+                  formatter={(value: any) => formatRp(Number(value) || 0)}
                   contentStyle={{ borderRadius: '8px', fontSize: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)' }}
                 />
                 <Legend wrapperStyle={{ fontSize: '11px', paddingTop: '10px' }} />
@@ -226,7 +228,7 @@ export default function RKBAView({
                     ))}
                   </Pie>
                   <Tooltip 
-                    formatter={(value: number) => formatRp(value)}
+                    formatter={(value: any) => formatRp(Number(value) || 0)}
                     contentStyle={{ borderRadius: '8px', fontSize: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)' }}
                   />
                   <Legend wrapperStyle={{ fontSize: '11px' }} />
@@ -314,7 +316,7 @@ export default function RKBAView({
                 <th className="px-4 py-3 text-left text-right">Total (RAB Awal)</th>
                 <th className="px-3 py-3 text-left">Sumber</th>
                 <th className="px-3 py-3 text-left">Status</th>
-                {!isModal && <th className="px-4 py-3 text-left print:hidden">Aksi & Tata Kelola</th>}
+                {!isModal && !isReadOnly && <th className="px-4 py-3 text-left print:hidden">Aksi & Tata Kelola</th>}
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-200 text-xs text-slate-900">
@@ -378,7 +380,7 @@ export default function RKBAView({
                         )}
                       </div>
                     </td>
-                    {!isModal && (
+                    {!isModal && !isReadOnly && (
                       <td className="px-4 py-3 print:hidden">
                         {!isLocked ? (
                           <div className="flex items-center gap-1.5">
@@ -445,7 +447,7 @@ export default function RKBAView({
               })}
               {(isModal ? filteredRKBA : currentItems).length === 0 && (
                 <tr>
-                  <td colSpan={isModal ? 7 : 8} className="text-center py-6 text-slate-400 font-sans">
+                  <td colSpan={isModal || isReadOnly ? 7 : 8} className="text-center py-6 text-slate-400 font-sans">
                     Tidak ada item anggaran yang sesuai dengan kriteria pencarian / saringan saat ini.
                   </td>
                 </tr>
@@ -680,14 +682,16 @@ export default function RKBAView({
             <Sparkles className="w-3.5 h-3.5" />
             AI Smart Budget
           </button>
-          <button
-            id="btn-add-rkba"
-            onClick={handleOpenAdd}
-            className="flex items-center gap-1 bg-red-700 hover:bg-red-800 text-white text-[11px] font-bold px-3 py-1.5 rounded shadow-xs transition-all duration-150 self-start md:self-auto uppercase tracking-wide cursor-pointer"
-          >
-            <Plus className="w-3.5 h-3.5" />
-            Ajukan Usulan Awal
-          </button>
+          {!isReadOnly && (
+            <button
+              id="btn-add-rkba"
+              onClick={handleOpenAdd}
+              className="flex items-center gap-1 bg-red-700 hover:bg-red-800 text-white text-[11px] font-bold px-3 py-1.5 rounded shadow-xs transition-all duration-150 self-start md:self-auto uppercase tracking-wide cursor-pointer"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              Ajukan Usulan Awal
+            </button>
+          )}
         </div>
       </div>
 

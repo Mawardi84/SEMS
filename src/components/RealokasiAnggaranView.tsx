@@ -41,6 +41,7 @@ interface RealokasiAnggaranViewProps {
   settings: SystemSetting;
   onSaveBudgetReallocation: (action: 'add' | 'edit' | 'submit' | 'approve' | 'reject' | 'cancel', data: BudgetReallocation, actor?: string) => Promise<void>;
   onNavigateView?: (viewName: string, params?: any) => void;
+  isReadOnly?: boolean;
 }
 
 export default function RealokasiAnggaranView({
@@ -49,7 +50,8 @@ export default function RealokasiAnggaranView({
   notulensi = [],
   settings,
   onSaveBudgetReallocation,
-  onNavigateView
+  onNavigateView,
+  isReadOnly = false
 }: RealokasiAnggaranViewProps) {
   // Safety list of seksi
   const safeSeksiList = settings?.seksiList || [
@@ -434,13 +436,15 @@ export default function RealokasiAnggaranView({
             Ekspor PDF
           </button>
           
-          <button
-            onClick={() => handleOpenAdd()}
-            className="flex items-center gap-1.5 px-3.5 py-1.5 bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold rounded-lg transition-colors shadow-xs hover:shadow-md cursor-pointer"
-          >
-            <Plus className="w-4 h-4" />
-            Ajukan Realokasi Anggaran
-          </button>
+          {!isReadOnly && (
+            <button
+              onClick={() => handleOpenAdd()}
+              className="flex items-center gap-1.5 px-3.5 py-1.5 bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold rounded-lg transition-colors shadow-xs hover:shadow-md cursor-pointer"
+            >
+              <Plus className="w-4 h-4" />
+              Ajukan Realokasi Anggaran
+            </button>
+          )}
         </div>
       </div>
 
@@ -775,7 +779,7 @@ export default function RealokasiAnggaranView({
                         </button>
 
                         {/* DRAFT */}
-                        {isDraft && (
+                        {!isReadOnly && isDraft && (
                           <>
                             <button
                               onClick={() => handleWorkflowSubmit(item)}
@@ -803,7 +807,7 @@ export default function RealokasiAnggaranView({
                         )}
 
                         {/* DIAJUKAN */}
-                        {isSubmitted && (
+                        {!isReadOnly && isSubmitted && (
                           <>
                             <button
                               onClick={() => handleWorkflowApprove(item)}

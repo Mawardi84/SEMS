@@ -144,16 +144,27 @@ export default function MonitoringView({
 
   // 1. Compute RT Contributions
   const rtCollections = safeSettings.rtList.map((rtName) => {
-    const collected = keuangan
+    const directCollected = keuangan
       .filter((t) => t.type === "Masuk" && t.category === "Iuran RT" && (t.notes || "").toLowerCase().includes(rtName.toLowerCase()))
       .reduce((sum, t) => sum + t.amount, 0);
 
-    const percent = Math.min(100, Math.round((collected / safeSettings.targetIuranPerRT) * 100));
+    // Cek apakah ter-cover oleh Dana Talangan Pamsimas (Rp 8.000.000 untuk 4 RT -> @ Rp 2.000.000 per RT)
+    const hasTalangan = keuangan.some(
+      (t) => t.type === "Masuk" && (
+        t.category === "Dana Talangan / Pinjaman" || 
+        (t.notes || "").toLowerCase().includes("talangan") || 
+        (t.notes || "").toLowerCase().includes("pamsimas")
+      )
+    );
+    const talanganPerRT = hasTalangan ? (safeSettings.targetIuranPerRT || 2000000) : 0;
+    const collected = directCollected > 0 ? directCollected : talanganPerRT;
+
+    const percent = Math.min(100, Math.round((collected / (safeSettings.targetIuranPerRT || 1)) * 100));
 
     let status = "Belum Mulai";
     let statusClass = "bg-slate-100 text-slate-500 border-slate-200";
     if (collected >= safeSettings.targetIuranPerRT) {
-      status = "LUNAS";
+      status = directCollected > 0 ? "LUNAS" : "LUNAS (Talangan)";
       statusClass = "bg-emerald-100 text-emerald-700 border-emerald-200";
     } else if (collected > 0) {
       status = "Kurang";
@@ -165,7 +176,8 @@ export default function MonitoringView({
       collected,
       percent,
       status,
-      statusClass
+      statusClass,
+      isTalangan: directCollected === 0 && talanganPerRT > 0
     };
   });
 
@@ -424,8 +436,16 @@ Laporan keuangan ini disusun secara transparan dan akuntabel berdasarkan sistem 
 - Total Realisasi Pengeluaran: ${formatRp(totalPengeluaran)}
 - **Sisa Saldo Kas Akhir:** **${formatRp(saldoSisa)}** (Telah diserahkan kembali ke Kas RW)
 
-**2. Pengelolaan Dana Talangan / Pinjaman Sementara**
-Mengingat saldo kas awal kepanitiaan adalah Rp 0 pada saat pembentukan, panitia telah mengandalkan skema Dana Talangan / Pinjaman dari Pamsimas guna membiayai pengeluaran darurat awal (seperti perlengkapan kesekretariatan, uang muka, dan pubdok). Seluruh Dana Talangan tersebut kini telah dikembalikan secara penuh dan tuntas kepada pihak Pamsimas seiring dengan masuknya setoran iuran tunai swadaya dari seluruh RT. Dengan demikian, kewajiban hutang talangan panitia per tanggal laporan pertanggungjawaban ini adalah Rp 0 (LUNAS).
+**2. Pengelolaan Dana Pamsimas (Talangan Rp 8 Juta & Sumbangan Rp 2 Juta)**
+Mengingat saldo kas awal kepanitiaan adalah Rp 0 pada saat pembentukan, panitia mendapatkan penerimaan kas awal sebesar Rp 10.000.000,00 dari Pamsimas RW 04 Ngabean dengan rincian:
+1. **Dana Talangan 4 RT (Rp 8.000.000,00):** Alokasi dana talangan operasional @ Rp 2.000.000,00 untuk RT 01 s.d. RT 04.
+2. **Sumbangan / Donasi Pamsimas (Rp 2.000.000,00):** Merupakan sumbangan sukarela murni dari pihak Pamsimas untuk mendukung kegiatan HUT RI Ke-81.
+
+Dalam mekanisme pertanggungjawabannya:
+- Panitia pelaksana telah menyerahkan bundel Surat Pertanggungjawaban (SPJ) berupa nota-nota bukti belanja riil sebesar Rp 2.000.000,00 per RT (total Rp 8.000.000,00) kepada masing-masing pengurus RT (RT 01 s.d. RT 04).
+- Selanjutnya, masing-masing pengurus RT dari hasil iuran warga langsung menyetorkan dan mengganti dana talangan tersebut kepada pihak Pamsimas sebagai pelunasan dana talangan awal.
+- Sumbangan Pamsimas Rp 2.000.000,00 dibukukan sebagai pemasukan donasi/sponsorship resmi.
+- Dengan demikian, kewajiban panitia terhadap dana talangan Pamsimas dinyatakan telah tuntas 100% (LUNAS) melalui penyerahan fisik berkas nota belanja per RT.
 
 ---
 
