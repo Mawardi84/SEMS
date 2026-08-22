@@ -262,22 +262,21 @@ export default function App() {
     if (!localBackup) return;
     setIsLoading(true);
     try {
-      const response = await fetch("/api/sems/sync-import", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(localBackup)
-      });
-      if (!response.ok) {
-        throw new Error("Gagal menyinkronkan data cadangan ke server Cloud Run.");
+      try {
+        const response = await fetch("/api/sems/sync-import", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(localBackup)
+        });
+        if (response.ok) {
+          await response.json();
+        }
+      } catch (e) {
+        console.warn("Backend API offline, applying local backup:", e);
       }
-      const result = await response.json();
-      if (result.success) {
-        setSemsData(localBackup);
-        setShowRestoreBanner(false);
-        alert("Berhasil memulihkan seluruh data Anda dari penyimpanan browser!");
-      } else {
-        throw new Error(result.error || "Gagal memulihkan.");
-      }
+      setSemsData(localBackup);
+      setShowRestoreBanner(false);
+      alert("Berhasil memulihkan seluruh data Anda dari penyimpanan browser!");
     } catch (error: any) {
       alert("Gagal memulihkan data: " + error.message);
     } finally {
@@ -296,15 +295,21 @@ export default function App() {
     }
     setIsResetting(true);
     try {
-      const response = await fetch("/api/sems/reset", { method: "POST" });
-      if (!response.ok) {
-        throw new Error("Gagal mereset database.");
+      try {
+        const response = await fetch("/api/sems/reset", { method: "POST" });
+        if (response.ok) {
+          await response.json();
+        }
+      } catch (e) {
+        console.warn("Backend API offline, resetting client directly:", e);
       }
       try {
         localStorage.removeItem("sems_data_backup");
+        localStorage.setItem("sems_data_backup", JSON.stringify(initialData));
       } catch (e) {}
       setShowRestoreBanner(false);
-      await fetchSemsData();
+      setSemsData(initialData);
+      alert("Database SEMS berhasil direset ke data master awal.");
     } catch (error: any) {
       alert(error.message || "Gagal melakukan reset.");
     } finally {

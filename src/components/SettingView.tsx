@@ -222,45 +222,43 @@ export default function SettingView({ settings, onSaveSettings, semsData, onImpo
         throw new Error("Teks JSON tidak sesuai format SEMS (tidak mengandung konfigurasi settings).");
       }
 
-      // Sync with backend database
-      const response = await fetch("/api/sems/sync-import", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(parsed)
-      });
-
-      if (!response.ok) {
-        throw new Error("Gagal menyinkronkan data impor ke server.");
+      // Sync with backend database if available
+      try {
+        const response = await fetch("/api/sems/sync-import", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(parsed)
+        });
+        if (response.ok) {
+          await response.json();
+        }
+      } catch (syncErr) {
+        console.warn("Backend offline, applying pasted data locally:", syncErr);
       }
 
-      const result = await response.json();
-      if (result.success) {
-        await onImportSuccess(parsed);
-        setImportSuccess(true);
-        setPastedJson("");
-        setShowPasteArea(false);
-        setRtListStr(parsed.settings.rtList?.join(", ") || "");
-        setSeksiListStr(parsed.settings.seksiList?.join(", ") || "");
-        setTargetIuran(parsed.settings.targetIuranPerRT || 2000000);
-        setPaguBudgets({ ...parsed.settings.paguAnggaranSeksi });
-        setKopLine1(parsed.settings.kopLine1 || "");
-        setKopLine2(parsed.settings.kopLine2 || "");
-        setKopLine3(parsed.settings.kopLine3 || "");
-        setKopLine4(parsed.settings.kopLine4 || "");
-        setLogoStyle(parsed.settings.logoStyle || "flag");
-        setLogoUrl(parsed.settings.logoUrl || "");
-        setKopStyle(parsed.settings.kopStyle || "classic-centered");
-        setStempelUrl(parsed.settings.stempelUrl || "");
-        setSignatureKetuaUrl(parsed.settings.signatureKetuaUrl || "");
-        setSignatureKetuaName(parsed.settings.signatureKetuaName || "");
-        setSignatureBendaharaUrl(parsed.settings.signatureBendaharaUrl || "");
-        setSignatureBendaharaName(parsed.settings.signatureBendaharaName || "");
-        setSignatureSekretarisUrl(parsed.settings.signatureSekretarisUrl || "");
-        setSignatureSekretarisName(parsed.settings.signatureSekretarisName || "");
-        setTimeout(() => setImportSuccess(false), 5000);
-      } else {
-        throw new Error(result.error || "Gagal mengimpor ke server.");
-      }
+      await onImportSuccess(parsed);
+      setImportSuccess(true);
+      setPastedJson("");
+      setShowPasteArea(false);
+      setRtListStr(parsed.settings.rtList?.join(", ") || "");
+      setSeksiListStr(parsed.settings.seksiList?.join(", ") || "");
+      setTargetIuran(parsed.settings.targetIuranPerRT || 2000000);
+      setPaguBudgets({ ...parsed.settings.paguAnggaranSeksi });
+      setKopLine1(parsed.settings.kopLine1 || "");
+      setKopLine2(parsed.settings.kopLine2 || "");
+      setKopLine3(parsed.settings.kopLine3 || "");
+      setKopLine4(parsed.settings.kopLine4 || "");
+      setLogoStyle(parsed.settings.logoStyle || "flag");
+      setLogoUrl(parsed.settings.logoUrl || "");
+      setKopStyle(parsed.settings.kopStyle || "classic-centered");
+      setStempelUrl(parsed.settings.stempelUrl || "");
+      setSignatureKetuaUrl(parsed.settings.signatureKetuaUrl || "");
+      setSignatureKetuaName(parsed.settings.signatureKetuaName || "");
+      setSignatureBendaharaUrl(parsed.settings.signatureBendaharaUrl || "");
+      setSignatureBendaharaName(parsed.settings.signatureBendaharaName || "");
+      setSignatureSekretarisUrl(parsed.settings.signatureSekretarisUrl || "");
+      setSignatureSekretarisName(parsed.settings.signatureSekretarisName || "");
+      setTimeout(() => setImportSuccess(false), 5000);
     } catch (err: any) {
       console.error("Gagal mengimpor data tempel:", err);
       setImportError(err.message || "Teks JSON tidak valid atau salah format.");
