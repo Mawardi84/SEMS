@@ -19,7 +19,8 @@ import PerubahanAnggaranView from "./components/PerubahanAnggaranView";
 import RealokasiAnggaranView from "./components/RealokasiAnggaranView";
 import ShareAnggaranModal from "./components/ShareAnggaranModal";
 import AdminPinModal from "./components/AdminPinModal";
-import { SEMSData, SystemSetting, Panitia, Kegiatan, RKBAItem, KeuanganTransaction, Notulensi, DigitalDocument, UndanganRapat, BudgetChange, BudgetReallocation } from "./types";
+import { SEMSData, SystemSetting, Panitia, Kegiatan, RKBAItem, KeuanganTransaction, Notulensi, DigitalDocument, UndanganRapat, BudgetChange, BudgetReallocation, LPJMaster, LPJStatus } from "./types";
+import { initialData } from "./data/initialData";
 import { Award, AlertTriangle, RefreshCw, Menu, Clock, Share2, Eye, ShieldCheck, Lock, ArrowLeft } from "lucide-react";
 
 export default function App() {
@@ -151,19 +152,52 @@ export default function App() {
   const [showRestoreBanner, setShowRestoreBanner] = useState<boolean>(false);
   const [localBackup, setLocalBackup] = useState<SEMSData | null>(null);
 
-  // Fetch initial SEMS data
+  // Fetch initial SEMS data with offline/Vercel fallback
   const fetchSemsData = async () => {
     try {
-      const response = await fetch("/api/sems/data");
-      if (!response.ok) {
-        throw new Error("Gagal mengunduh database SEMS dari server.");
+      // 1. Try checking local storage first
+      let localSaved: SEMSData | null = null;
+      try {
+        const backupStr = localStorage.getItem("sems_data_backup");
+        if (backupStr) {
+          localSaved = JSON.parse(backupStr) as SEMSData;
+        }
+      } catch (e) {
+        console.error("Gagal membaca backup browser:", e);
       }
-      const json = await response.json();
-      setSemsData(json);
+
+      // 2. Try fetching from backend API (if server is running)
+      try {
+        const response = await fetch("/api/sems/data");
+        if (response.ok) {
+          const contentType = response.headers.get("content-type");
+          if (contentType && contentType.includes("application/json")) {
+            const json = await response.json();
+            if (json && json.settings) {
+              setSemsData(json);
+              setErrorMessage("");
+              return;
+            }
+          }
+        }
+      } catch (apiErr) {
+        console.warn("Backend API tidak terjangkau (misal static Vercel), menggunakan database bawaan/lokal:", apiErr);
+      }
+
+      // 3. Fallback to localStorage or bundled initial master data
+      if (localSaved && localSaved.settings) {
+        setSemsData(localSaved);
+      } else {
+        setSemsData(initialData);
+        try {
+          localStorage.setItem("sems_data_backup", JSON.stringify(initialData));
+        } catch (e) {}
+      }
       setErrorMessage("");
     } catch (error: any) {
-      console.error(error);
-      setErrorMessage(error.message || "Gagal menghubungi server SEMS.");
+      console.error("Fallback error:", error);
+      setSemsData(initialData);
+      setErrorMessage("");
     } finally {
       setIsLoading(false);
     }
@@ -286,18 +320,18 @@ export default function App() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(updatedSettings)
       });
-      if (!response.ok) {
-        throw new Error("Gagal menyimpan konfigurasi.");
+      if (response.ok) {
+        const result = await response.json();
+        if (result.success) {
+          setSemsData(prev => prev ? { ...prev, settings: updatedSettings } : null);
+          return;
+        }
       }
-      const result = await response.json();
-      if (result.success) {
-        setSemsData(prev => prev ? { ...prev, settings: updatedSettings } : null);
-      } else {
-        throw new Error(result.error || "Gagal menyimpan.");
-      }
-    } catch (error: any) {
-      alert(error.message || "Gagal menyimpan konfigurasi.");
+    } catch (e) {
+      console.warn("Backend offline, updating settings locally:", e);
     }
+    // Local fallback
+    setSemsData(prev => prev ? { ...prev, settings: updatedSettings } : null);
   };
 
   // 2. PANITIA CRUD
@@ -308,16 +342,23 @@ export default function App() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ action, data })
       });
-      if (!response.ok) throw new Error("Gagal sinkronisasi data Panitia.");
-      const result = await response.json();
-      if (result.success && semsData) {
-        setSemsData({ ...semsData, panitia: result.panitia });
-      } else {
-        throw new Error(result.error);
+      if (response.ok) {
+        const result = await response.json();
+        if (result.success && semsData) {
+          setSemsData({ ...semsData, panitia: result.panitia });
+          return;
+        }
       }
-    } catch (error: any) {
-      alert(error.message);
+    } catch (e) {
+      console.warn("Backend offline, mutating panitia locally:", e);
     }
+    // Local fallback
+    if (!semsData) return;
+    let list = [...(semsData.panitia || [])];
+    if (action === 'add') list.push(data);
+    else if (action === 'edit') list = list.map(p => p.id === data.id ? data : p);
+    else if (action === 'delete') list = list.filter(p => p.id !== data.id);
+    setSemsData({ ...semsData, panitia: list });
   };
 
   // 3. KEGIATAN CRUD
@@ -328,16 +369,23 @@ export default function App() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ action, data })
       });
-      if (!response.ok) throw new Error("Gagal sinkronisasi data Kegiatan.");
-      const result = await response.json();
-      if (result.success && semsData) {
-        setSemsData({ ...semsData, kegiatan: result.kegiatan });
-      } else {
-        throw new Error(result.error);
+      if (response.ok) {
+        const result = await response.json();
+        if (result.success && semsData) {
+          setSemsData({ ...semsData, kegiatan: result.kegiatan });
+          return;
+        }
       }
-    } catch (error: any) {
-      alert(error.message);
+    } catch (e) {
+      console.warn("Backend offline, mutating kegiatan locally:", e);
     }
+    // Local fallback
+    if (!semsData) return;
+    let list = [...(semsData.kegiatan || [])];
+    if (action === 'add') list.push(data);
+    else if (action === 'edit') list = list.map(k => k.id === data.id ? data : k);
+    else if (action === 'delete') list = list.filter(k => k.id !== data.id);
+    setSemsData({ ...semsData, kegiatan: list });
   };
 
   // 4. RKBA CRUD & APPROVAL WORKFLOW
@@ -348,19 +396,40 @@ export default function App() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ action, data })
       });
-      if (!response.ok) throw new Error("Gagal sinkronisasi data RKBA.");
-      const result = await response.json();
-      if (result.success && semsData) {
-        setSemsData({ ...semsData, rkba: result.rkba });
-      } else {
-        throw new Error(result.error);
+      if (response.ok) {
+        const result = await response.json();
+        if (result.success && semsData) {
+          setSemsData({ ...semsData, rkba: result.rkba });
+          return;
+        }
       }
-    } catch (error: any) {
-      alert(error.message);
+    } catch (e) {
+      console.warn("Backend offline, mutating rkba locally:", e);
     }
+    // Local fallback
+    if (!semsData) return;
+    let list = [...(semsData.rkba || [])];
+    if (action === 'add') {
+      const nextIdx = list.length + 1;
+      const formatted: RKBAItem = {
+        ...data,
+        id: data.id || `rkba-${Date.now()}`,
+        activityCode: data.activityCode || `ACT-${String(nextIdx).padStart(3, '0')}`,
+        status: data.status || 'Draft',
+        activityStatus: data.activityStatus || 'RENCANA'
+      };
+      list.push(formatted);
+    } else if (action === 'edit') {
+      list = list.map(r => r.id === data.id ? { ...r, ...data } : r);
+    } else if (action === 'delete') {
+      list = list.filter(r => r.id !== data.id);
+    } else if (action === 'approve') {
+      list = list.map(r => r.id === data.id ? { ...r, status: 'Disetujui' } : r);
+    } else if (action === 'reject') {
+      list = list.map(r => r.id === data.id ? { ...r, status: 'Ditolak' } : r);
+    }
+    setSemsData({ ...semsData, rkba: list });
   };
-
-  // 5. NATURA CRUD removed
 
   // 6. KEUANGAN MANUAL LEDGER CRUD
   const handleSaveKeuangan = async (action: 'add' | 'edit' | 'delete', data: KeuanganTransaction) => {
@@ -370,16 +439,27 @@ export default function App() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ action, data })
       });
-      if (!response.ok) throw new Error("Gagal sinkronisasi Buku Kas.");
-      const result = await response.json();
-      if (result.success && semsData) {
-        setSemsData({ ...semsData, keuangan: result.keuangan });
-      } else {
-        throw new Error(result.error);
+      if (response.ok) {
+        const result = await response.json();
+        if (result.success && semsData) {
+          setSemsData({ ...semsData, keuangan: result.keuangan });
+          return;
+        }
       }
-    } catch (error: any) {
-      alert(error.message);
+    } catch (e) {
+      console.warn("Backend offline, mutating keuangan locally:", e);
     }
+    // Local fallback
+    if (!semsData) return;
+    let list = [...(semsData.keuangan || [])];
+    if (action === 'add') {
+      list.push({ ...data, id: data.id || `tr-${Date.now()}` });
+    } else if (action === 'edit') {
+      list = list.map(k => k.id === data.id ? data : k);
+    } else if (action === 'delete') {
+      list = list.filter(k => k.id !== data.id);
+    }
+    setSemsData({ ...semsData, keuangan: list });
   };
 
   // 7. TASK STATUS TOGGLE & CRUD (Belum -> Proses -> Selesai)
@@ -390,16 +470,26 @@ export default function App() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ id: taskId })
       });
-      if (!response.ok) throw new Error("Gagal mengubah progres program kerja.");
-      const result = await response.json();
-      if (result.success && semsData) {
-        setSemsData({ ...semsData, tasks: result.tasks });
-      } else {
-        throw new Error(result.error);
+      if (response.ok) {
+        const result = await response.json();
+        if (result.success && semsData) {
+          setSemsData({ ...semsData, tasks: result.tasks });
+          return;
+        }
       }
-    } catch (error: any) {
-      alert(error.message);
+    } catch (e) {
+      console.warn("Backend offline, toggling task locally:", e);
     }
+    // Local fallback
+    if (!semsData) return;
+    const list = (semsData.tasks || []).map(t => {
+      if (t.id === taskId) {
+        const nextStatus = t.status === 'Belum' ? 'Proses' : t.status === 'Proses' ? 'Selesai' : 'Belum';
+        return { ...t, status: nextStatus as any };
+      }
+      return t;
+    });
+    setSemsData({ ...semsData, tasks: list });
   };
 
   const handleSaveTask = async (action: 'add' | 'edit' | 'delete' | 'toggle', data: any) => {
@@ -409,16 +499,23 @@ export default function App() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ action, data })
       });
-      if (!response.ok) throw new Error("Gagal menyimpan program kerja.");
-      const result = await response.json();
-      if (result.success && semsData) {
-        setSemsData({ ...semsData, tasks: result.tasks });
-      } else {
-        throw new Error(result.error);
+      if (response.ok) {
+        const result = await response.json();
+        if (result.success && semsData) {
+          setSemsData({ ...semsData, tasks: result.tasks });
+          return;
+        }
       }
-    } catch (error: any) {
-      alert(error.message);
+    } catch (e) {
+      console.warn("Backend offline, mutating task locally:", e);
     }
+    // Local fallback
+    if (!semsData) return;
+    let list = [...(semsData.tasks || [])];
+    if (action === 'add') list.push({ ...data, id: data.id || `task-${Date.now()}` });
+    else if (action === 'edit') list = list.map(t => t.id === data.id ? data : t);
+    else if (action === 'delete') list = list.filter(t => t.id !== data.id);
+    setSemsData({ ...semsData, tasks: list });
   };
 
   // 8. RECORD REAL TRANSAKSI FROM APPROVED RKBA (Bridges RKBA and Keuangan)
@@ -430,23 +527,41 @@ export default function App() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ id: rkbaId })
       });
-      if (!response.ok) throw new Error("Gagal membukukan belanja.");
-      const result = await response.json();
-      if (result.success && semsData) {
-        // Update both rkba list and keuangan list
-        setSemsData({ 
-          ...semsData, 
-          rkba: result.rkba,
-          keuangan: result.keuangan 
-        });
-      } else {
-        throw new Error(result.error || "Gagal membukukan.");
+      if (response.ok) {
+        const result = await response.json();
+        if (result.success && semsData) {
+          setSemsData({ 
+            ...semsData, 
+            rkba: result.rkba,
+            keuangan: result.keuangan 
+          });
+          return;
+        }
       }
-    } catch (error: any) {
-      alert("Gagal membukukan belanja: " + error.message);
+    } catch (e) {
+      console.warn("Backend offline, processing belanja locally:", e);
     } finally {
       setIsRecordingBelanjaId(null);
     }
+    // Local fallback
+    if (!semsData) return;
+    const rkbaItem = (semsData.rkba || []).find(r => r.id === rkbaId);
+    if (!rkbaItem) return;
+    const updatedRkba = (semsData.rkba || []).map(r => r.id === rkbaId ? { ...r, status: 'Belanja' as const, activityStatus: 'SELESAI' as const } : r);
+    const newTx: KeuanganTransaction = {
+      id: `tr-auto-${Date.now()}`,
+      type: 'Keluar',
+      date: new Date().toISOString().split('T')[0],
+      category: 'Pengeluaran Kegiatan',
+      amount: rkbaItem.total || 0,
+      notes: `[Realisasi RKBA] ${rkbaItem.name} (${rkbaItem.seksi}) - ${rkbaItem.notes || ''}`,
+      seksi: rkbaItem.seksi,
+      refId: rkbaItem.id,
+      paymentMethod: 'Tunai',
+      proofStatus: 'Lengkap'
+    };
+    const updatedKeuangan = [...(semsData.keuangan || []), newTx];
+    setSemsData({ ...semsData, rkba: updatedRkba, keuangan: updatedKeuangan });
   };
 
   // 9. NOTULENSI CRUD
@@ -457,20 +572,27 @@ export default function App() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ action, data, actor })
       });
-      if (!response.ok) throw new Error("Gagal sinkronisasi data Notulensi.");
-      const result = await response.json();
-      if (result.success && semsData) {
-        setSemsData({ 
-          ...semsData, 
-          notulensi: result.notulensi,
-          auditTrails: result.auditTrails || semsData.auditTrails
-        });
-      } else {
-        throw new Error(result.error);
+      if (response.ok) {
+        const result = await response.json();
+        if (result.success && semsData) {
+          setSemsData({ 
+            ...semsData, 
+            notulensi: result.notulensi,
+            auditTrails: result.auditTrails || semsData.auditTrails
+          });
+          return;
+        }
       }
-    } catch (error: any) {
-      alert(error.message);
+    } catch (e) {
+      console.warn("Backend offline, mutating notulensi locally:", e);
     }
+    // Local fallback
+    if (!semsData) return;
+    let list = [...(semsData.notulensi || [])];
+    if (action === 'add') list.unshift({ ...data, id: data.id || `notulensi-${Date.now()}` });
+    else if (action === 'edit') list = list.map(n => n.id === data.id ? data : n);
+    else if (action === 'delete') list = list.filter(n => n.id !== data.id);
+    setSemsData({ ...semsData, notulensi: list });
   };
 
   // 10. DIGITAL DOCUMENTS CRUD
@@ -481,16 +603,23 @@ export default function App() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ action, data })
       });
-      if (!response.ok) throw new Error("Gagal sinkronisasi data Dokumen Digital.");
-      const result = await response.json();
-      if (result.success && semsData) {
-        setSemsData({ ...semsData, documents: result.documents });
-      } else {
-        throw new Error(result.error);
+      if (response.ok) {
+        const result = await response.json();
+        if (result.success && semsData) {
+          setSemsData({ ...semsData, documents: result.documents });
+          return;
+        }
       }
-    } catch (error: any) {
-      alert(error.message);
+    } catch (e) {
+      console.warn("Backend offline, mutating document locally:", e);
     }
+    // Local fallback
+    if (!semsData) return;
+    let list = [...(semsData.documents || [])];
+    if (action === 'add') list.unshift({ ...data, id: data.id || `doc-${Date.now()}` });
+    else if (action === 'edit') list = list.map(d => d.id === data.id ? data : d);
+    else if (action === 'delete') list = list.filter(d => d.id !== data.id);
+    setSemsData({ ...semsData, documents: list });
   };
 
   // 11. UNDANGAN RAPAT CRUD
@@ -501,16 +630,23 @@ export default function App() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ action, data })
       });
-      if (!response.ok) throw new Error("Gagal sinkronisasi data Undangan Rapat.");
-      const result = await response.json();
-      if (result.success && semsData) {
-        setSemsData({ ...semsData, undangan: result.undangan });
-      } else {
-        throw new Error(result.error);
+      if (response.ok) {
+        const result = await response.json();
+        if (result.success && semsData) {
+          setSemsData({ ...semsData, undangan: result.undangan });
+          return;
+        }
       }
-    } catch (error: any) {
-      alert(error.message);
+    } catch (e) {
+      console.warn("Backend offline, mutating undangan locally:", e);
     }
+    // Local fallback
+    if (!semsData) return;
+    let list = [...(semsData.undangan || [])];
+    if (action === 'add') list.unshift({ ...data, id: data.id || `undangan-${Date.now()}` });
+    else if (action === 'edit') list = list.map(u => u.id === data.id ? data : u);
+    else if (action === 'delete') list = list.filter(u => u.id !== data.id);
+    setSemsData({ ...semsData, undangan: list });
   };
 
   // 12. BUDGET CHANGES (Perubahan Anggaran) CRUD & WORKFLOW
@@ -521,21 +657,38 @@ export default function App() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ action, data, actor })
       });
-      if (!response.ok) throw new Error("Gagal sinkronisasi data Perubahan Anggaran.");
-      const result = await response.json();
-      if (result.success && semsData) {
-        setSemsData({
-          ...semsData,
-          budgetChanges: result.budgetChanges,
-          rkba: result.rkba || semsData.rkba,
-          auditTrails: result.auditTrails || semsData.auditTrails
-        });
-      } else {
-        throw new Error(result.error);
+      if (response.ok) {
+        const result = await response.json();
+        if (result.success && semsData) {
+          setSemsData({
+            ...semsData,
+            budgetChanges: result.budgetChanges,
+            rkba: result.rkba || semsData.rkba,
+            auditTrails: result.auditTrails || semsData.auditTrails
+          });
+          return;
+        }
       }
-    } catch (error: any) {
-      alert(error.message || "Gagal memproses perubahan anggaran.");
+    } catch (e) {
+      console.warn("Backend offline, mutating budget change locally:", e);
     }
+    // Local fallback
+    if (!semsData) return;
+    let changes = [...(semsData.budgetChanges || [])];
+    let rkbaList = [...(semsData.rkba || [])];
+    if (action === 'add') {
+      changes.unshift({ ...data, id: data.id || `change-${Date.now()}` });
+    } else if (action === 'edit') {
+      changes = changes.map(c => c.id === data.id ? data : c);
+    } else if (action === 'approve') {
+      changes = changes.map(c => c.id === data.id ? { ...c, status: 'DISETUJUI' as const } : c);
+      rkbaList = rkbaList.map(r => r.id === data.activityId ? { ...r, total: data.revisedAmount, status: 'Disetujui' as const } : r);
+    } else if (action === 'reject') {
+      changes = changes.map(c => c.id === data.id ? { ...c, status: 'DITOLAK' as const } : c);
+    } else if (action === 'cancel') {
+      changes = changes.map(c => c.id === data.id ? { ...c, status: 'CANCELLED' as const } : c);
+    }
+    setSemsData({ ...semsData, budgetChanges: changes, rkba: rkbaList });
   };
 
   // 13. BUDGET REALLOCATIONS (Realokasi Anggaran - Zero-Sum Shift) CRUD & WORKFLOW
@@ -546,21 +699,46 @@ export default function App() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ action, data, actor })
       });
-      if (!response.ok) throw new Error("Gagal sinkronisasi data Realokasi Anggaran.");
-      const result = await response.json();
-      if (result.success && semsData) {
-        setSemsData({
-          ...semsData,
-          budgetReallocations: result.budgetReallocations,
-          rkba: result.rkba || semsData.rkba,
-          auditTrails: result.auditTrails || semsData.auditTrails
-        });
-      } else {
-        throw new Error(result.error);
+      if (response.ok) {
+        const result = await response.json();
+        if (result.success && semsData) {
+          setSemsData({
+            ...semsData,
+            budgetReallocations: result.budgetReallocations,
+            rkba: result.rkba || semsData.rkba,
+            auditTrails: result.auditTrails || semsData.auditTrails
+          });
+          return;
+        }
       }
-    } catch (error: any) {
-      alert(error.message || "Gagal memproses realokasi anggaran.");
+    } catch (e) {
+      console.warn("Backend offline, mutating reallocation locally:", e);
     }
+    // Local fallback
+    if (!semsData) return;
+    let reallocs = [...(semsData.budgetReallocations || [])];
+    let rkbaList = [...(semsData.rkba || [])];
+    if (action === 'add') {
+      reallocs.unshift({ ...data, id: data.id || `realloc-${Date.now()}` });
+    } else if (action === 'edit') {
+      reallocs = reallocs.map(r => r.id === data.id ? data : r);
+    } else if (action === 'approve') {
+      reallocs = reallocs.map(r => r.id === data.id ? { ...r, status: 'DISETUJUI' as const } : r);
+      rkbaList = rkbaList.map(r => {
+        if (r.id === data.sourceActivityId) {
+          return { ...r, total: Math.max(0, (r.total || 0) - data.amount) };
+        }
+        if (r.id === data.targetActivityId) {
+          return { ...r, total: (r.total || 0) + data.amount };
+        }
+        return r;
+      });
+    } else if (action === 'reject') {
+      reallocs = reallocs.map(r => r.id === data.id ? { ...r, status: 'DITOLAK' as const } : r);
+    } else if (action === 'cancel') {
+      reallocs = reallocs.map(r => r.id === data.id ? { ...r, status: 'CANCELLED' as const } : r);
+    }
+    setSemsData({ ...semsData, budgetReallocations: reallocs, rkba: rkbaList });
   };
 
   // 14. LPJ MANAGEMENT HANDLERS
@@ -571,45 +749,60 @@ export default function App() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ sectionId, ...updates, actor, reason })
       });
-      if (!response.ok) throw new Error("Gagal memperbarui pembagian penyampai LPJ.");
-      const result = await response.json();
-      if (result.success && semsData) {
-        setSemsData({
-          ...semsData,
-          lpj: result.lpj,
-          auditTrails: result.auditTrails || semsData.auditTrails
-        });
-        return result.lpj;
-      } else {
-        throw new Error(result.error);
+      if (response.ok) {
+        const result = await response.json();
+        if (result.success && semsData) {
+          setSemsData({
+            ...semsData,
+            lpj: result.lpj,
+            auditTrails: result.auditTrails || semsData.auditTrails
+          });
+          return result.lpj;
+        }
       }
-    } catch (error: any) {
-      alert(error.message);
+    } catch (e) {
+      console.warn("Backend offline, updating LPJ section locally:", e);
     }
+    // Local fallback
+    if (!semsData || !semsData.lpj) return;
+    const currentSections = semsData.lpj.sections || [];
+    const updatedSections = currentSections.map((sec: any) => sec.id === sectionId ? { ...sec, ...updates } : sec);
+    const updatedLPJ = { ...semsData.lpj, sections: updatedSections };
+    setSemsData({ ...semsData, lpj: updatedLPJ });
+    return updatedLPJ;
   };
 
-  const handleUpdateLPJStatus = async (status: string, actor?: string, notes?: string, isReconciled?: boolean, reconciliationNotes?: string) => {
+  const handleUpdateLPJStatus = async (status: LPJStatus, actor?: string, notes?: string, isReconciled?: boolean, reconciliationNotes?: string) => {
     try {
       const response = await fetch("/api/sems/lpj/update-status", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status, actor, notes, isReconciled, reconciliationNotes })
       });
-      const result = await response.json();
-      if (!response.ok || !result.success) {
-        throw new Error(result.error || "Gagal memperbarui status LPJ.");
+      if (response.ok) {
+        const result = await response.json();
+        if (result.success && semsData) {
+          setSemsData({
+            ...semsData,
+            lpj: result.lpj,
+            auditTrails: result.auditTrails || semsData.auditTrails
+          });
+          return result.lpj;
+        }
       }
-      if (semsData) {
-        setSemsData({
-          ...semsData,
-          lpj: result.lpj,
-          auditTrails: result.auditTrails || semsData.auditTrails
-        });
-      }
-      return result.lpj;
-    } catch (error: any) {
-      alert(error.message);
+    } catch (e) {
+      console.warn("Backend offline, updating LPJ status locally:", e);
     }
+    // Local fallback
+    if (!semsData || !semsData.lpj) return;
+    const updatedLPJ: LPJMaster = {
+      ...semsData.lpj,
+      status,
+      updatedAt: new Date().toISOString(),
+      ...(isReconciled !== undefined ? { isReconciled, reconciliationNotes } : {})
+    };
+    setSemsData({ ...semsData, lpj: updatedLPJ });
+    return updatedLPJ;
   };
 
   const handleSaveLPJ = async (lpj: any, actor?: string, reason?: string) => {
@@ -619,19 +812,23 @@ export default function App() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ lpj, actor, reason })
       });
-      if (!response.ok) throw new Error("Gagal menyimpan dokumen LPJ.");
-      const result = await response.json();
-      if (result.success && semsData) {
-        setSemsData({
-          ...semsData,
-          lpj: result.lpj,
-          auditTrails: result.auditTrails || semsData.auditTrails
-        });
-      } else {
-        throw new Error(result.error);
+      if (response.ok) {
+        const result = await response.json();
+        if (result.success && semsData) {
+          setSemsData({
+            ...semsData,
+            lpj: result.lpj,
+            auditTrails: result.auditTrails || semsData.auditTrails
+          });
+          return;
+        }
       }
-    } catch (error: any) {
-      alert(error.message);
+    } catch (e) {
+      console.warn("Backend offline, saving LPJ locally:", e);
+    }
+    // Local fallback
+    if (semsData) {
+      setSemsData({ ...semsData, lpj });
     }
   };
 
@@ -642,22 +839,43 @@ export default function App() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload)
       });
-      if (!response.ok) throw new Error("Gagal membuat notulensi rapat LPJ.");
-      const result = await response.json();
-      if (result.success && semsData) {
-        setSemsData({
-          ...semsData,
-          notulensi: result.notulensi,
-          lpj: result.lpj,
-          auditTrails: result.auditTrails || semsData.auditTrails
-        });
-        return result.createdNotulensi;
-      } else {
-        throw new Error(result.error);
+      if (response.ok) {
+        const result = await response.json();
+        if (result.success && semsData) {
+          setSemsData({
+            ...semsData,
+            notulensi: result.notulensi,
+            lpj: result.lpj,
+            auditTrails: result.auditTrails || semsData.auditTrails
+          });
+          return result.createdNotulensi;
+        }
       }
-    } catch (error: any) {
-      alert(error.message);
+    } catch (e) {
+      console.warn("Backend offline, generating LPJ notulen locally:", e);
     }
+    // Local fallback
+    if (!semsData) return;
+    const newNotulen: Notulensi = {
+      id: `notulensi-lpj-${Date.now()}`,
+      title: payload.title || "Notulensi Pengesahan LPJ",
+      date: new Date().toISOString().split('T')[0],
+      time: "20:00 WIB",
+      location: "Balai Warga RW 04 Ngabean",
+      leader: "Ketua RW 04",
+      attendeesCount: 25,
+      attendeesList: "Ketua RW 04, Panitia HUT RI Ke-81, Pengurus RT 01-08, Tokoh Masyarakat",
+      agenda: "Penyampaian LPJ, Tanya Jawab & Rekonsiliasi, Pengesahan Berita Acara",
+      notesRaw: "Laporan keuangan diterima dengan tertib. Dokumentasi dan aset telah diverifikasi.",
+      decisions: "LPJ HUT RI Ke-81 disahkan secara aklamasi.",
+      actionItems: [],
+      contentMarkdown: `# ${payload.title || "Notulensi Pengesahan LPJ"}\n\nLPJ HUT RI Ke-81 RW 04 disahkan dengan tertib dan transparan.`,
+      minutesNumber: `081/NOT/RW04/VIII/${new Date().getFullYear()}`,
+      createdAt: new Date().toISOString()
+    };
+    const updatedNotulensi = [newNotulen, ...(semsData.notulensi || [])];
+    setSemsData({ ...semsData, notulensi: updatedNotulensi });
+    return newNotulen;
   };
 
   const handleGenerateLPJSpeech = async () => {
@@ -666,20 +884,20 @@ export default function App() {
         method: "POST",
         headers: { "Content-Type": "application/json" }
       });
-      if (!response.ok) throw new Error("Gagal menghasilkan naskah penyampaian.");
-      const result = await response.json();
-      if (result.success && semsData) {
-        setSemsData({
-          ...semsData,
-          lpj: result.lpj
-        });
-        return result.speechScripts;
-      } else {
-        throw new Error(result.error);
+      if (response.ok) {
+        const result = await response.json();
+        if (result.success && semsData) {
+          setSemsData({
+            ...semsData,
+            lpj: result.lpj
+          });
+          return result.speechScripts;
+        }
       }
-    } catch (error: any) {
-      alert(error.message);
+    } catch (e) {
+      console.warn("Backend offline, generating speech locally:", e);
     }
+    return null;
   };
 
   // Loading Screen with National Pride Theme

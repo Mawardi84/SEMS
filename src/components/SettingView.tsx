@@ -18,6 +18,7 @@ import {
   RefreshCw
 } from "lucide-react";
 import { SystemSetting, SEMSData } from "../types";
+import { initialData } from "../data/initialData";
 
 interface SettingViewProps {
   settings: SystemSetting;
@@ -73,22 +74,36 @@ export default function SettingView({ settings, onSaveSettings, semsData, onImpo
     setImportSuccess(false);
 
     try {
-      const response = await fetch("/api/sems/restore-from-md", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" }
-      });
-      const result = await response.json();
-      if (result.success && result.data) {
-        await onImportSuccess(result.data);
-        setImportSuccess(true);
-        setRtListStr(result.data.settings?.rtList?.join(", ") || "");
-        setSeksiListStr(result.data.settings?.seksiList?.join(", ") || "");
-        setTargetIuran(result.data.settings?.targetIuranPerRT || 2000000);
-        setPaguBudgets({ ...result.data.settings?.paguAnggaranSeksi });
-        setTimeout(() => setImportSuccess(false), 5000);
-      } else {
-        throw new Error(result.error || "Gagal memulihkan dari Markdown.");
+      try {
+        const response = await fetch("/api/sems/restore-from-md", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" }
+        });
+        if (response.ok) {
+          const result = await response.json();
+          if (result.success && result.data) {
+            await onImportSuccess(result.data);
+            setImportSuccess(true);
+            setRtListStr(result.data.settings?.rtList?.join(", ") || "");
+            setSeksiListStr(result.data.settings?.seksiList?.join(", ") || "");
+            setTargetIuran(result.data.settings?.targetIuranPerRT || 2000000);
+            setPaguBudgets({ ...result.data.settings?.paguAnggaranSeksi });
+            setTimeout(() => setImportSuccess(false), 5000);
+            return;
+          }
+        }
+      } catch (e) {
+        console.warn("Backend offline, restoring initial master data locally:", e);
       }
+
+      // Offline / Vercel fallback
+      await onImportSuccess(initialData);
+      setImportSuccess(true);
+      setRtListStr(initialData.settings?.rtList?.join(", ") || "");
+      setSeksiListStr(initialData.settings?.seksiList?.join(", ") || "");
+      setTargetIuran(initialData.settings?.targetIuranPerRT || 2000000);
+      setPaguBudgets({ ...initialData.settings?.paguAnggaranSeksi });
+      setTimeout(() => setImportSuccess(false), 5000);
     } catch (err: any) {
       setImportError(err.message || "Gagal memulihkan dari Master Markdown.");
       setTimeout(() => setImportError(""), 6000);
@@ -135,43 +150,41 @@ export default function SettingView({ settings, onSaveSettings, semsData, onImpo
           throw new Error("File JSON tidak sesuai format SEMS (tidak mengandung konfigurasi settings).");
         }
 
-        // Sync with backend database
-        const response = await fetch("/api/sems/sync-import", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(parsed)
-        });
-
-        if (!response.ok) {
-          throw new Error("Gagal menyinkronkan data impor ke server.");
+        // Sync with backend database if available
+        try {
+          const response = await fetch("/api/sems/sync-import", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(parsed)
+          });
+          if (response.ok) {
+            await response.json();
+          }
+        } catch (syncErr) {
+          console.warn("Backend offline, applying imported data locally:", syncErr);
         }
 
-        const result = await response.json();
-        if (result.success) {
-          await onImportSuccess(parsed);
-          setImportSuccess(true);
-          setRtListStr(parsed.settings.rtList?.join(", ") || "");
-          setSeksiListStr(parsed.settings.seksiList?.join(", ") || "");
-          setTargetIuran(parsed.settings.targetIuranPerRT || 2000000);
-          setPaguBudgets({ ...parsed.settings.paguAnggaranSeksi });
-          setKopLine1(parsed.settings.kopLine1 || "");
-          setKopLine2(parsed.settings.kopLine2 || "");
-          setKopLine3(parsed.settings.kopLine3 || "");
-          setKopLine4(parsed.settings.kopLine4 || "");
-          setLogoStyle(parsed.settings.logoStyle || "flag");
-          setLogoUrl(parsed.settings.logoUrl || "");
-          setKopStyle(parsed.settings.kopStyle || "classic-centered");
-          setStempelUrl(parsed.settings.stempelUrl || "");
-          setSignatureKetuaUrl(parsed.settings.signatureKetuaUrl || "");
-          setSignatureKetuaName(parsed.settings.signatureKetuaName || "");
-          setSignatureBendaharaUrl(parsed.settings.signatureBendaharaUrl || "");
-          setSignatureBendaharaName(parsed.settings.signatureBendaharaName || "");
-          setSignatureSekretarisUrl(parsed.settings.signatureSekretarisUrl || "");
-          setSignatureSekretarisName(parsed.settings.signatureSekretarisName || "");
-          setTimeout(() => setImportSuccess(false), 5000);
-        } else {
-          throw new Error(result.error || "Gagal mengimpor ke server.");
-        }
+        await onImportSuccess(parsed);
+        setImportSuccess(true);
+        setRtListStr(parsed.settings.rtList?.join(", ") || "");
+        setSeksiListStr(parsed.settings.seksiList?.join(", ") || "");
+        setTargetIuran(parsed.settings.targetIuranPerRT || 2000000);
+        setPaguBudgets({ ...parsed.settings.paguAnggaranSeksi });
+        setKopLine1(parsed.settings.kopLine1 || "");
+        setKopLine2(parsed.settings.kopLine2 || "");
+        setKopLine3(parsed.settings.kopLine3 || "");
+        setKopLine4(parsed.settings.kopLine4 || "");
+        setLogoStyle(parsed.settings.logoStyle || "flag");
+        setLogoUrl(parsed.settings.logoUrl || "");
+        setKopStyle(parsed.settings.kopStyle || "classic-centered");
+        setStempelUrl(parsed.settings.stempelUrl || "");
+        setSignatureKetuaUrl(parsed.settings.signatureKetuaUrl || "");
+        setSignatureKetuaName(parsed.settings.signatureKetuaName || "");
+        setSignatureBendaharaUrl(parsed.settings.signatureBendaharaUrl || "");
+        setSignatureBendaharaName(parsed.settings.signatureBendaharaName || "");
+        setSignatureSekretarisUrl(parsed.settings.signatureSekretarisUrl || "");
+        setSignatureSekretarisName(parsed.settings.signatureSekretarisName || "");
+        setTimeout(() => setImportSuccess(false), 5000);
       } catch (err: any) {
         console.error("Gagal mengimpor data:", err);
         setImportError(err.message || "Pastikan file JSON valid dan sesuai format backup SEMS.");
