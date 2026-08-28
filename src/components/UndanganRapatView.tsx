@@ -122,7 +122,7 @@ export default function UndanganRapatView({
   ];
 
   const activeKopLine1 = useMasterKop ? (settings?.kopLine1 || "PANITIA PERINGATAN HARI ULANG TAHUN KEMERDEKAAN RI KE-81") : (kopLine1 || "PANITIA PERINGATAN HARI ULANG TAHUN KEMERDEKAAN RI KE-81");
-  const activeKopLine2 = useMasterKop ? (settings?.kopLine2 || "RUKUN WARGA 04 KELURAHAN NGABEAN") : (kopLine2 || "RUKUN WARGA 04 KELURAHAN NGABEAN");
+  const activeKopLine2 = useMasterKop ? (settings?.kopLine2 || "RUKUN WARGA 04 NGABEAN") : (kopLine2 || "RUKUN WARGA 04 NGABEAN");
   const activeKopLine3 = useMasterKop ? (settings?.kopLine3 || "Kecamatan Semarang Barat, Kota Semarang, Jawa Tengah") : (kopLine3 || "Kecamatan Semarang Barat, Kota Semarang, Jawa Tengah");
   const activeKopLine4 = useMasterKop ? (settings?.kopLine4 || "Sekretariat: Balai RW 04 Ngabean, Telp: +62 812-3456-7890 | Kode Pos: 50141") : (kopLine4 || "Sekretariat: Balai RW 04 Ngabean, Telp: +62 812-3456-7890 | Kode Pos: 50141");
   const activeLogoStyle = useMasterKop ? (settings?.logoStyle || "flag") : (logoStyle || "flag");
@@ -130,7 +130,7 @@ export default function UndanganRapatView({
   const activeKopStyle = useMasterKop ? (settings?.kopStyle || "classic-centered") : (kopStyle || "classic-centered");
 
   const viewKopLine1 = selectedUndangan?.useMasterKop !== false ? (settings?.kopLine1 || "PANITIA PERINGATAN HARI ULANG TAHUN KEMERDEKAAN RI KE-81") : (selectedUndangan.kopLine1 || "PANITIA PERINGATAN HARI ULANG TAHUN KEMERDEKAAN RI KE-81");
-  const viewKopLine2 = selectedUndangan?.useMasterKop !== false ? (settings?.kopLine2 || "RUKUN WARGA 04 KELURAHAN NGABEAN") : (selectedUndangan.kopLine2 || "RUKUN WARGA 04 KELURAHAN NGABEAN");
+  const viewKopLine2 = selectedUndangan?.useMasterKop !== false ? (settings?.kopLine2 || "RUKUN WARGA 04 NGABEAN") : (selectedUndangan.kopLine2 || "RUKUN WARGA 04 NGABEAN");
   const viewKopLine3 = selectedUndangan?.useMasterKop !== false ? (settings?.kopLine3 || "Kecamatan Semarang Barat, Kota Semarang, Jawa Tengah") : (selectedUndangan.kopLine3 || "Kecamatan Semarang Barat, Kota Semarang, Jawa Tengah");
   const viewKopLine4 = selectedUndangan?.useMasterKop !== false ? (settings?.kopLine4 || "Sekretariat: Balai RW 04 Ngabean, Telp: +62 812-3456-7890 | Kode Pos: 50141") : (selectedUndangan.kopLine4 || "Sekretariat: Balai RW 04 Ngabean, Telp: +62 812-3456-7890 | Kode Pos: 50141");
   const viewLogoStyle = selectedUndangan?.useMasterKop !== false ? (settings?.logoStyle || "flag") : (selectedUndangan.logoStyle || "flag");
@@ -398,7 +398,7 @@ Demikian undangan ini kami sampaikan, atas perhatian dan kehadiran serta kerjasa
       const isUsingMaster = existing.useMasterKop !== false;
       setUseMasterKop(isUsingMaster);
       setKopLine1(existing.kopLine1 || settings?.kopLine1 || "PANITIA PERINGATAN HARI ULANG TAHUN KEMERDEKAAN RI KE-81");
-      setKopLine2(existing.kopLine2 || settings?.kopLine2 || "RUKUN WARGA 04 KELURAHAN NGABEAN");
+      setKopLine2(existing.kopLine2 || settings?.kopLine2 || "RUKUN WARGA 04 NGABEAN");
       setKopLine3(existing.kopLine3 || settings?.kopLine3 || "Kecamatan Semarang Barat, Kota Semarang, Jawa Tengah");
       setKopLine4(existing.kopLine4 || settings?.kopLine4 || "Sekretariat: Balai RW 04 Ngabean, Telp: +62 812-3456-7890 | Kode Pos: 50141");
       setLogoStyle(existing.logoStyle || settings?.logoStyle || "flag");
@@ -420,7 +420,7 @@ Demikian undangan ini kami sampaikan, atas perhatian dan kehadiran serta kerjasa
       ]);
       setUseMasterKop(true);
       setKopLine1(settings?.kopLine1 || "PANITIA PERINGATAN HARI ULANG TAHUN KEMERDEKAAN RI KE-81");
-      setKopLine2(settings?.kopLine2 || "RUKUN WARGA 04 KELURAHAN NGABEAN");
+      setKopLine2(settings?.kopLine2 || "RUKUN WARGA 04 NGABEAN");
       setKopLine3(settings?.kopLine3 || "Kecamatan Semarang Barat, Kota Semarang, Jawa Tengah");
       setKopLine4(settings?.kopLine4 || "Sekretariat: Balai RW 04 Ngabean, Telp: +62 812-3456-7890 | Kode Pos: 50141");
       setLogoStyle(settings?.logoStyle || "flag");
@@ -954,7 +954,7 @@ Demikian undangan ini kami sampaikan, atas perhatian dan kehadiran serta kerjasa
                                   {kopLine1 || "PANITIA PERINGATAN HARI ULANG TAHUN KEMERDEKAAN RI KE-81"}
                                 </h2>
                                 <h1 className="text-xs font-extrabold uppercase tracking-wide text-slate-800 leading-none truncate">
-                                  {kopLine2 || "RUKUN WARGA 04 KELURAHAN NGABEAN"}
+                                  {kopLine2 || "RUKUN WARGA 04 NGABEAN"}
                                 </h1>
                                 <p className="text-[8.5px] text-slate-500 italic font-medium leading-tight truncate">
                                   {kopLine3 || "Kecamatan Semarang Barat, Kota Semarang, Jawa Tengah"}
@@ -1002,7 +1002,7 @@ Demikian undangan ini kami sampaikan, atas perhatian dan kehadiran serta kerjasa
                                   {kopLine1 || "PANITIA PERINGATAN HARI ULANG TAHUN KEMERDEKAAN RI KE-81"}
                                 </h2>
                                 <h1 className="text-xs font-extrabold uppercase tracking-wide text-white leading-none truncate">
-                                  {kopLine2 || "RUKUN WARGA 04 KELURAHAN NGABEAN"}
+                                  {kopLine2 || "RUKUN WARGA 04 NGABEAN"}
                                 </h1>
                                 <p className="text-[8.5px] text-red-50/90 italic font-medium leading-tight truncate">
                                   {kopLine3 || "Kecamatan Semarang Barat, Kota Semarang, Jawa Tengah"}
@@ -1030,7 +1030,7 @@ Demikian undangan ini kami sampaikan, atas perhatian dan kehadiran serta kerjasa
                                   {kopLine1 || "PANITIA PERINGATAN HARI ULANG TAHUN KEMERDEKAAN RI KE-81"}
                                 </h2>
                                 <h1 className="text-xs font-extrabold uppercase tracking-wide text-slate-800 leading-none truncate">
-                                  {kopLine2 || "RUKUN WARGA 04 KELURAHAN NGABEAN"}
+                                  {kopLine2 || "RUKUN WARGA 04 NGABEAN"}
                                 </h1>
                                 <p className="text-[8.5px] text-slate-500 italic font-medium truncate">
                                   {kopLine3 || "Kecamatan Semarang Barat, Kota Semarang, Jawa Tengah"}
@@ -1063,7 +1063,7 @@ Demikian undangan ini kami sampaikan, atas perhatian dan kehadiran serta kerjasa
                                   {kopLine1 || "PANITIA PERINGATAN HARI ULANG TAHUN KEMERDEKAAN RI KE-81"}
                                 </h2>
                                 <h1 className="text-xs font-extrabold uppercase tracking-wide text-slate-800 leading-none truncate">
-                                  {kopLine2 || "RUKUN WARGA 04 KELURAHAN NGABEAN"}
+                                  {kopLine2 || "RUKUN WARGA 04 NGABEAN"}
                                 </h1>
                                 <p className="text-[8.5px] text-slate-500 italic font-medium truncate">
                                   {kopLine3 || "Kecamatan Semarang Barat, Kota Semarang, Jawa Tengah"}
@@ -1090,7 +1090,7 @@ Demikian undangan ini kami sampaikan, atas perhatian dan kehadiran serta kerjasa
                                 {kopLine1 || "PANITIA PERINGATAN HARI ULANG TAHUN KEMERDEKAAN RI KE-81"}
                               </h2>
                               <h1 className="text-xs font-extrabold uppercase tracking-wide text-slate-800 leading-none truncate">
-                                {kopLine2 || "RUKUN WARGA 04 KELURAHAN NGABEAN"}
+                                {kopLine2 || "RUKUN WARGA 04 NGABEAN"}
                               </h1>
                               <p className="text-[8.5px] text-slate-500 italic font-medium truncate">
                                 {kopLine3 || "Kecamatan Semarang Barat, Kota Semarang, Jawa Tengah"}
@@ -1122,7 +1122,7 @@ Demikian undangan ini kami sampaikan, atas perhatian dan kehadiran serta kerjasa
                       value={kopLine2}
                       onChange={(e) => setKopLine2(e.target.value)}
                       className="w-full text-xs border border-slate-200 focus:border-red-500 focus:outline-none rounded-lg px-3 py-2 bg-white"
-                      placeholder="Contoh: RUKUN WARGA 04 KELURAHAN NGABEAN"
+                      placeholder="Contoh: RUKUN WARGA 04 NGABEAN"
                     />
                   </div>
                   <div className="space-y-1.5">
@@ -1704,7 +1704,7 @@ Demikian undangan ini kami sampaikan, atas perhatian dan kehadiran serta kerjasa
               {paperTheme !== 'minimal' && (() => {
                 const isMaster = selectedUndangan.useMasterKop !== false;
                 const kLine1 = isMaster ? (settings?.kopLine1 || "PANITIA PERINGATAN HARI ULANG TAHUN KEMERDEKAAN RI KE-81") : (selectedUndangan.kopLine1 || "PANITIA PERINGATAN HARI ULANG TAHUN KEMERDEKAAN RI KE-81");
-                const kLine2 = isMaster ? (settings?.kopLine2 || "RUKUN WARGA 04 KELURAHAN NGABEAN") : (selectedUndangan.kopLine2 || "RUKUN WARGA 04 KELURAHAN NGABEAN");
+                const kLine2 = isMaster ? (settings?.kopLine2 || "RUKUN WARGA 04 NGABEAN") : (selectedUndangan.kopLine2 || "RUKUN WARGA 04 NGABEAN");
                 const kLine3 = isMaster ? (settings?.kopLine3 || "Kecamatan Semarang Barat, Kota Semarang, Jawa Tengah") : (selectedUndangan.kopLine3 || "Kecamatan Semarang Barat, Kota Semarang, Jawa Tengah");
                 const kLine4 = isMaster ? (settings?.kopLine4 || "Sekretariat: Balai RW 04 Ngabean, Telp: +62 812-3456-7890 | Kode Pos: 50141") : (selectedUndangan.kopLine4 || "Sekretariat: Balai RW 04 Ngabean, Telp: +62 812-3456-7890 | Kode Pos: 50141");
                 const kLogoStyle = isMaster ? (settings?.logoStyle || "flag") : (selectedUndangan.logoStyle || "flag");

@@ -83,7 +83,7 @@ export default function DocumentPreviewRenderer({
                 <div className="w-12 h-12 shrink-0" />
                 <div className="text-center flex-1 px-3">
                     <h2 className="text-[12px] sm:text-sm font-black tracking-wider uppercase font-serif text-slate-950">{namaKegiatan}</h2>
-                    <h3 className="text-[10px] sm:text-xs font-bold uppercase font-serif text-slate-800">{namaRW} KELURAHAN NGABEAN</h3>
+                    <h3 className="text-[10px] sm:text-xs font-bold uppercase font-serif text-slate-800">{namaRW.toUpperCase()}</h3>
                     <p className="text-[8px] sm:text-[9px] text-slate-500 italic font-serif mt-0.5">Sekretariat: RT 04 Ngabean, Kota Semarang, Jawa Tengah</p>
                 </div>
                 {renderRightLogoAndDivider("border-slate-900/40")}
@@ -96,7 +96,7 @@ export default function DocumentPreviewRenderer({
                 <div className="w-12 h-12 shrink-0" />
                 <div className="text-center flex-1 px-3">
                     <h2 className="text-[12px] sm:text-sm font-black tracking-wider uppercase font-serif text-amber-950">{namaKegiatan}</h2>
-                    <h3 className="text-[10px] sm:text-xs font-bold uppercase font-serif text-amber-900">{namaRW} KELURAHAN NGABEAN</h3>
+                    <h3 className="text-[10px] sm:text-xs font-bold uppercase font-serif text-amber-900">{namaRW.toUpperCase()}</h3>
                     <p className="text-[8px] sm:text-[9px] text-amber-800/70 italic font-serif mt-0.5 font-bold">PANITIA PERINGATAN KEMERDEKAAN RI KE-81</p>
                 </div>
                 {renderRightLogoAndDivider("border-amber-900/30")}
@@ -109,7 +109,7 @@ export default function DocumentPreviewRenderer({
                 <div className="text-left flex-1">
                     <div className="text-[8px] font-extrabold text-slate-400 uppercase tracking-widest font-sans">Dokumen Resmi Pertanggungjawaban</div>
                     <h2 className="text-sm sm:text-base font-black tracking-tight text-slate-900 uppercase font-sans mt-0.5">{namaKegiatan}</h2>
-                    <p className="text-[9px] sm:text-[10px] text-slate-600 font-sans mt-0.5 font-semibold">{namaRW} Ngabean, Semarang, Jawa Tengah</p>
+                    <p className="text-[9px] sm:text-[10px] text-slate-600 font-sans mt-0.5 font-semibold">{namaRW}, Semarang, Jawa Tengah</p>
                 </div>
                 {renderRightLogoAndDivider("border-slate-300")}
             </div>
@@ -120,7 +120,7 @@ export default function DocumentPreviewRenderer({
         <div className="flex justify-between items-center border-b-2 border-emerald-800 pb-3 mb-6">
             <div className="text-center flex-1 px-3">
                 <h2 className="text-[12px] sm:text-sm font-black tracking-wider uppercase font-serif text-emerald-950">{namaKegiatan}</h2>
-                <h3 className="text-[10px] sm:text-xs font-bold uppercase font-serif text-emerald-900">{namaRW} KELURAHAN NGABEAN</h3>
+                <h3 className="text-[10px] sm:text-xs font-bold uppercase font-serif text-emerald-900">{namaRW.toUpperCase()}</h3>
             </div>
             {renderRightLogoAndDivider("border-emerald-800/30")}
         </div>

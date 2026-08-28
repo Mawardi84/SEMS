@@ -35,3 +35,42 @@ body {
   color: #1e293b;
 }
 
+@media print {
+  @page {
+    size: A4 portrait;
+    margin: 12mm 10mm 12mm 10mm;
+  }
+
+  body, html {
+    background: #ffffff !important;
+    color: #000000 !important;
+  }
+
+  .no-print, button, nav, header, sidebar, .print\:hidden {
+    display: none !important;
+  }
+
+  .page-break-before, .break-before-page {
+    break-before: page !important;
+    page-break-before: always !important;
+  }
+
+  .page-break-after, .break-after-page {
+    break-after: page !important;
+    page-break-after: always !important;
+  }
+
+  table, tr, td, th, .card, blockquote, figure, h1, h2, h3, h4, .signature-block {
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+  }
+
+  thead {
+    display: table-header-group;
+  }
+
+  tfoot {
+    display: table-footer-group;
+  }
+}
+

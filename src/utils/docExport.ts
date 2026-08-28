@@ -85,7 +85,7 @@ export function exportToDOC(selectedUndangan: UndanganRapat, settings: SystemSet
   // Get Kop parameters
   const isMaster = selectedUndangan.useMasterKop !== false;
   const kLine1 = isMaster ? (settings?.kopLine1 || "PANITIA PERINGATAN HARI ULANG TAHUN KEMERDEKAAN RI KE-81") : (selectedUndangan.kopLine1 || "PANITIA PERINGATAN HARI ULANG TAHUN KEMERDEKAAN RI KE-81");
-  const kLine2 = isMaster ? (settings?.kopLine2 || "RUKUN WARGA 04 KELURAHAN NGABEAN") : (selectedUndangan.kopLine2 || "RUKUN WARGA 04 KELURAHAN NGABEAN");
+  const kLine2 = isMaster ? (settings?.kopLine2 || "RUKUN WARGA 04 NGABEAN") : (selectedUndangan.kopLine2 || "RUKUN WARGA 04 NGABEAN");
   const kLine3 = isMaster ? (settings?.kopLine3 || "Kecamatan Semarang Barat, Kota Semarang, Jawa Tengah") : (selectedUndangan.kopLine3 || "Kecamatan Semarang Barat, Kota Semarang, Jawa Tengah");
   const kLine4 = isMaster ? (settings?.kopLine4 || "Sekretariat: Balai RW 04 Ngabean, Telp: +62 812-3456-7890 | Kode Pos: 50141") : (selectedUndangan.kopLine4 || "Sekretariat: Balai RW 04 Ngabean, Telp: +62 812-3456-7890 | Kode Pos: 50141");
   const kLogoStyle = isMaster ? (settings?.logoStyle || "flag") : (selectedUndangan.logoStyle || "flag");

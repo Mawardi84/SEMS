@@ -191,7 +191,7 @@ ${useMock ? "(Data Simulasi)" : ""}
 
 ### KATA PENGANTAR
 
-Puji syukur kami panjatkan kepada Tuhan Yang Maha Esa atas tersusunnya proposal kegiatan ${namaKegiatan} di wilayah ${namaRW} Kelurahan Ngabean Semarang. Proposal ini disusun untuk memberikan gambaran menyeluruh tentang rencana kegiatan, kebutuhan anggaran, dan target pencapaian yang akan dilaksanakan.
+Puji syukur kami panjatkan kepada Tuhan Yang Maha Esa atas tersusunnya proposal kegiatan ${namaKegiatan} di wilayah ${namaRW} Semarang. Proposal ini disusun untuk memberikan gambaran menyeluruh tentang rencana kegiatan, kebutuhan anggaran, dan target pencapaian yang akan dilaksanakan.
 
 Semoga proposal ini dapat menjadi acuan bersama dalam mensukseskan kegiatan warga yang kita cintai ini.
 
@@ -924,7 +924,7 @@ Semarang, ${tanggalProposal}
                         <div className="w-12 h-12 shrink-0" />
                         <div className="text-center flex-1 px-3">
                           <h2 className="text-[12px] sm:text-sm font-black tracking-wider uppercase font-serif text-slate-950">{namaKegiatan}</h2>
-                          <h3 className="text-[10px] sm:text-xs font-bold uppercase font-serif text-slate-800">{namaRW} KELURAHAN NGABEAN</h3>
+                          <h3 className="text-[10px] sm:text-xs font-bold uppercase font-serif text-slate-800">{namaRW.toUpperCase()}</h3>
                           <p className="text-[8px] sm:text-[9px] text-slate-500 italic font-serif mt-0.5">Sekretariat: RT 04 Ngabean, Kota Semarang, Jawa Tengah</p>
                         </div>
                         {renderRightLogoAndDivider("border-slate-900/40")}
@@ -938,7 +938,7 @@ Semarang, ${tanggalProposal}
                         <div className="w-12 h-12 shrink-0" />
                         <div className="text-center flex-1 px-3">
                           <h2 className="text-[12px] sm:text-sm font-black tracking-wider uppercase font-serif text-amber-950">{namaKegiatan}</h2>
-                          <h3 className="text-[10px] sm:text-xs font-bold uppercase font-serif text-amber-900">{namaRW} KELURAHAN NGABEAN</h3>
+                          <h3 className="text-[10px] sm:text-xs font-bold uppercase font-serif text-amber-900">{namaRW.toUpperCase()}</h3>
                           <p className="text-[8px] sm:text-[9px] text-amber-800/70 italic font-serif mt-0.5 font-bold">PANITIA PERINGATAN KEMERDEKAAN RI KE-81</p>
                         </div>
                         {renderRightLogoAndDivider("border-amber-900/30")}
@@ -952,7 +952,7 @@ Semarang, ${tanggalProposal}
                         <div className="text-left flex-1">
                           <div className="text-[8px] font-extrabold text-slate-400 uppercase tracking-widest font-sans">Dokumen Resmi Pertanggungjawaban</div>
                           <h2 className="text-sm sm:text-base font-black tracking-tight text-slate-900 uppercase font-sans mt-0.5">{namaKegiatan}</h2>
-                          <p className="text-[9px] sm:text-[10px] text-slate-600 font-sans mt-0.5 font-semibold">{namaRW} Ngabean, Semarang, Jawa Tengah</p>
+                          <p className="text-[9px] sm:text-[10px] text-slate-600 font-sans mt-0.5 font-semibold">{namaRW}, Semarang, Jawa Tengah</p>
                         </div>
                         {renderRightLogoAndDivider("border-slate-300")}
                       </div>
@@ -964,7 +964,7 @@ Semarang, ${tanggalProposal}
                       <div className="w-12 h-12 shrink-0" />
                       <div className="text-center flex-1 px-3">
                         <h2 className="text-[12px] sm:text-sm font-extrabold tracking-wider uppercase text-emerald-900">{namaKegiatan}</h2>
-                        <h3 className="text-[10px] sm:text-xs font-bold uppercase text-emerald-800">{namaRW} KELURAHAN NGABEAN</h3>
+                        <h3 className="text-[10px] sm:text-xs font-bold uppercase text-emerald-800">{namaRW.toUpperCase()}</h3>
                         <p className="text-[8px] sm:text-[9px] text-emerald-700 italic mt-0.5">Pemberdayaan Gotong Royong & Swadaya Kemandirian</p>
                       </div>
                       {renderRightLogoAndDivider("border-emerald-600/40")}
@@ -1416,7 +1416,7 @@ Semarang, ${tanggalProposal}
                                   PROPOSAL KEGIATAN RESMI
                                 </div>
                                 <div className="mt-2 text-[10px] font-mono uppercase tracking-[0.3em] text-slate-500 font-extrabold">
-                                  {namaRW.toUpperCase()} KELURAHAN NGABEAN
+                                  {namaRW.toUpperCase()}
                                 </div>
                               </div>
 

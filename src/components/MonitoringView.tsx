@@ -288,7 +288,7 @@ ${rtRows}
     if (templateType === "ringkas") {
       return `# RINGKASAN EKSEKUTIF LAPORAN PERTANGGUNGJAWABAN (LPJ)
 ## DOKUMEN RINGKAS WARGA - KEGIATAN: ${namaKegiatan.toUpperCase()}
-## ${namaRW.toUpperCase()} KELURAHAN NGABEAN SEMARANG
+## ${namaRW.toUpperCase()} SEMARANG
 
 Yth. Bapak/Ibu Warga ${namaRW},
 
@@ -323,7 +323,7 @@ Ketua Panitia Pelaksana`;
     return `# LAPORAN PERTANGGUNGJAWABAN (LPJ)
 ## PANITIA PELAKSANA PERINGATAN HUT RI KE-81
 ## ${namaKegiatan.toUpperCase()}
-## ${namaRW.toUpperCase()} KELURAHAN NGABEAN KOTA SEMARANG
+## ${namaRW.toUpperCase()} KOTA SEMARANG
 
 ---
 
@@ -334,7 +334,7 @@ Ketua Panitia Pelaksana`;
 
 Diajukan oleh:
 Panitia Pelaksana Peringatan HUT RI Ke-81
-${namaRW} Kelurahan Ngabean, Kecamatan Gunungpati, Kota Semarang
+${namaRW}, Kecamatan Gunungpati, Kota Semarang
 
 Sebagai wujud akuntabilitas, transparansi, dan dokumentasi sejarah atas pelaksanaan agenda sosial kemasyarakatan di tingkat wilayah.
 
@@ -345,7 +345,7 @@ Sebagai wujud akuntabilitas, transparansi, dan dokumentasi sejarah atas pelaksan
 Dokumen Laporan Pertanggungjawaban (LPJ) Peringatan Hari Ulang Tahun Kemerdekaan Republik Indonesia Ke-81 ini telah diperiksa, dievaluasi, dan disahkan oleh pengurus kepanitiaan serta pimpinan wilayah pada:
 
 Hari/Tanggal: ${tanggalLPJ}
-Tempat: Balai Warga ${namaRW} Kelurahan Ngabean, Semarang
+Tempat: Balai Warga ${namaRW}, Semarang
 
 Dengan pengesahan ini, masa bakti kepanitiaan dinyatakan selesai dengan rasa hormat dan apresiasi yang setinggi-tingginya dari warga.
 
@@ -477,7 +477,7 @@ Kami mengucapkan terima kasih yang sebesar-besarnya kepada seluruh warga, pengur
 Semarang, ${tanggalLPJ}
 
 **PANITIA PELAKSANA PERINGATAN HUT RI KE-81**
-**${namaRW.toUpperCase()} KELURAHAN NGABEAN**
+**${namaRW.toUpperCase()}**
 
 ---
 
@@ -1074,7 +1074,7 @@ Laporan Pertanggungjawaban ini dibuat rangkap sebagai dokumentasi resmi dan arsi
                         </div>
                         <div className="text-center flex-1 px-4">
                           <h2 className="text-[14px] sm:text-lg font-black tracking-wider uppercase font-serif text-red-950">{namaKegiatan}</h2>
-                          <h3 className="text-[11px] sm:text-sm font-bold uppercase font-serif text-red-800 mt-1">{namaRW} KELURAHAN NGABEAN</h3>
+                          <h3 className="text-[11px] sm:text-sm font-bold uppercase font-serif text-red-800 mt-1">{namaRW.toUpperCase()}</h3>
                           <p className="text-[9px] sm:text-[10px] text-slate-600 font-sans mt-1">Sekretariat: RT 04 Ngabean, Kota Semarang, Jawa Tengah</p>
                         </div>
                         <div className="w-16 h-16 shrink-0" />
@@ -1090,7 +1090,7 @@ Laporan Pertanggungjawaban ini dibuat rangkap sebagai dokumentasi resmi dan arsi
                         </div>
                         <div className="text-center flex-1 px-3">
                           <h2 className="text-[13px] sm:text-base font-black tracking-widest uppercase font-serif text-amber-950">{namaKegiatan}</h2>
-                          <h3 className="text-[10px] sm:text-xs font-bold uppercase font-serif text-amber-900 mt-1">{namaRW} KELURAHAN NGABEAN</h3>
+                          <h3 className="text-[10px] sm:text-xs font-bold uppercase font-serif text-amber-900 mt-1">{namaRW.toUpperCase()}</h3>
                           <div className="w-1/3 h-[1px] bg-amber-900/30 mx-auto mt-2" />
                         </div>
                         <div className="w-16 h-16 shrink-0" />
@@ -1117,7 +1117,7 @@ Laporan Pertanggungjawaban ini dibuat rangkap sebagai dokumentasi resmi dan arsi
                       </div>
                       <div className="text-center flex-1 px-3">
                         <h2 className="text-[13px] sm:text-base font-extrabold tracking-wider uppercase text-emerald-950">{namaKegiatan}</h2>
-                        <h3 className="text-[10px] sm:text-xs font-bold uppercase text-emerald-800 mt-1">{namaRW} KELURAHAN NGABEAN</h3>
+                        <h3 className="text-[10px] sm:text-xs font-bold uppercase text-emerald-800 mt-1">{namaRW.toUpperCase()}</h3>
                       </div>
                       <div className="w-14 h-14 shrink-0" />
                     </div>
@@ -1542,7 +1542,7 @@ Laporan Pertanggungjawaban ini dibuat rangkap sebagai dokumentasi resmi dan arsi
                           <div className="bg-slate-50 border border-slate-200/60 rounded-xl p-4 max-w-sm mx-auto space-y-1.5 shadow-3xs">
                             <h2 className="text-[11px] font-bold text-slate-400 uppercase tracking-wider font-sans">DILAKSANAKAN DI WILAYAH:</h2>
                             <p className="text-sm font-black text-slate-800 uppercase font-sans tracking-tight">
-                              {namaRW} KELURAHAN NGABEAN
+                              {namaRW.toUpperCase()}
                             </p>
                             <p className="text-[9px] font-bold text-slate-500 font-sans tracking-wide">
                               Kecamatan Gunungpati, Kota Semarang, Jawa Tengah
@@ -1625,7 +1625,7 @@ Laporan Pertanggungjawaban ini dibuat rangkap sebagai dokumentasi resmi dan arsi
                                 </div>
                                 <div className="grid grid-cols-3 gap-2 border-t border-slate-100 pt-2">
                                   <span className="text-slate-400 font-medium">Wilayah Kerja</span>
-                                  <span className="col-span-2 font-semibold text-slate-700">{namaRW} Kelurahan Ngabean, Kecamatan Gunungpati, Kota Semarang</span>
+                                  <span className="col-span-2 font-semibold text-slate-700">{namaRW}, Kecamatan Gunungpati, Kota Semarang</span>
                                 </div>
                                 <div className="grid grid-cols-3 gap-2 border-t border-slate-100 pt-2">
                                   <span className="text-slate-400 font-medium">Penyusun Laporan</span>

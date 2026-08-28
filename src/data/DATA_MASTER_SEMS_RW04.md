@@ -1,6 +1,6 @@
 # MASTER DATA & DOKUMENTASI LENGKAP SISTEM INFORMASI SEMS RW 04 NGABEAN
 **Peringatan Hari Ulang Tahun Kemerdekaan Republik Indonesia Ke-81**
-*Rukun Warga 04 Kelurahan Ngabean, Kecamatan Semarang Barat, Kota Semarang*
+*Rukun Warga 04 Ngabean, Kecamatan Gunungpati, Kota Semarang*
 
 > 💡 **PETUNJUK PEMULIHAN OTOMATIS (AUTO-RESTORE):**
 > File ini berisi dokumentasi naratif resmi dan snapshot data terstruktur (JSON). Jika database `db.json` hilang atau terhapus, server SEMS akan secara otomatis memindai dan membaca file ini (`DATA_MASTER_SEMS_RW04.md`) untuk memulihkan seluruh konfigurasi, kegiatan, RKBA, transaksi buku kas utama, buku kas donasi, voucher non-kas, notulensi rapat, dan LPJ tanpa perlu upload ulang manual!
@@ -9,7 +9,7 @@
 
 ## 1. INFORMASI UMUM & KONFIGURASI SISTEM
 - **Kop Surat Baris 1:** PANITIA PERINGATAN HARI ULANG TAHUN KEMERDEKAAN RI KE-81
-- **Kop Surat Baris 2:** RUKUN WARGA 04 KELURAHAN NGABEAN
+- **Kop Surat Baris 2:** RUKUN WARGA 04 NGABEAN
 - **Kop Surat Baris 3:** Kecamatan Semarang Barat, Kota Semarang, Jawa Tengah
 - **Kop Surat Baris 4:** Sekretariat: Balai RW 04 Ngabean, Telp: +62 812-3456-7890 | Kode Pos: 50141
 - **Daftar Wilayah RT:** RT 01, RT 02, RT 03, RT 04 (Total: 4 RT)
@@ -215,7 +215,7 @@ Total: **68 Voucher Kuliner UMKM** dan **1 Unit Mesin Cuci Doorprize**:
     "sheetApiKey": "AIzaSyFakeKey_SEMS_GoogleSheetsAPI_2026",
     "themeColor": "red",
     "kopLine1": "PANITIA PERINGATAN HARI ULANG TAHUN KEMERDEKAAN RI KE-81",
-    "kopLine2": "RUKUN WARGA 04 KELURAHAN NGABEAN",
+    "kopLine2": "RUKUN WARGA 04 NGABEAN",
     "kopLine3": "Kecamatan Semarang Barat, Kota Semarang, Jawa Tengah",
     "kopLine4": "Sekretariat: Balai RW 04 Ngabean, Telp: +62 812-3456-7890 | Kode Pos: 50141",
     "logoStyle": "flag",

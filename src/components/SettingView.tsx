@@ -37,7 +37,7 @@ export default function SettingView({ settings, onSaveSettings, semsData, onImpo
   
   // Kop Surat States
   const [kopLine1, setKopLine1] = useState(settings.kopLine1 || "PANITIA PERINGATAN HARI ULANG TAHUN KEMERDEKAAN RI KE-81");
-  const [kopLine2, setKopLine2] = useState(settings.kopLine2 || "RUKUN WARGA 04 KELURAHAN NGABEAN");
+  const [kopLine2, setKopLine2] = useState(settings.kopLine2 || "RUKUN WARGA 04 NGABEAN");
   const [kopLine3, setKopLine3] = useState(settings.kopLine3 || "Kecamatan Semarang Barat, Kota Semarang, Jawa Tengah");
   const [kopLine4, setKopLine4] = useState(settings.kopLine4 || "Sekretariat: Balai RW 04 Ngabean, Telp: +62 812-3456-7890 | Kode Pos: 50141");
   const [logoStyle, setLogoStyle] = useState(settings.logoStyle || "flag");
@@ -457,7 +457,7 @@ export default function SettingView({ settings, onSaveSettings, semsData, onImpo
                       type="text"
                       value={kopLine2}
                       onChange={(e) => setKopLine2(e.target.value)}
-                      placeholder="Contoh: RUKUN WARGA 04 KELURAHAN NGABEAN"
+                      placeholder="Contoh: RUKUN WARGA 04 NGABEAN"
                       className="w-full text-xs border border-slate-200 focus:border-red-500 focus:outline-none rounded p-1.5 bg-slate-50/50"
                       required
                     />
