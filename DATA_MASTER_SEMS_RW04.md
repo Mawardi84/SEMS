@@ -78,7 +78,7 @@
 | ACT-008 | Panggung + Tratak Resepsi | Perlengkapan | Kas Utama | 750.000 | 750.000 | Sesuai Baseline |
 | ACT-009 | Sound Resepsi | Perlengkapan | Kas Utama | 1.200.000 | 1.200.000 | Sesuai Baseline |
 | ACT-010 | Tarling / Tarting Resepsi | Seksi Pentas Seni | Kas Utama | 1.500.000 | 1.500.000 | Sesuai Baseline |
-| ACT-011 | MMT / Banner | Seksi Dokumentasi dan Publikasi | Kas Utama | 400.000 | 245.000 | Lebih Hemat (-155.000) |
+| ACT-011 | MMT / Banner | Sekretaris | Kas Utama | 400.000 | 245.000 | Lebih Hemat (-155.000) |
 | ACT-012 | Proposal Kegiatan | Sekretaris | Kas Utama | 258.000 | 258.000 | Sesuai Realisasi |
 | ACT-013 | Trashbag & ID Card | Humas | Sponsorship | 0 | 0 | Swadaya Panitia |
 

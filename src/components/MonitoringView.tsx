@@ -239,7 +239,7 @@ export default function MonitoringView({
         else if (seksiName.includes("Lomba")) { pagu = 2000000; spent = 1400000; }
         else { spent = Math.round(pagu * 0.9); }
       } else {
-        spent = keuangan.filter(t => t.type === 'Keluar' && (t.notes?.toLowerCase().includes(seksiName.toLowerCase()) || (t as any).seksi === seksiName)).reduce((sum, t) => sum + t.amount, 0);
+        spent = keuangan.filter(t => t.type === 'Keluar' && (t as any).seksi === seksiName).reduce((sum, t) => sum + t.amount, 0);
       }
       const sisa = pagu - spent;
       const pct = pagu > 0 ? Math.round((spent / pagu) * 100) : 0;
@@ -1447,7 +1447,7 @@ Laporan Pertanggungjawaban ini dibuat rangkap sebagai dokumentasi resmi dan arsi
                       else if (seksiName.includes("Lomba")) { pagu = 2000000; spent = 1400000; }
                       else { spent = Math.round(pagu * 0.9); }
                     } else {
-                      spent = keuangan.filter(t => t.type === 'Keluar' && (t.notes?.toLowerCase().includes(seksiName.toLowerCase()) || (t as any).seksi === seksiName)).reduce((sum, t) => sum + t.amount, 0);
+                      spent = keuangan.filter(t => t.type === 'Keluar' && (t as any).seksi === seksiName).reduce((sum, t) => sum + t.amount, 0);
                     }
                     const sisa = pagu - spent;
                     const percent = pagu > 0 ? Math.round((spent / pagu) * 100) : 0;

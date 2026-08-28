@@ -39,6 +39,7 @@ interface RKBAViewProps {
   onBelanjaItem: (rkbaId: string) => Promise<void>;
   isRecordingBelanjaId: string | null;
   onNavigateView?: (viewName: string, params?: any) => void;
+  onOpenExcelImport?: () => void;
   isReadOnly?: boolean;
 }
 
@@ -51,6 +52,7 @@ export default function RKBAView({
   onBelanjaItem,
   isRecordingBelanjaId,
   onNavigateView,
+  onOpenExcelImport,
   isReadOnly = false
 }: RKBAViewProps) {
   // Safety checks
@@ -661,6 +663,16 @@ export default function RKBAView({
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
+          {onOpenExcelImport && !isReadOnly && (
+            <button
+              onClick={onOpenExcelImport}
+              className="flex items-center gap-1 bg-emerald-700 hover:bg-emerald-800 text-white text-[11px] font-bold px-3 py-1.5 rounded shadow-xs transition-all duration-150 uppercase tracking-wide cursor-pointer"
+              title="Import Data Anggaran dari File Excel"
+            >
+              <FileSpreadsheet className="w-3.5 h-3.5 text-amber-300" />
+              Import Excel
+            </button>
+          )}
           <button
             onClick={() => setIsPreviewOpen(true)}
             className="flex items-center gap-1 bg-indigo-600 hover:bg-indigo-700 text-white text-[11px] font-bold px-3 py-1.5 rounded shadow-xs transition-all duration-150 uppercase tracking-wide cursor-pointer"

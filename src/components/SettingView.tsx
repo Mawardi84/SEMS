@@ -15,7 +15,8 @@ import {
   Download,
   Database,
   FileText,
-  RefreshCw
+  RefreshCw,
+  FileSpreadsheet
 } from "lucide-react";
 import { SystemSetting, SEMSData } from "../types";
 import { initialData } from "../data/initialData";
@@ -25,9 +26,10 @@ interface SettingViewProps {
   onSaveSettings: (settings: SystemSetting) => Promise<void>;
   semsData: SEMSData;
   onImportSuccess: (importedData: SEMSData) => Promise<void>;
+  onOpenExcelImport?: () => void;
 }
 
-export default function SettingView({ settings, onSaveSettings, semsData, onImportSuccess }: SettingViewProps) {
+export default function SettingView({ settings, onSaveSettings, semsData, onImportSuccess, onOpenExcelImport }: SettingViewProps) {
   const [rtListStr, setRtListStr] = useState(settings.rtList.join(", "));
   const [seksiListStr, setSeksiListStr] = useState(settings.seksiList.join(", "));
   const [targetIuran, setTargetIuran] = useState(settings.targetIuranPerRT);
@@ -1245,6 +1247,31 @@ export default function SettingView({ settings, onSaveSettings, semsData, onImpo
                 )}
               </div>
             </div>
+
+            {/* CARD 3: IMPOR EXCEL SPREADSHEET */}
+            {onOpenExcelImport && (
+              <div className="bg-gradient-to-r from-emerald-900/10 to-amber-900/10 p-4 rounded-xl border border-emerald-300 flex flex-col justify-between space-y-3 md:col-span-2">
+                <div className="flex items-center justify-between">
+                  <div className="space-y-1">
+                    <span className="text-[11px] font-extrabold text-emerald-950 uppercase tracking-wider flex items-center gap-1.5">
+                      <FileSpreadsheet className="w-4 h-4 text-emerald-700" />
+                      3. Impor & Parsing File Excel (.xlsx / .csv)
+                    </span>
+                    <p className="text-[11px] text-slate-600 leading-normal">
+                      Unggah file Excel tabel Transaksi Keuangan, Pagu Anggaran/RKBA, atau Daftar Panitia secara serentak. Fitur ini dilengkapi auto-detector kolom & pratinjau data.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={onOpenExcelImport}
+                    className="px-4 py-2 bg-gradient-to-r from-emerald-700 to-amber-700 hover:from-emerald-800 hover:to-amber-800 text-white font-bold text-xs rounded-lg transition-all flex items-center gap-1.5 shadow-sm cursor-pointer shrink-0"
+                  >
+                    <FileSpreadsheet className="w-4 h-4 text-amber-300" />
+                    Buka Tool Import Excel
+                  </button>
+                </div>
+              </div>
+            )}
 
           </div>
 

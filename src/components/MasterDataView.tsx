@@ -15,7 +15,8 @@ import {
   CheckSquare,
   ListTodo,
   Check,
-  CalendarCheck
+  CalendarCheck,
+  FileSpreadsheet
 } from "lucide-react";
 import { Panitia, Kegiatan, SystemSetting, SeksiTask } from "../types";
 import OrgChart from "./OrgChart";
@@ -29,6 +30,7 @@ interface MasterDataViewProps {
   onSaveKegiatan: (action: 'add' | 'edit' | 'delete', data: Kegiatan) => Promise<void>;
   onSaveTask?: (action: 'add' | 'edit' | 'delete' | 'toggle', data: any) => Promise<void>;
   onToggleTaskStatus?: (taskId: string) => Promise<void>;
+  onOpenExcelImport?: () => void;
 }
 
 export default function MasterDataView({
@@ -39,7 +41,8 @@ export default function MasterDataView({
   onSavePanitia,
   onSaveKegiatan,
   onSaveTask,
-  onToggleTaskStatus
+  onToggleTaskStatus,
+  onOpenExcelImport
 }: MasterDataViewProps) {
   // Safety checks
   const safeSettings = {
@@ -233,7 +236,18 @@ export default function MasterDataView({
             Kelola panitia pelaksana, agenda kegiatan resmi, dan program kerja per seksi HUT RI Ke-81 RW 04 Ngabean.
           </p>
         </div>
-        <div className="flex bg-slate-200/60 p-0.5 rounded self-start sm:self-auto border border-slate-200 flex-wrap">
+        <div className="flex items-center gap-2 flex-wrap">
+          {onOpenExcelImport && (
+            <button
+              onClick={onOpenExcelImport}
+              className="flex items-center gap-1 bg-emerald-700 hover:bg-emerald-800 text-white text-[11px] font-bold px-3 py-1.5 rounded shadow-xs transition-all duration-150 uppercase tracking-wide cursor-pointer"
+              title="Import Data Panitia dari File Excel"
+            >
+              <FileSpreadsheet className="w-3.5 h-3.5 text-amber-300" />
+              Import Excel
+            </button>
+          )}
+          <div className="flex bg-slate-200/60 p-0.5 rounded self-start sm:self-auto border border-slate-200 flex-wrap">
           <button
             onClick={() => setActiveSubTab('panitia')}
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded text-[11px] font-bold font-sans transition-all duration-150 ${
@@ -279,6 +293,7 @@ export default function MasterDataView({
             Bagan Organisasi (Chart)
           </button>
         </div>
+      </div>
       </div>
 
       <div className="p-4">

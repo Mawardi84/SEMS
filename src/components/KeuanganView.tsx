@@ -14,7 +14,8 @@ import {
   ArrowDownLeft,
   FileText,
   Download,
-  Eye
+  Eye,
+  FileSpreadsheet
 } from "lucide-react";
 import { KeuanganTransaction, SystemSetting } from "../types";
 import { exportToPDF } from "../utils/pdfExport";
@@ -26,6 +27,7 @@ interface KeuanganViewProps {
   keuangan: KeuanganTransaction[];
   settings: SystemSetting;
   onSaveKeuangan: (action: 'add' | 'edit' | 'delete', data: KeuanganTransaction) => Promise<void>;
+  onOpenExcelImport?: () => void;
   isReadOnly?: boolean;
 }
 
@@ -33,6 +35,7 @@ export default function KeuanganView({
   keuangan,
   settings,
   onSaveKeuangan,
+  onOpenExcelImport,
   isReadOnly = false
 }: KeuanganViewProps) {
   const [filterType, setFilterType] = useState<string>("Semua");
@@ -368,6 +371,16 @@ export default function KeuanganView({
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2 self-start md:self-auto">
+          {onOpenExcelImport && !isReadOnly && (
+            <button
+              onClick={onOpenExcelImport}
+              className="flex items-center gap-1 bg-emerald-700 hover:bg-emerald-800 text-white text-[11px] font-bold px-3 py-1.5 rounded shadow-xs transition-all duration-150 uppercase tracking-wide cursor-pointer"
+              title="Import Transaksi Keuangan dari File Excel"
+            >
+              <FileSpreadsheet className="w-3.5 h-3.5 text-amber-300" />
+              Import Excel
+            </button>
+          )}
           <button
             onClick={() => setIsPreviewOpen(true)}
             className="flex items-center gap-1 bg-indigo-600 hover:bg-indigo-700 text-white text-[11px] font-bold px-3 py-1.5 rounded shadow-xs transition-all duration-150 uppercase tracking-wide cursor-pointer"

@@ -1,363 +1,3 @@
-import { SEMSData } from "../types";
-
-export const initialData: SEMSData = {
-  "settings": {
-    "id": "rw04_sems_config",
-    "rtList": [
-      "RT 01",
-      "RT 02",
-      "RT 03",
-      "RT 04"
-    ],
-    "seksiList": [
-      "Sekretaris",
-      "Acara",
-      "Seksi Lomba",
-      "Seksi Pentas Seni",
-      "Perlengkapan",
-      "Konsumsi",
-      "Seksi Hadiah Dan Doorprize"
-    ],
-    "targetIuranPerRT": 2000000,
-    "paguAnggaranSeksi": {
-      "Sekretaris": 487000,
-      "Acara": 0,
-      "Seksi Lomba": 2547000,
-      "Seksi Pentas Seni": 1938000,
-      "Perlengkapan": 3182000,
-      "Konsumsi": 796000,
-      "Seksi Hadiah Dan Doorprize": 3394000,
-      "Bendahara": 0,
-      "Humas": 196000,
-      "Keamanan dan Kebersihan": 0,
-      "Seksi Dokumentasi dan Publikasi": 0,
-      "Seksi Dana Usaha": 0
-    },
-    "sheetId": "1SEMS_RW04_NGABEAN_SPREADSHEET_ID_XYZ123",
-    "sheetApiKey": "AIzaSyFakeKey_SEMS_GoogleSheetsAPI_2026",
-    "themeColor": "red",
-    "kopLine1": "PANITIA PERINGATAN HARI ULANG TAHUN KEMERDEKAAN RI KE-81",
-    "kopLine2": "RUKUN WARGA 04 NGABEAN",
-    "kopLine3": "Kecamatan Gunungpati, Kota Semarang, Jawa Tengah",
-    "kopLine4": "Sekretariat: Balai RW 04 Ngabean, Telp: - | Kode Pos: 50225",
-    "logoStyle": "flag",
-    "logoUrl": "",
-    "kopStyle": "classic-centered",
-    "stempelUrl": "",
-    "signatureKetuaUrl": "",
-    "signatureKetuaName": "",
-    "signatureBendaharaUrl": "",
-    "signatureBendaharaName": "",
-    "signatureSekretarisUrl": "",
-    "signatureSekretarisName": ""
-  },
-  "panitia": [
-    {
-      "id": "p-1",
-      "name": "Karto",
-      "role": "Penanggung Jawab",
-      "phone": "-",
-      "rt": "",
-      "seksi": "Penanggung Jawab"
-    },
-    {
-      "id": "p-2",
-      "name": "Muh Zaenun",
-      "role": "Ketua",
-      "phone": "-",
-      "rt": "",
-      "seksi": "Acara"
-    },
-    {
-      "id": "p-3",
-      "name": "Faldan",
-      "role": "Wakil",
-      "phone": "-",
-      "rt": "",
-      "seksi": "Acara"
-    },
-    {
-      "id": "p-4",
-      "name": "Mawardi",
-      "role": "Sekretaris",
-      "phone": "-",
-      "rt": "",
-      "seksi": "Sekretaris"
-    },
-    {
-      "id": "p-5",
-      "name": "Dias Ayu",
-      "role": "Bendahara",
-      "phone": "-",
-      "rt": "",
-      "seksi": "Bendahara"
-    },
-    {
-      "id": "p-6",
-      "name": "Ade Rahmat",
-      "role": "Koordinator",
-      "phone": "-",
-      "rt": "",
-      "seksi": "Acara"
-    },
-    {
-      "id": "p-22",
-      "name": "Jihan",
-      "role": "Anggota",
-      "phone": "-",
-      "rt": "",
-      "seksi": "Acara"
-    },
-    {
-      "id": "p-7",
-      "name": "Gunarso",
-      "role": "Koordinator",
-      "phone": "-",
-      "rt": "",
-      "seksi": "Seksi Lomba"
-    },
-    {
-      "id": "p-8",
-      "name": "Teddy",
-      "role": "Koordinator",
-      "phone": "-",
-      "rt": "",
-      "seksi": "Seksi Hadiah Dan Doorprize"
-    },
-    {
-      "id": "p-9",
-      "name": "Indra",
-      "role": "Anggota",
-      "phone": "-",
-      "rt": "",
-      "seksi": "Seksi Hadiah Dan Doorprize"
-    },
-    {
-      "id": "p-10",
-      "name": "Eva",
-      "role": "Koordinator",
-      "phone": "-",
-      "rt": "",
-      "seksi": "Seksi Pentas Seni"
-    },
-    {
-      "id": "p-11",
-      "name": "Rika",
-      "role": "Anggota",
-      "phone": "-",
-      "rt": "",
-      "seksi": "Seksi Pentas Seni"
-    },
-    {
-      "id": "p-12",
-      "name": "Sandy",
-      "role": "Koordinator",
-      "phone": "-",
-      "rt": "",
-      "seksi": "Perlengkapan"
-    },
-    {
-      "id": "p-13",
-      "name": "Tatak",
-      "role": "Anggota",
-      "phone": "-",
-      "rt": "",
-      "seksi": "Perlengkapan"
-    },
-    {
-      "id": "p-14",
-      "name": "Yogo",
-      "role": "Anggota",
-      "phone": "-",
-      "rt": "",
-      "seksi": "Perlengkapan"
-    },
-    {
-      "id": "p-15",
-      "name": "Dea",
-      "role": "Koordinator",
-      "phone": "-",
-      "rt": "",
-      "seksi": "Konsumsi"
-    },
-    {
-      "id": "p-16",
-      "name": "Dita",
-      "role": "Koordinator",
-      "phone": "-",
-      "rt": "",
-      "seksi": "Humas"
-    },
-    {
-      "id": "p-17",
-      "name": "Ervan",
-      "role": "Koordinator",
-      "phone": "-",
-      "rt": "",
-      "seksi": "Seksi Dana Usaha"
-    },
-    {
-      "id": "p-18",
-      "name": "Wenny",
-      "role": "Koordinator",
-      "phone": "-",
-      "rt": "",
-      "seksi": "Seksi Dokumentasi dan Publikasi"
-    },
-    {
-      "id": "p-19",
-      "name": "Winne",
-      "role": "Anggota",
-      "phone": "-",
-      "rt": "",
-      "seksi": "Seksi Dokumentasi dan Publikasi"
-    },
-    {
-      "id": "p-20",
-      "name": "Agung",
-      "role": "Koordinator",
-      "phone": "-",
-      "rt": "",
-      "seksi": "Keamanan dan Kebersihan"
-    },
-    {
-      "id": "p-21",
-      "name": "Rio",
-      "role": "Anggota",
-      "phone": "-",
-      "rt": "",
-      "seksi": "Keamanan dan Kebersihan"
-    }
-  ],
-  "kegiatan": [
-    {
-      "id": "keg-1",
-      "activityCode": "ACT-001",
-      "name": "Jalan Sehat",
-      "date": "2026-08-23",
-      "time": "06:30 - 11:30 WIB",
-      "location": "Rute Keliling RW 04 & Panggung Utama",
-      "description": "Jalan sehat warga RW 04 disertai pembagian doorprize",
-      "status": "RENCANA"
-    },
-    {
-      "id": "keg-2",
-      "activityCode": "ACT-002",
-      "name": "Resepsi",
-      "date": "2026-08-23",
-      "time": "19:00 - 23:00 WIB",
-      "location": "Panggung Utama Balai RW 04",
-      "description": "Resepsi penutupan HUT RI, pembagian hadiah, dan pentas seni",
-      "status": "RENCANA"
-    }
-  ],
-  "rkba": [
-    {
-      "id": "rkba-01",
-      "activityCode": "ACT-001",
-      "kegiatanId": "keg-1",
-      "name": "Anggaran Perlengkapan",
-      "seksi": "Perlengkapan",
-      "qty": 1,
-      "unit": "Paket",
-      "price": 3182000,
-      "total": 3182000,
-      "fundingSource": "Kas Utama",
-      "status": "Disetujui",
-      "notes": "-",
-      "dateAdded": "2026-07-01"
-    },
-    {
-      "id": "rkba-02",
-      "activityCode": "ACT-002",
-      "kegiatanId": "keg-1",
-      "name": "Anggaran Sekretaris",
-      "seksi": "Sekretaris",
-      "qty": 1,
-      "unit": "Paket",
-      "price": 487000,
-      "total": 487000,
-      "fundingSource": "Kas Utama",
-      "status": "Disetujui",
-      "notes": "-",
-      "dateAdded": "2026-07-01"
-    },
-    {
-      "id": "rkba-03",
-      "activityCode": "ACT-003",
-      "kegiatanId": "keg-1",
-      "name": "Anggaran Seksi Lomba",
-      "seksi": "Seksi Lomba",
-      "qty": 1,
-      "unit": "Paket",
-      "price": 2547000,
-      "total": 2547000,
-      "fundingSource": "Kas Utama",
-      "status": "Disetujui",
-      "notes": "-",
-      "dateAdded": "2026-07-01"
-    },
-    {
-      "id": "rkba-04",
-      "activityCode": "ACT-004",
-      "kegiatanId": "keg-1",
-      "name": "Anggaran Konsumsi",
-      "seksi": "Konsumsi",
-      "qty": 1,
-      "unit": "Paket",
-      "price": 796000,
-      "total": 796000,
-      "fundingSource": "Kas Utama",
-      "status": "Disetujui",
-      "notes": "-",
-      "dateAdded": "2026-07-01"
-    },
-    {
-      "id": "rkba-05",
-      "activityCode": "ACT-005",
-      "kegiatanId": "keg-1",
-      "name": "Anggaran Humas",
-      "seksi": "Humas",
-      "qty": 1,
-      "unit": "Paket",
-      "price": 196000,
-      "total": 196000,
-      "fundingSource": "Kas Utama",
-      "status": "Disetujui",
-      "notes": "-",
-      "dateAdded": "2026-07-01"
-    },
-    {
-      "id": "rkba-06",
-      "activityCode": "ACT-006",
-      "kegiatanId": "keg-1",
-      "name": "Anggaran Seksi Hadiah Dan Doorprize",
-      "seksi": "Seksi Hadiah Dan Doorprize",
-      "qty": 1,
-      "unit": "Paket",
-      "price": 3394000,
-      "total": 3394000,
-      "fundingSource": "Kas Utama",
-      "status": "Disetujui",
-      "notes": "-",
-      "dateAdded": "2026-07-01"
-    },
-    {
-      "id": "rkba-07",
-      "activityCode": "ACT-007",
-      "kegiatanId": "keg-1",
-      "name": "Anggaran Seksi Pentas Seni",
-      "seksi": "Seksi Pentas Seni",
-      "qty": 1,
-      "unit": "Paket",
-      "price": 1938000,
-      "total": 1938000,
-      "fundingSource": "Kas Utama",
-      "status": "Disetujui",
-      "notes": "-",
-      "dateAdded": "2026-07-01"
-    }
-  ],
   "keuangan": [
     {
       "id": "trx-bu-01",
@@ -378,7 +18,7 @@ export const initialData: SEMSData = {
       "category": "Sewa Sound System",
       "amount": 300000,
       "notes": "[Buku Utama] DP Sound (TF)",
-      "refId": "rkba-01",
+      "refId": "rkba-09",
       "activityId": "keg-4",
       "activityName": "Resepsi & Pentas Seni Tarling",
       "seksi": "Perlengkapan",
@@ -394,7 +34,7 @@ export const initialData: SEMSData = {
       "category": "Cetak & Jilid Proposal",
       "amount": 258000,
       "notes": "[Buku Utama] Cetak Proposal (TF)",
-      "refId": "rkba-02",
+      "refId": "rkba-12",
       "seksi": "Sekretaris",
       "paymentMethod": "Transfer",
       "proofStatus": "Lengkap",
@@ -408,7 +48,7 @@ export const initialData: SEMSData = {
       "category": "Perlengkapan Lomba",
       "amount": 35000,
       "notes": "[Buku Utama] Perlengkapan lomba anak (Rafia, Pluit, kapur)",
-      "refId": "rkba-03",
+      "refId": "rkba-01",
       "activityId": "keg-1",
       "activityName": "Lomba Anak & Remaja",
       "seksi": "Seksi Lomba",
@@ -424,7 +64,7 @@ export const initialData: SEMSData = {
       "category": "Perlengkapan Lomba",
       "amount": 47000,
       "notes": "[Buku Utama] Perlengkapan lomba (Air minum kerupuk)",
-      "refId": "rkba-03",
+      "refId": "rkba-01",
       "activityId": "keg-1",
       "activityName": "Lomba Anak & Remaja",
       "seksi": "Seksi Lomba",
@@ -440,7 +80,7 @@ export const initialData: SEMSData = {
       "category": "Administrasi & Print",
       "amount": 6000,
       "notes": "[Buku Utama] Print naskah lomba",
-      "refId": "rkba-02",
+      "refId": "rkba-01",
       "activityId": "keg-1",
       "activityName": "Lomba Anak & Remaja",
       "seksi": "Sekretaris",
@@ -456,7 +96,7 @@ export const initialData: SEMSData = {
       "category": "Konsumsi Panitia / Lomba",
       "amount": 30000,
       "notes": "[Buku Utama] Es teh lomba",
-      "refId": "rkba-04",
+      "refId": "rkba-01",
       "activityId": "keg-1",
       "activityName": "Lomba Anak & Remaja",
       "seksi": "Konsumsi",
@@ -472,7 +112,7 @@ export const initialData: SEMSData = {
       "category": "Perlengkapan Lomba",
       "amount": 50000,
       "notes": "[Buku Utama] Perlengkapan lomba anak (Tali & Cup minum)",
-      "refId": "rkba-03",
+      "refId": "rkba-01",
       "activityId": "keg-1",
       "activityName": "Lomba Anak & Remaja",
       "seksi": "Seksi Lomba",
@@ -492,8 +132,7 @@ export const initialData: SEMSData = {
       "paymentMethod": "Tunai",
       "proofStatus": "Lengkap",
       "proofNumber": "BKK-BU-08",
-      "vendor": "Panitia Belanja",
-      "refId": "rkba-05"
+      "vendor": "Panitia Belanja"
     },
     {
       "id": "trx-bu-10",
@@ -502,7 +141,7 @@ export const initialData: SEMSData = {
       "category": "Belanja Doorprize",
       "amount": 834000,
       "notes": "[Buku Utama] Belanja Hadiah jalan sehat (Alifa grosir)",
-      "refId": "rkba-06",
+      "refId": "rkba-03",
       "activityId": "keg-3",
       "activityName": "Jalan Sehat & Doorprize",
       "seksi": "Seksi Hadiah Dan Doorprize",
@@ -518,7 +157,7 @@ export const initialData: SEMSData = {
       "category": "Belanja Doorprize",
       "amount": 235500,
       "notes": "[Buku Utama] Belanja Hadiah jalan sehat (Pusat grosir)",
-      "refId": "rkba-06",
+      "refId": "rkba-03",
       "activityId": "keg-3",
       "activityName": "Jalan Sehat & Doorprize",
       "seksi": "Seksi Hadiah Dan Doorprize",
@@ -534,7 +173,7 @@ export const initialData: SEMSData = {
       "category": "Belanja Doorprize",
       "amount": 967000,
       "notes": "[Buku Utama] Belanja Hadiah jalan sehat (Delamas)",
-      "refId": "rkba-06",
+      "refId": "rkba-03",
       "activityId": "keg-3",
       "activityName": "Jalan Sehat & Doorprize",
       "seksi": "Seksi Hadiah Dan Doorprize",
@@ -550,7 +189,7 @@ export const initialData: SEMSData = {
       "category": "Belanja Doorprize",
       "amount": 740500,
       "notes": "[Buku Utama] Belanja Hadiah jalan sehat (Lainnya)",
-      "refId": "rkba-06",
+      "refId": "rkba-03",
       "activityId": "keg-3",
       "activityName": "Jalan Sehat & Doorprize",
       "seksi": "Seksi Hadiah Dan Doorprize",
@@ -566,7 +205,7 @@ export const initialData: SEMSData = {
       "category": "Belanja Doorprize",
       "amount": 597000,
       "notes": "[Buku Utama] CO Gelang Semar (Hadiah Utama Jalan Sehat)",
-      "refId": "rkba-06",
+      "refId": "rkba-03",
       "activityId": "keg-3",
       "activityName": "Jalan Sehat & Doorprize",
       "seksi": "Seksi Hadiah Dan Doorprize",
@@ -582,7 +221,7 @@ export const initialData: SEMSData = {
       "category": "Hadiah Lomba",
       "amount": 309000,
       "notes": "[Buku Utama] Belanja hadiah lomba anak Co shopee",
-      "refId": "rkba-03",
+      "refId": "rkba-01",
       "activityId": "keg-1",
       "activityName": "Lomba Anak & Remaja",
       "seksi": "Seksi Lomba",
@@ -598,7 +237,7 @@ export const initialData: SEMSData = {
       "category": "Hadiah Lomba",
       "amount": 149000,
       "notes": "[Buku Utama] Belanja Jajan hadiah lomba anak (mas cut)",
-      "refId": "rkba-03",
+      "refId": "rkba-01",
       "activityId": "keg-1",
       "activityName": "Lomba Anak & Remaja",
       "seksi": "Seksi Lomba",
@@ -614,7 +253,7 @@ export const initialData: SEMSData = {
       "category": "Perlengkapan Lomba",
       "amount": 187500,
       "notes": "[Buku Utama] Belanja perlengkapan lomba (Spon, print, lem tembak, pita, kertas, double tape, konsumsi, cup minum)",
-      "refId": "rkba-03",
+      "refId": "rkba-01",
       "activityId": "keg-1",
       "activityName": "Lomba Anak & Remaja",
       "seksi": "Seksi Lomba",
@@ -634,8 +273,7 @@ export const initialData: SEMSData = {
       "paymentMethod": "Tunai",
       "proofStatus": "Lengkap",
       "proofNumber": "BKK-BU-17",
-      "vendor": "Fotocopy",
-      "refId": "rkba-01"
+      "vendor": "Fotocopy"
     },
     {
       "id": "trx-bu-19",
@@ -648,8 +286,7 @@ export const initialData: SEMSData = {
       "paymentMethod": "Tunai",
       "proofStatus": "Lengkap",
       "proofNumber": "BKK-BU-18",
-      "vendor": "Rental & Toko Tali",
-      "refId": "rkba-02"
+      "vendor": "Rental & Toko Tali"
     },
     {
       "id": "trx-bu-20",
@@ -662,8 +299,7 @@ export const initialData: SEMSData = {
       "paymentMethod": "Tunai",
       "proofStatus": "Lengkap",
       "proofNumber": "BKK-BU-19",
-      "vendor": "Toko Plastik",
-      "refId": "rkba-04"
+      "vendor": "Toko Plastik"
     },
     {
       "id": "trx-bu-21",
@@ -672,7 +308,7 @@ export const initialData: SEMSData = {
       "category": "Hadiah Lomba",
       "amount": 257000,
       "notes": "[Buku Utama] Belanja hadiah Jabutan (Sesi 1)",
-      "refId": "rkba-03",
+      "refId": "rkba-01",
       "activityId": "keg-1",
       "activityName": "Lomba Anak & Remaja",
       "seksi": "Seksi Lomba",
@@ -688,7 +324,7 @@ export const initialData: SEMSData = {
       "category": "Hadiah Lomba",
       "amount": 319000,
       "notes": "[Buku Utama] Belanja hadiah Jabutan (Sesi 2)",
-      "refId": "rkba-03",
+      "refId": "rkba-01",
       "activityId": "keg-1",
       "activityName": "Lomba Anak & Remaja",
       "seksi": "Seksi Lomba",
@@ -700,10 +336,10 @@ export const initialData: SEMSData = {
     {
       "id": "trx-bu-23",
       "type": "Keluar",
-      "date": "2026-08-22",
+      "date": "2026-08-16",
       "category": "Konsumsi Jalan Sehat",
-      "amount": 415000,
-      "notes": "[Buku Utama] Konsumsi jalan sehat air mineral 17 dus",
+      "amount": 418000,
+      "notes": "[Buku Utama] Pengajuan beli air mineral keperluan Jalan Sehat",
       "refId": "rkba-04",
       "activityId": "keg-3",
       "activityName": "Jalan Sehat & Doorprize",
@@ -720,7 +356,7 @@ export const initialData: SEMSData = {
       "category": "Cetak MMT & Konsumsi",
       "amount": 200000,
       "notes": "[Buku Utama] MMT + konsumsi",
-      "refId": "rkba-02",
+      "refId": "rkba-11",
       "seksi": "Sekretaris",
       "paymentMethod": "Tunai",
       "proofStatus": "Lengkap",
@@ -734,7 +370,7 @@ export const initialData: SEMSData = {
       "category": "Sewa Panggung & Tratak",
       "amount": 750000,
       "notes": "[Buku Utama] Panggung + tratak",
-      "refId": "rkba-01",
+      "refId": "rkba-08",
       "activityId": "keg-4",
       "activityName": "Resepsi & Pentas Seni Tarling",
       "seksi": "Perlengkapan",
@@ -750,7 +386,7 @@ export const initialData: SEMSData = {
       "category": "Pentas Seni Tarling",
       "amount": 1500000,
       "notes": "[Buku Utama] Honor grup seni Tarling Nada Kencana",
-      "refId": "rkba-07",
+      "refId": "rkba-10",
       "activityId": "keg-4",
       "activityName": "Resepsi & Pentas Seni Tarling",
       "seksi": "Seksi Pentas Seni",
@@ -766,7 +402,7 @@ export const initialData: SEMSData = {
       "category": "Sewa Sound System",
       "amount": 900000,
       "notes": "[Buku Utama] Pelunasan sound system resepsi",
-      "refId": "rkba-01",
+      "refId": "rkba-09",
       "activityId": "keg-4",
       "activityName": "Resepsi & Pentas Seni Tarling",
       "seksi": "Perlengkapan",
@@ -782,7 +418,7 @@ export const initialData: SEMSData = {
       "category": "Hadiah Lomba",
       "amount": 599500,
       "notes": "[Buku Utama] Hadiah lomba anak",
-      "refId": "rkba-03",
+      "refId": "rkba-01",
       "activityId": "keg-1",
       "activityName": "Lomba Anak & Remaja",
       "seksi": "Seksi Lomba",
@@ -802,8 +438,7 @@ export const initialData: SEMSData = {
       "paymentMethod": "Tunai",
       "proofStatus": "Lengkap",
       "proofNumber": "BKK-BU-28",
-      "vendor": "Toko Tali ID Card",
-      "refId": "rkba-05"
+      "vendor": "Toko Tali ID Card"
     },
     {
       "id": "trx-bu-30",
@@ -816,8 +451,7 @@ export const initialData: SEMSData = {
       "paymentMethod": "Tunai",
       "proofStatus": "Lengkap",
       "proofNumber": "BKK-BU-29",
-      "vendor": "Fotocopy",
-      "refId": "rkba-01"
+      "vendor": "Fotocopy"
     },
     {
       "id": "trx-bu-31",
@@ -826,7 +460,7 @@ export const initialData: SEMSData = {
       "category": "Pentas Seni",
       "amount": 15000,
       "notes": "[Buku Utama] Aksesoris tari anak",
-      "refId": "rkba-07",
+      "refId": "rkba-10",
       "activityId": "keg-4",
       "activityName": "Resepsi & Pentas Seni Tarling",
       "seksi": "Seksi Pentas Seni",
@@ -846,8 +480,7 @@ export const initialData: SEMSData = {
       "paymentMethod": "Tunai",
       "proofStatus": "Lengkap",
       "proofNumber": "BKK-BU-31",
-      "vendor": "Fotocopy",
-      "refId": "rkba-06"
+      "vendor": "Fotocopy"
     },
     {
       "id": "trx-bd-01",
@@ -964,7 +597,7 @@ export const initialData: SEMSData = {
       "category": "Hadiah Lomba",
       "amount": 225000,
       "notes": "[Buku Donasi] Hadiah uang tunai lomba remaja",
-      "refId": "rkba-03",
+      "refId": "rkba-01",
       "activityId": "keg-1",
       "activityName": "Lomba Anak & Remaja",
       "seksi": "Seksi Lomba",
@@ -980,7 +613,7 @@ export const initialData: SEMSData = {
       "category": "Sewa Sound System",
       "amount": 200000,
       "notes": "[Buku Donasi] Sound tirakat + konsumsi (Realisasi dari dana donasi)",
-      "refId": "rkba-01",
+      "refId": "rkba-02",
       "activityId": "keg-2",
       "activityName": "Malam Tirakatan",
       "seksi": "Perlengkapan",
@@ -996,7 +629,7 @@ export const initialData: SEMSData = {
       "category": "Pentas Seni & Tari",
       "amount": 181000,
       "notes": "[Buku Donasi] Beli alat make up untuk nari anak",
-      "refId": "rkba-07",
+      "refId": "rkba-10",
       "activityId": "keg-4",
       "activityName": "Resepsi & Pentas Seni Tarling",
       "seksi": "Seksi Pentas Seni",
@@ -1012,7 +645,7 @@ export const initialData: SEMSData = {
       "category": "Hadiah Lomba",
       "amount": 369000,
       "notes": "[Buku Donasi] Hadiah lomba bapak ibu",
-      "refId": "rkba-03",
+      "refId": "rkba-01",
       "activityId": "keg-1",
       "activityName": "Lomba Anak & Remaja",
       "seksi": "Seksi Lomba",
@@ -1028,7 +661,7 @@ export const initialData: SEMSData = {
       "category": "Sewa Panggung & Tratak",
       "amount": 760000,
       "notes": "[Buku Donasi] Panggung + tratak tambahan",
-      "refId": "rkba-01",
+      "refId": "rkba-08",
       "activityId": "keg-4",
       "activityName": "Resepsi & Pentas Seni Tarling",
       "seksi": "Perlengkapan",
@@ -1048,8 +681,7 @@ export const initialData: SEMSData = {
       "paymentMethod": "Tunai",
       "proofStatus": "Lengkap",
       "proofNumber": "BKK-BD-06",
-      "vendor": "Panitia Perlengkapan",
-      "refId": "rkba-01"
+      "vendor": "Panitia Perlengkapan"
     },
     {
       "id": "trx-bd-16",
@@ -1062,8 +694,7 @@ export const initialData: SEMSData = {
       "paymentMethod": "Tunai",
       "proofStatus": "Lengkap",
       "proofNumber": "BKK-BD-07",
-      "vendor": "Toko Prakarya & Warung",
-      "refId": "rkba-01"
+      "vendor": "Toko Prakarya & Warung"
     },
     {
       "id": "trx-bd-17",
@@ -1076,8 +707,7 @@ export const initialData: SEMSData = {
       "paymentMethod": "Tunai",
       "proofStatus": "Lengkap",
       "proofNumber": "BKK-BD-08",
-      "vendor": "Warung Konsumsi",
-      "refId": "rkba-04"
+      "vendor": "Warung Konsumsi"
     },
     {
       "id": "trx-bd-18",
@@ -1090,8 +720,7 @@ export const initialData: SEMSData = {
       "paymentMethod": "Tunai",
       "proofStatus": "Lengkap",
       "proofNumber": "BKK-BD-09",
-      "vendor": "Warung Konsumsi",
-      "refId": "rkba-04"
+      "vendor": "Warung Konsumsi"
     },
     {
       "id": "trx-bd-19",
@@ -1104,8 +733,7 @@ export const initialData: SEMSData = {
       "paymentMethod": "Tunai",
       "proofStatus": "Lengkap",
       "proofNumber": "BKK-BD-10",
-      "vendor": "Warung Es",
-      "refId": "rkba-04"
+      "vendor": "Warung Es"
     },
     {
       "id": "trx-bd-20",
@@ -1114,7 +742,7 @@ export const initialData: SEMSData = {
       "category": "Konsumsi Pentas Seni",
       "amount": 242000,
       "notes": "[Buku Donasi] Sonic konsumsi tari anak",
-      "refId": "rkba-07",
+      "refId": "rkba-10",
       "activityId": "keg-4",
       "activityName": "Resepsi & Pentas Seni Tarling",
       "seksi": "Seksi Pentas Seni",
@@ -1134,8 +762,7 @@ export const initialData: SEMSData = {
       "paymentMethod": "Tunai",
       "proofStatus": "Lengkap",
       "proofNumber": "BKK-BD-12",
-      "vendor": "Toko Roti & Snack",
-      "refId": "rkba-04"
+      "vendor": "Toko Roti & Snack"
     }
   ],
   "tasks": [
@@ -1303,114 +930,82 @@ export const initialData: SEMSData = {
       "createdAt": "2026-08-24T15:00:00.000Z"
     }
   ],
-  "documents": [
+  "documents": [],
+  "undangan": [],
+  "budgetChanges": [
     {
-      "id": "doc_seed_1",
-      "title": "SK Susunan Panitia HUT RI Ke-81 RW 04 Ngabean",
-      "category": "SK Panitia",
-      "description": "Surat Keputusan Resmi dari Ketua RW 04 Kelurahan Gunungpati mengenai susunan lengkap organisasi panitia pelaksana kemerdekaan.",
-      "fileUrl": "https://drive.google.com/file/d/1SEMS_SK_Panitia_RW04_XYZ/view?usp=sharing",
-      "fileName": "SK_Panitia_HUT_RI_81_RW04.pdf",
-      "fileSize": "1.4 MB",
-      "fileType": "application/pdf",
-      "uploadDate": "2026-07-01T10:00:00.000Z",
-      "uploadedBy": "Sekretaris",
-      "notes": "Dokumen fisik disimpan di lemari arsip Balai RW 04."
+      "id": "pa-2026-001",
+      "changeNumber": "PA-2026-001",
+      "date": "2026-07-20",
+      "activityId": "rkba-10",
+      "activityCode": "ACT-010",
+      "activityName": "Sewa Kostum & Pentas Seni",
+      "seksi": "Seksi Pentas Seni",
+      "changeType": "PERUBAHAN NILAI",
+      "initialAmount": 1500000,
+      "changeAmount": -750000,
+      "revisedAmount": 750000,
+      "reason": "Revisi pagu RAB Pentas Seni disesuaikan dari Rp 1.500.000 menjadi Rp 750.000 berdasarkan kesepakatan efisiensi panitia.",
+      "decisionBasis": "Hasil Evaluasi Panitia / Rapat Koordinasi Seksi Pentas Seni",
+      "meetingMinutesId": "notulensi_seed_2",
+      "meetingMinutesNumber": "NR-2026-002",
+      "proposedBy": "Seksi Pentas Seni",
+      "approvedBy": "Ketua RW 04 & Ketua Panitia",
+      "approvalDate": "2026-07-20",
+      "status": "DISETUJUI",
+      "notes": "Pengurangan pagu RAB Pentas Seni dari Rp 1.500.000 menjadi Rp 750.000",
+      "createdAt": "2026-07-20T10:00:00.000Z",
+      "updatedAt": "2026-07-20T10:00:00.000Z"
     },
     {
-      "id": "doc_seed_2",
-      "title": "Draf Proposal Sponsorship HUT RI Ke-81 Ngabean",
-      "category": "Proposal",
-      "description": "Draf proposal pengajuan dana sponsor utama, donatur korporat, dan kemitraan UMKM sekitar Kelurahan Gunungpati.",
-      "fileUrl": "https://drive.google.com/file/d/1SEMS_Proposal_Sponsor_RW04_ABC/view?usp=sharing",
-      "fileName": "Proposal_Sponsorship_Kemerdekaan_RI81_Ngabean.docx",
-      "fileSize": "3.2 MB",
-      "fileType": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-      "uploadDate": "2026-07-03T14:30:00.000Z",
-      "uploadedBy": "Seksi Dana Usaha",
-      "notes": "Telah diajukan ke PT Sinar Murni dan BPR Gunungpati."
+      "id": "pa-2026-002",
+      "changeNumber": "PA-2026-002",
+      "date": "2026-07-30",
+      "activityId": "rkba-10",
+      "activityCode": "ACT-010",
+      "activityName": "Sewa Kostum & Pentas Seni",
+      "seksi": "Seksi Pentas Seni",
+      "changeType": "DITIADAKAN",
+      "initialAmount": 750000,
+      "changeAmount": -750000,
+      "revisedAmount": 0,
+      "reason": "Revisi RAB Pentas Seni resmi ditiadakan dari alokasi dana Kas Utama.",
+      "decisionBasis": "Keputusan Rapat Panitia / Pengalihan Program Pentas Seni",
+      "meetingMinutesId": "notulensi_seed_2",
+      "meetingMinutesNumber": "NR-2026-002",
+      "proposedBy": "Seksi Pentas Seni",
+      "approvedBy": "Ketua RW 04 & Ketua Panitia",
+      "approvalDate": "2026-07-30",
+      "status": "DISETUJUI",
+      "notes": "Pos anggaran Pentas Seni ditiadakan (dikurangi Rp 750.000 menjadi Rp 0)",
+      "createdAt": "2026-07-30T10:00:00.000Z",
+      "updatedAt": "2026-07-30T10:00:00.000Z"
     },
     {
-      "id": "doc_seed_3",
-      "title": "Surat Edaran Iuran Warga Per RT 01-04 Ngabean",
-      "category": "Surat",
-      "description": "Surat pemberitahuan resmi dan permohonan iuran sukarela warga RW 04 Ngabean untuk membiayai perayaan kemerdekaan.",
-      "fileUrl": "https://drive.google.com/file/d/1SEMS_Surat_Edaran_Iuran_RW04/view?usp=sharing",
-      "fileName": "Surat_Edaran_Iuran_Warga_HUT_RI.pdf",
-      "fileSize": "850 KB",
-      "fileType": "application/pdf",
-      "uploadDate": "2026-07-04T08:15:00.000Z",
-      "uploadedBy": "Humas",
-      "notes": "Telah dicetak dan didistribusikan ke masing-masing Ketua RT 01 s.d. RT 04."
-    },
-    {
-      "id": "doc_seed_4",
-      "title": "Kuitansi Belanja Panggung Pentas Seni & Perlengkapan",
-      "category": "Kuitansi",
-      "description": "Arsip digital bukti pembayaran sewa panggung utama, sound system, terpal, lampu dekorasi kemerdekaan.",
-      "fileUrl": "https://drive.google.com/file/d/1SEMS_Nota_Panggung_Pentas_Seni/view?usp=sharing",
-      "fileName": "Kuitansi_Sewa_Panggung_Sound.jpg",
-      "fileSize": "2.1 MB",
-      "fileType": "image/jpeg",
-      "uploadDate": "2026-07-08T16:45:00.000Z",
-      "uploadedBy": "Perlengkapan",
-      "notes": "Realisasi pembayaran penuh dari anggaran kas seksi perlengkapan."
-    },
-    {
-      "id": "doc_seed_5",
-      "title": "Formulir Pendaftaran Lomba Kemerdekaan 2026",
-      "category": "Lainnya",
-      "description": "Lembar formulir pendaftaran peserta berbagai jenis lomba (tarik tambang, balap karung helm, futsal daster, panjat pinang).",
-      "fileUrl": "https://drive.google.com/file/d/1SEMS_Form_Lomba_Kemerdekaan/view?usp=sharing",
-      "fileName": "Formulir_Pendaftaran_Lomba_HUT_RI81.xlsx",
-      "fileSize": "180 KB",
-      "fileType": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-      "uploadDate": "2026-07-05T11:20:00.000Z",
-      "uploadedBy": "Seksi Lomba",
-      "notes": "Diisi oleh perwakilan tiap tim RT."
-    },
-    {
-      "id": "doc_seed_6",
-      "title": "Foto Kerja Bakti Pemasangan Umbul-Umbul RW 04",
-      "category": "Dokumentasi",
-      "description": "Dokumentasi foto antusiasme warga RT 02 Ngabean bergotong-royong memasang bendera merah putih, lampu hias, dan gapura bambu dalam menyambut bulan kemerdekaan.",
-      "fileUrl": "https://images.unsplash.com/photo-1596436889106-be35e843f974?auto=format&fit=crop&w=800&q=80",
-      "fileName": "Kerja_Bakti_Pasang_Umbul.jpg",
-      "fileSize": "1.7 MB",
-      "fileType": "image/jpeg",
-      "uploadDate": "2026-07-02T09:30:00.000Z",
-      "uploadedBy": "Seksi Humas",
-      "notes": "Foto resmi panitia untuk dipajang di LPJ. Lokasi gerbang utama RT 02."
-    },
-    {
-      "id": "doc_seed_7",
-      "title": "Foto Rapat Koordinasi Panitia Ke-2 di Balai RW",
-      "category": "Dokumentasi",
-      "description": "Dokumentasi foto jalannya rapat koordinasi kepanitiaan pleno kedua yang membahas pemetaan anggaran final dan mekanisme penyerahan kupon iuran warga.",
-      "fileUrl": "https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?auto=format&fit=crop&w=800&q=80",
-      "fileName": "Rapat_Panitia_2_Balai_RW.jpg",
-      "fileSize": "2.4 MB",
-      "fileType": "image/jpeg",
-      "uploadDate": "2026-07-04T20:00:00.000Z",
-      "uploadedBy": "Seksi Dokumentasi",
-      "notes": "Dihadiri Ketua Panitia (Ahmad Rifqi) dan Sekretaris RW."
-    },
-    {
-      "id": "doc_seed_8",
-      "title": "Foto Survei Lapangan & Area Panggung Utama",
-      "category": "Dokumentasi",
-      "description": "Survei teknis lokasi pemasangan panggung pentas seni dan perlengkapan sound system utama di lapangan serbaguna RW 04 Ngabean agar aman dari jalur kabel tegangan tinggi.",
-      "fileUrl": "https://images.unsplash.com/photo-1505232458627-41db7a8927ac?auto=format&fit=crop&w=800&q=80",
-      "fileName": "Survei_Area_Panggung_Seni.jpg",
-      "fileSize": "1.9 MB",
-      "fileType": "image/jpeg",
-      "uploadDate": "2026-07-06T14:20:00.000Z",
-      "uploadedBy": "Perlengkapan",
-      "notes": "Diputuskan panggung menghadap ke barat dengan sirkulasi penonton optimal."
+      "id": "pa-2026-003",
+      "changeNumber": "PA-2026-003",
+      "date": "2026-07-20",
+      "activityId": "rkba-04",
+      "activityCode": "ACT-004",
+      "activityName": "Konsumsi Jalan Sehat",
+      "seksi": "Konsumsi",
+      "changeType": "PERUBAHAN NILAI",
+      "initialAmount": 500000,
+      "changeAmount": -500000,
+      "revisedAmount": 0,
+      "reason": "Revisi pagu RAB Seksi Konsumsi (Konsumsi Jalan Sehat) menjadi Rp 0 karena ditanggung oleh pihak RW 04.",
+      "decisionBasis": "Hasil Rapat Pleno Panitia / Kesepakatan Pihak RW 04",
+      "meetingMinutesId": "notulensi_seed_2",
+      "meetingMinutesNumber": "NR-2026-002",
+      "proposedBy": "Seksi Konsumsi",
+      "approvedBy": "Ketua RW 04 & Ketua Panitia",
+      "approvalDate": "2026-07-20",
+      "status": "DISETUJUI",
+      "notes": "Pagu RAB Seksi Konsumsi Jalan Sehat direvisi menjadi Rp 0 (ditanggung pihak RW)",
+      "createdAt": "2026-07-20T11:00:00.000Z",
+      "updatedAt": "2026-07-20T11:00:00.000Z"
     }
   ],
-  "undangan": [],
-  "budgetChanges": [],
   "budgetReallocations": [],
   "auditTrails": [
     {
@@ -1579,4 +1174,4 @@ export const initialData: SEMSData = {
     "createdAt": "2026-07-02T15:00:00.000Z",
     "updatedAt": "2026-07-02T15:00:00.000Z"
   }
-};
+}

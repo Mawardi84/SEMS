@@ -19,9 +19,10 @@ import PerubahanAnggaranView from "./components/PerubahanAnggaranView";
 import RealokasiAnggaranView from "./components/RealokasiAnggaranView";
 import ShareAnggaranModal from "./components/ShareAnggaranModal";
 import AdminPinModal from "./components/AdminPinModal";
+import ExcelImporterModal from "./components/ExcelImporterModal";
 import { SEMSData, SystemSetting, Panitia, Kegiatan, RKBAItem, KeuanganTransaction, Notulensi, DigitalDocument, UndanganRapat, BudgetChange, BudgetReallocation, LPJMaster, LPJStatus } from "./types";
 import { initialData } from "./data/initialData";
-import { Award, AlertTriangle, RefreshCw, Menu, Clock, Share2, Eye, ShieldCheck, Lock, ArrowLeft } from "lucide-react";
+import { Award, AlertTriangle, RefreshCw, Menu, Clock, Share2, Eye, ShieldCheck, Lock, ArrowLeft, FileSpreadsheet } from "lucide-react";
 
 export default function App() {
   // Check if mode is budget-view from URL parameter or localStorage
@@ -42,6 +43,8 @@ export default function App() {
   });
 
   const [isShareModalOpen, setIsShareModalOpen] = useState<boolean>(false);
+  const [isExcelModalOpen, setIsExcelModalOpen] = useState<boolean>(false);
+  const [excelDefaultTarget, setExcelDefaultTarget] = useState<"keuangan" | "rkba" | "panitia" | "auto">("auto");
 
   const [currentView, setCurrentView] = useState<string>(() => {
     try {
@@ -1005,6 +1008,23 @@ export default function App() {
 
           {/* Center-Right Live Countdown, Share Button, and Sync Indicators */}
           <div className="flex items-center gap-2 sm:gap-3">
+            {/* Import Excel Button */}
+            {!isBudgetViewOnly && (
+              <button
+                id="btn-import-excel"
+                onClick={() => {
+                  setExcelDefaultTarget("auto");
+                  setIsExcelModalOpen(true);
+                }}
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-700 hover:bg-emerald-800 text-white rounded-lg text-xs font-bold transition-all shadow-xs hover:shadow-md cursor-pointer"
+                title="Import File Spreadsheet Excel (.xlsx / .csv)"
+              >
+                <FileSpreadsheet className="w-3.5 h-3.5 text-amber-300" />
+                <span className="hidden sm:inline">Import Excel</span>
+                <span className="sm:hidden">Excel</span>
+              </button>
+            )}
+
             {/* Share Budget Transparency Link Button */}
             <button
               id="btn-share-anggaran"
@@ -1164,6 +1184,10 @@ export default function App() {
                   onBelanjaItem={handleBelanjaItem}
                   isRecordingBelanjaId={isRecordingBelanjaId}
                   onNavigateView={(view) => setCurrentView(view)}
+                  onOpenExcelImport={() => {
+                    setExcelDefaultTarget("rkba");
+                    setIsExcelModalOpen(true);
+                  }}
                   isReadOnly={isBudgetViewOnly}
                 />
               )}
@@ -1212,6 +1236,10 @@ export default function App() {
                   keuangan={semsData.keuangan}
                   settings={semsData.settings} 
                   onSaveKeuangan={handleSaveKeuangan} 
+                  onOpenExcelImport={() => {
+                    setExcelDefaultTarget("keuangan");
+                    setIsExcelModalOpen(true);
+                  }}
                   isReadOnly={isBudgetViewOnly}
                 />
               )}
@@ -1268,6 +1296,10 @@ export default function App() {
                   onSaveKegiatan={handleSaveKegiatan}
                   onSaveTask={handleSaveTask}
                   onToggleTaskStatus={handleToggleTaskStatus}
+                  onOpenExcelImport={() => {
+                    setExcelDefaultTarget("panitia");
+                    setIsExcelModalOpen(true);
+                  }}
                 />
               )}
 
@@ -1298,6 +1330,10 @@ export default function App() {
                   semsData={semsData}
                   onImportSuccess={async (importedData) => {
                     setSemsData(importedData);
+                  }}
+                  onOpenExcelImport={() => {
+                    setExcelDefaultTarget("auto");
+                    setIsExcelModalOpen(true);
                   }}
                 />
               )}
@@ -1330,6 +1366,18 @@ export default function App() {
             }
           } catch (e) {}
         }}
+      />
+
+      {/* Excel Importer Modal */}
+      <ExcelImporterModal
+        isOpen={isExcelModalOpen}
+        onClose={() => setIsExcelModalOpen(false)}
+        semsData={semsData}
+        onUpdateSemsData={async (updatedData) => {
+          setSemsData(updatedData);
+          await fetchSemsData();
+        }}
+        defaultTargetType={excelDefaultTarget}
       />
     </div>
   );
