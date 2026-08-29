@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { 
   TrendingUp, 
   CheckSquare, 
@@ -27,7 +27,8 @@ import {
   Image,
   Eye,
   FileCheck,
-  UserCheck
+  UserCheck,
+  Archive
 } from "lucide-react";
 import { 
   SeksiTask, 
@@ -46,11 +47,13 @@ import {
 } from "../types";
 import { exportToPDF } from "../utils/pdfExport";
 import { exportToWord } from "../utils/wordExport";
+import { exportToPNG, exportToJPG, exportToPNGZip, exportToJPGZip } from "../utils/imageExport";
 import { PDFPreviewModal } from "./PDFPreviewModal";
 import OrgChart from "./OrgChart";
 import LPJDeliveryPanel from "./LPJDeliveryPanel";
 import LPJSpeechModal from "./LPJSpeechModal";
 import LPJNotulenModal from "./LPJNotulenModal";
+import DocumentPreviewRenderer from "./DocumentPreviewRenderer";
 
 interface MonitoringViewProps {
   tasks: SeksiTask[];
@@ -125,11 +128,39 @@ export default function MonitoringView({
   const [namaBendahara, setNamaBendahara] = useState<string>("");
   const [namaRWKetua, setNamaRWKetua] = useState<string>("");
 
+  // Auto-fill panitia default names if empty
+  useEffect(() => {
+    if (panitia && panitia.length > 0) {
+      if (!namaKetua) {
+        const k = panitia.find((p) => p.role.toLowerCase().includes("ketua") && !p.role.toLowerCase().includes("rw"));
+        if (k) setNamaKetua(k.name);
+      }
+      if (!namaSekretaris) {
+        const s = panitia.find((p) => p.role.toLowerCase().includes("sekretaris"));
+        if (s) setNamaSekretaris(s.name);
+      }
+      if (!namaBendahara) {
+        const b = panitia.find((p) => p.role.toLowerCase().includes("bendahara"));
+        if (b) setNamaBendahara(b.name);
+      }
+      if (!namaRWKetua) {
+        const r = panitia.find((p) => p.role.toLowerCase().includes("rw") || p.role.toLowerCase().includes("pembina"));
+        if (r) setNamaRWKetua(r.name);
+      }
+    }
+  }, [panitia]);
+
+  // Fallback names for rendering
+  const displayKetua = namaKetua || panitia?.find((p) => p.role.toLowerCase().includes("ketua") && !p.role.toLowerCase().includes("rw"))?.name || "Fahmi Mawardi";
+  const displaySekretaris = namaSekretaris || panitia?.find((p) => p.role.toLowerCase().includes("sekretaris"))?.name || "Siti Rahma";
+  const displayBendahara = namaBendahara || panitia?.find((p) => p.role.toLowerCase().includes("bendahara"))?.name || "Budi Santoso";
+  const displayRWKetua = namaRWKetua || panitia?.find((p) => p.role.toLowerCase().includes("rw") || p.role.toLowerCase().includes("pembina"))?.name || "Drs. H. Ahmad Fauzi";
+
   // Custom LPJ Styling states
   const [paperTheme, setPaperTheme] = useState<"classic" | "creamy" | "minimal" | "green-gold">("classic");
   const [fontStyle, setFontStyle] = useState<"poppins" | "arial" | "mono">("poppins");
-  const [showWatermark, setShowWatermark] = useState<boolean>(true);
-  const [showStamp, setShowStamp] = useState<boolean>(true);
+  const [showWatermark, setShowWatermark] = useState<boolean>(false);
+  const [showStamp, setShowStamp] = useState<boolean>(false);
 
   // Logo HUT RI and offline fallback states
   const [eventLogo, setEventLogo] = useState<string>(() => {
@@ -301,7 +332,7 @@ Berikut adalah ringkasan kilas balik keuangan dan progress kegiatan yang dapat k
 2. Total Pengeluaran Kegiatan (Belanja Panitia): ${formatRp(totalPengeluaran)}
 3. Sisa Saldo Kas Bersih Panitia: ${formatRp(saldoSisa)}
 
-Sisa saldo sebesar ${formatRp(saldoSisa)} ini telah diserahkan kembali secara utuh kepada kas RW untuk kemaslahatan warga berikutnya.
+Sisa efisiensi dana kepanitiaan sebesar ${formatRp(saldoSisa)} (bersumber dari Kas Donatur) akan dialihfungsikan untuk kegiatan Konsolidasi Internal dan Pembubaran Panitia. Kegiatan ini dirancang di luar lingkungan (ekskursi/pembinaan keakraban) guna melepas penat setelah satu bulan penuh menyiapkan acara kemerdekaan, sekaligus mempererat solidaritas antar pemuda dan warga yang tergabung dalam kepanitiaan tahun ini.
 
 ### II. CAPAIAN PROGRAM KERJA & TUGAS SEKSI
 Kepanitiaan sukses merampungkan ${persenTugas}% dari total target kegiatan:
@@ -434,7 +465,7 @@ Laporan keuangan ini disusun secara transparan dan akuntabel berdasarkan sistem 
 **1. Ringkasan Posisi Kas Bersih**
 - Total Pemasukan Kas Tunai: ${formatRp(totalPemasukan)}
 - Total Realisasi Pengeluaran: ${formatRp(totalPengeluaran)}
-- **Sisa Saldo Kas Akhir:** **${formatRp(saldoSisa)}** (Telah diserahkan kembali ke Kas RW)
+- **Sisa Saldo Kas Akhir:** **${formatRp(saldoSisa)}** (Sisa efisiensi dana kepanitiaan sebesar Rp 1.382.000 bersumber dari Kas Donatur dialihfungsikan untuk kegiatan Konsolidasi Internal dan Pembubaran Panitia / ekskursi luar lingkungan)
 
 **2. Pengelolaan Dana Pamsimas (Talangan Rp 8 Juta & Sumbangan Rp 2 Juta)**
 Mengingat saldo kas awal kepanitiaan adalah Rp 0 pada saat pembentukan, panitia mendapatkan penerimaan kas awal sebesar Rp 10.000.000,00 dari Pamsimas RW 04 Ngabean dengan rincian:
@@ -453,18 +484,22 @@ Dalam mekanisme pertanggungjawabannya:
 
 Evaluasi dilakukan untuk mencatat kendala yang dihadapi selama pelaksanaan serta solusi yang diterapkan sebagai pembelajaran berharga bagi kepanitiaan di masa mendatang.
 
-**1. Kendala yang Dihadapi**
-- Keterbatasan waktu koordinasi panitia karena kesibukan pekerjaan masing-masing pengurus.
-- Logistik cuaca panas pada siang hari saat perlombaan luar ruangan.
-- Fluktuasi kehadiran warga pada jam-jam awal pelaksanaan jalan sehat.
+**1. Tantangan Administrasi dan Pengelolaan Keuangan**
+- **Keterlambatan Serah Terima Nota Lapangan:** Banyaknya pengeluaran tak terduga berskala kecil saat hari-H (seperti pembelian es teh, solasi, tali id card dll) sering kali tidak langsung dilaporkan oleh seksi terkait. Hal ini memicu penumpukan nota di akhir acara dan menyebabkan perlunya rekonsiliasi ulang yang memakan waktu untuk menyamakan saldo riil di dompet dengan draf laporan di Excel.
+- **Dinamika Relokasi Anggaran Dadakan:** Kondisi lapangan menuntut fleksibilitas tinggi, seperti keharusan merelokasi sisa dana sound system atau subsidi kas untuk menutupi kebutuhan spontan (misalnya penambahan hadiah lomba remaja, lomba bapak/ibu, dan kebutuhan make-up pentas seni tari anak).
 
-**2. Solusi & Tindakan Korektif**
-- Mengoptimalkan koordinasi digital melalui grup komunikasi instan secara terjadwal.
-- Menyediakan pos air mineral tambahan dan tenda peneduh portabel di area perlombaan.
-- Memberikan reminder berkala dan memajukan waktu pembagian kupon doorprize utama.
+**2. Kendala Koordinasi dan Komposisi Panitia**
+- **In-efisiensi Struktur Kepanitiaan (Gemuk):** Komposisi panitia yang melibatkan terlalu banyak orang (seksi yang terlalu dipecah) justru memunculkan tantangan komunikasi dan memperlambat pengambilan keputusan. Selain itu, struktur yang besar berdampak langsung pada membengkaknya biaya operasional, khususnya alokasi konsumsi rapat dan konsumsi pekerja lapangan.
+- **Beban Kerja Terpusat (Asimetris):** Meskipun nama di dalam SK kepanitiaan cukup banyak, pada eksekusi teknisnya (seperti pencarian doorprize, loading barang, hingga penyusunan LPJ), beban kerja terberat sering kali hanya bertumpu pada segelintir tim inti saja.
 
-**3. Rekomendasi Masa Depan**
-Sistem pengelolaan iuran dan inventarisasi natura yang telah berjalan harus dipertahankan karena terbukti meningkatkan kepercayaan warga akan transparansi pengelolaan dana sosial.
+**3. Tantangan Logistik dan Operasional**
+- **Manajemen Waktu Pengadaan Vendor:** Menyatukan jadwal vendor yang berbeda (panggung, tratak, dan sound system) membutuhkan pengawalan ekstra, terutama saat proses bongkar pasang agar tidak mengganggu rundown acara malam resepsi.
+- **Swadaya Perlengkapan Ekstra:** Keterbatasan pagu anggaran awal membuat panitia harus mengandalkan swadaya atau subsidi silang untuk menutupi kebutuhan teknis kebersihan (seperti trashbag) dan kelengkapan pentas seni.
+
+**4. Rekomendasi & Solusi untuk Tahun Depan**
+- **Transisi ke Lean Structure (Kepanitiaan Ramping):** Memangkas jumlah panitia menjadi tim inti yang tangkas (9–11 orang). Divisi cukup disederhanakan menjadi BPH, Divisi Acara Terpadu, Divisi Operasional Lapangan, dan Support/Humas. Hal ini terbukti akan menekan biaya konsumsi panitia secara drastis dan mempercepat alur kerja.
+- **Disiplin Sistem Reimbursement Satu Pintu:** Memberlakukan aturan ketat di mana setiap pengeluaran lapangan sekecil apa pun (tali, minum, selotip) harus segera diserahkan notanya kepada kesekretariatan maksimal 1x24 jam untuk langsung di-input ke dalam Buku Kas Harian.
+- **Penebalan Dana Tak Terduga (Darurat):** Mengingat tingginya dinamika perubahan rundown atau penambahan kuota hadiah, pagu "Biaya Tak Terduga" di RAB tahun depan perlu dinaikkan persentasenya agar BPH tidak perlu terlalu sering melakukan subsidi silang antar-seksi.
 
 ---
 
@@ -472,7 +507,11 @@ Sistem pengelolaan iuran dan inventarisasi natura yang telah berjalan harus dipe
 
 Demikian Laporan Pertanggungjawaban (LPJ) Peringatan HUT RI Ke-81 di wilayah ${namaRW} Ngabean ini kami susun dengan sebenar-benarnya. Suksesnya seluruh rangkaian acara ini merupakan bukti nyata bahwa semangat gotong royong dan kebersamaan warga masih sangat kental dan terjaga dengan baik.
 
-Kami mengucapkan terima kasih yang sebesar-besarnya kepada seluruh warga, pengurus RT/RW, donatur, serta jajaran panitia yang telah mendharmabaktikan waktu, tenaga, pikiran, dan materinya demi kehormatan lingkungan kita. Semoga kebersamaan ini terus terbina demi kemajuan wilayah kita bersama.
+Kami mengucapkan terima kasih yang sebesar-besarnya kepada seluruh warga, pengurus RT/RW, donatur, serta jajaran panitia yang telah mendharmabaktikan waktu, tenaga, pikiran, dan materinya demi kehormatan lingkungan kita.
+
+Masa bakti kepanitiaan secara resmi dinyatakan berakhir. Sisa efisiensi dana kepanitiaan sebesar Rp 1.382.000 (bersumber dari Kas Donatur) akan dialihfungsikan untuk kegiatan Konsolidasi Internal dan Pembubaran Panitia. Kegiatan ini dirancang di luar lingkungan (ekskursi/pembinaan keakraban) guna melepas penat setelah satu bulan penuh menyiapkan acara kemerdekaan, sekaligus mempererat solidaritas antar pemuda dan warga yang tergabung dalam kepanitiaan tahun ini.
+
+Semoga kebersamaan ini terus terbina demi kemajuan wilayah kita bersama.
 
 Semarang, ${tanggalLPJ}
 
@@ -483,11 +522,13 @@ Semarang, ${tanggalLPJ}
 
 ### LAMPIRAN
 
-Sebagai dokumen pendukung pertanggungjawaban panitia, berikut dilampirkan rincian pelengkap dokumen:
+Sebagai dokumen pendukung pertanggungjawaban panitia, berikut dilampirkan rincian pelengkap dokumen resmi:
 
-- **Lampiran 1:** Buku Kas Umum (BKU) Penerimaan & Pengeluaran Kas (Tercetak otomatis pada tab Keuangan)
-- **Lampiran 2:** Laporan Rekonsiliasi Pengembalian Dana Talangan Pamsimas (Arsip Bendahara)
-- **Lampiran 3:** Dokumentasi Kegiatan & Nota-nota Belanja Panitia (Arsip fisik Bendahara)
+- **Lampiran 1:** Surat Keputusan (SK) Pembentukan Panitia Pelaksana Peringatan HUT Kemerdekaan RI Ke-81 RW 04 Ngabean (No: 01/SK-RW04/HUT-RI/VII/2026)
+- **Lampiran 2:** Daftar Hadir & Rekapitulasi Presensi Rapat Pleno Kepanitiaan (Pleno I, II, III & Petugas Lapangan)
+- **Lampiran 3:** Buku Kas Umum (BKU) Penerimaan & Pengeluaran Kas
+- **Lampiran 4:** Laporan Rekonsiliasi Pengembalian Dana Talangan Pamsimas & Realisasi Swadaya RT
+- **Lampiran 5:** Dokumentasi Foto Kegiatan & Berkas Fisik Nota Belanja Panitia
 
 Laporan Pertanggungjawaban ini dibuat rangkap sebagai dokumentasi resmi dan arsip warga.`;
   };
@@ -587,6 +628,8 @@ Laporan Pertanggungjawaban ini dibuat rangkap sebagai dokumentasi resmi dan arsi
     setTimeout(() => setCopiedLPJ(false), 2000);
   };
 
+  const [isExportingImage, setIsExportingImage] = useState(false);
+
   const handleExportPDF = async () => {
     setIsExportingPDF(true);
     await exportToPDF("printable-lpj-paper", `LPJ-${namaKegiatan.replace(/\s+/g, "-")}.pdf`);
@@ -603,6 +646,34 @@ Laporan Pertanggungjawaban ini dibuat rangkap sebagai dokumentasi resmi dan arsi
     setIsPreviewOpen(false);
   };
 
+  const handleExportPNG = async () => {
+    setIsExportingImage(true);
+    await exportToPNG("printable-lpj-paper", `LPJ-${namaKegiatan.replace(/\s+/g, "-")}.png`);
+    setIsExportingImage(false);
+    setIsPreviewOpen(false);
+  };
+
+  const handleExportPNGZip = async () => {
+    setIsExportingImage(true);
+    await exportToPNGZip("printable-lpj-paper", `LPJ-${namaKegiatan.replace(/\s+/g, "-")}`);
+    setIsExportingImage(false);
+    setIsPreviewOpen(false);
+  };
+
+  const handleExportJPG = async () => {
+    setIsExportingImage(true);
+    await exportToJPG("printable-lpj-paper", `LPJ-${namaKegiatan.replace(/\s+/g, "-")}.jpg`);
+    setIsExportingImage(false);
+    setIsPreviewOpen(false);
+  };
+
+  const handleExportJPGZip = async () => {
+    setIsExportingImage(true);
+    await exportToJPGZip("printable-lpj-paper", `LPJ-${namaKegiatan.replace(/\s+/g, "-")}`);
+    setIsExportingImage(false);
+    setIsPreviewOpen(false);
+  };
+
   return (
     <div className="space-y-5">
       <PDFPreviewModal 
@@ -611,10 +682,29 @@ Laporan Pertanggungjawaban ini dibuat rangkap sebagai dokumentasi resmi dan arsi
         title="Pratinjau LPJ" 
         onDownload={handleExportPDF}
         onExportWord={handleExportWord}
+        onExportPNG={handleExportPNG}
+        onExportPNGZip={handleExportPNGZip}
+        onExportJPG={handleExportJPG}
+        onExportJPGZip={handleExportJPGZip}
       >
-        <div className="space-y-8 print:space-y-0">
-           {/* Need to copy the content of printable-lpj-paper here */}
-        </div>
+        <DocumentPreviewRenderer
+          proposalMarkdown={lpjMarkdown || generateLocalLPJ(selectedTemplate)}
+          paperTheme={paperTheme}
+          fontStyle={fontStyle}
+          namaKegiatan={namaKegiatan}
+          namaRW={namaRW}
+          namaKetua={namaKetua}
+          namaSekretaris={namaSekretaris}
+          namaBendahara={namaBendahara}
+          namaRWKetua={namaRWKetua}
+          eventLogo={eventLogo}
+          showStamp={showStamp}
+          useMockData={useMockData}
+          showLetterhead={true}
+          showSignature={true}
+        >
+           {/* Content rendered by DocumentPreviewRenderer */}
+        </DocumentPreviewRenderer>
       </PDFPreviewModal>
 
       {/* 1. Header Area */}
@@ -1026,7 +1116,7 @@ Laporan Pertanggungjawaban ini dibuat rangkap sebagai dokumentasi resmi dan arsi
               // Helper components inside the render cycle
               ...(() => {
                 const getPaperClass = () => {
-                  let base = "relative p-8 sm:p-14 shadow-md max-w-[794px] min-h-[1123px] mx-auto select-text overflow-hidden transition-all duration-300 z-10 break-after-page flex flex-col justify-between print:min-h-0 print:shadow-none print:border-none print:p-0 print:mb-0 print:break-after-page ";
+                  let base = "relative p-8 sm:p-14 shadow-md max-w-[813px] min-h-[1247px] mx-auto select-text overflow-hidden transition-all duration-300 z-10 break-after-page flex flex-col justify-between print:min-h-0 print:shadow-none print:border-none print:p-0 print:mb-0 print:break-after-page ";
                   
                   if (paperTheme === "classic") {
                     base += "bg-white border-t-[8px] border-t-red-600 border border-slate-200 text-slate-900";
@@ -1135,32 +1225,38 @@ Laporan Pertanggungjawaban ini dibuat rangkap sebagai dokumentasi resmi dan arsi
                         <div className="space-y-1">
                           <p className="text-[9px] font-bold uppercase text-slate-500 tracking-wider">Ketua Panitia Pelaksana</p>
                           <div className="h-14 flex items-center justify-center relative">
-                            <span className="font-serif italic text-sm text-blue-700/80 tracking-widest font-bold rotate-[-3deg] select-none">
-                              {namaKetua}
-                            </span>
+                            {showStamp && (
+                              <span className="font-serif italic text-sm text-blue-700/80 tracking-widest font-bold rotate-[-3deg] select-none">
+                                {displayKetua}
+                              </span>
+                            )}
                           </div>
-                          <p className="font-bold underline text-[11px] text-slate-800">{namaKetua}</p>
+                          <p className="font-bold underline text-[11px] text-slate-800">{displayKetua}</p>
                         </div>
 
                         <div className="space-y-1">
                           <p className="text-[9px] font-bold uppercase text-slate-500 tracking-wider">Sekretaris Panitia</p>
                           <div className="h-14 flex items-center justify-center relative">
-                            <span className="font-serif italic text-sm text-slate-500/80 tracking-widest font-bold rotate-[2deg] select-none">
-                              {namaSekretaris}
-                            </span>
+                            {showStamp && (
+                              <span className="font-serif italic text-sm text-slate-500/80 tracking-widest font-bold rotate-[2deg] select-none">
+                                {displaySekretaris}
+                              </span>
+                            )}
                           </div>
-                          <p className="font-bold underline text-[11px] text-slate-800">{namaSekretaris}</p>
+                          <p className="font-bold underline text-[11px] text-slate-800">{displaySekretaris}</p>
                         </div>
 
                         {/* Row 2 */}
                         <div className="space-y-1 relative">
                           <p className="text-[9px] font-bold uppercase text-slate-500 tracking-wider">Bendahara Keuangan</p>
                           <div className="h-14 flex items-center justify-center relative z-10">
-                            <span className="font-serif italic text-sm text-emerald-700/80 tracking-widest font-bold rotate-[-1deg] select-none">
-                              {namaBendahara}
-                            </span>
+                            {showStamp && (
+                              <span className="font-serif italic text-sm text-emerald-700/80 tracking-widest font-bold rotate-[-1deg] select-none">
+                                {displayBendahara}
+                              </span>
+                            )}
                           </div>
-                          <p className="font-bold underline text-[11px] text-slate-800">{namaBendahara}</p>
+                          <p className="font-bold underline text-[11px] text-slate-800">{displayBendahara}</p>
                         </div>
 
                         <div className="space-y-1 relative">
@@ -1168,19 +1264,25 @@ Laporan Pertanggungjawaban ini dibuat rangkap sebagai dokumentasi resmi dan arsi
                           <div className="h-14 flex items-center justify-center relative">
                             {/* The circular stamp/seal */}
                             {showStamp && (
-                              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-20 h-20 rounded-full border-2 border-dashed border-indigo-600/60 flex items-center justify-center rotate-[-12deg] pointer-events-none select-none z-0 shadow-xs">
-                                <div className="w-[72px] h-[72px] rounded-full border border-double border-indigo-600/50 flex flex-col items-center justify-center text-[5px] font-sans font-bold text-indigo-600/70 text-center leading-none">
-                                  <span className="uppercase text-[4px]">PANITIA HUT-RI</span>
-                                  <Award className="w-3.5 h-3.5 text-indigo-600/80 my-0.5" />
-                                  <span className="uppercase text-[4.5px] tracking-tight">{namaRW.toUpperCase()} NGABEAN</span>
+                              <>
+                                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-20 h-20 rounded-full border-2 border-dashed border-indigo-600/60 flex items-center justify-center rotate-[-12deg] pointer-events-none select-none z-0 shadow-xs">
+                                  {settings?.stempelUrl ? (
+                                    <img src={settings.stempelUrl} alt="Stempel" className="w-full h-full object-contain opacity-80" />
+                                  ) : (
+                                    <div className="w-[72px] h-[72px] rounded-full border border-double border-indigo-600/50 flex flex-col items-center justify-center text-[5px] font-sans font-bold text-indigo-600/70 text-center leading-none">
+                                      <span className="uppercase text-[4px]">PANITIA HUT-RI</span>
+                                      <Award className="w-3.5 h-3.5 text-indigo-600/80 my-0.5" />
+                                      <span className="uppercase text-[4.5px] tracking-tight">{namaRW.toUpperCase()} NGABEAN</span>
+                                    </div>
+                                  )}
                                 </div>
-                              </div>
+                                <span className="font-serif italic text-sm text-indigo-800/80 tracking-widest font-bold rotate-[1deg] relative z-10 select-none">
+                                  {displayRWKetua}
+                                </span>
+                              </>
                             )}
-                            <span className="font-serif italic text-sm text-indigo-800/80 tracking-widest font-bold rotate-[1deg] relative z-10 select-none">
-                              {namaRWKetua}
-                            </span>
                           </div>
-                          <p className="font-bold underline text-[11px] text-slate-800">{namaRWKetua}</p>
+                          <p className="font-bold underline text-[11px] text-slate-800">{displayRWKetua}</p>
                         </div>
                       </div>
                     </div>
@@ -1188,7 +1290,7 @@ Laporan Pertanggungjawaban ini dibuat rangkap sebagai dokumentasi resmi dan arsi
                 };
 
                 const renderPaperContent = () => {
-                  let mainBodyText = lpjMarkdown;
+                  let mainBodyText = lpjMarkdown || generateLocalLPJ(selectedTemplate);
 
                   const activePemasukan = keuangan
                     .filter(t => t.type === 'Masuk')
@@ -1293,6 +1395,60 @@ Laporan Pertanggungjawaban ini dibuat rangkap sebagai dokumentasi resmi dan arsi
 
                   const renderMarkdownCleanly = (markdownText: string) => {
                     if (!markdownText) return null;
+
+                    if (markdownText.includes("### DAFTAR ISI") || markdownText.includes("DAFTAR ISI")) {
+                      return (
+                        <div key="toc-custom" className="space-y-4 my-2 font-sans">
+                          <div className={`border-b-2 ${theme.bar1} pb-2 mb-4 flex items-center justify-between`}>
+                            <h3 className={`text-xs sm:text-sm font-black tracking-wider uppercase ${theme.textAccent} font-sans flex items-center gap-2`}>
+                              <span className={`w-2.5 h-4.5 ${theme.bar1} rounded-xs inline-block`} />
+                              DAFTAR ISI LAPORAN PERTANGGUNGJAWABAN
+                            </h3>
+                            <span className="text-[8.5px] font-mono font-bold uppercase bg-slate-100 text-slate-600 px-2 py-0.5 rounded border border-slate-200">
+                              Struktur Dokumen Formal
+                            </span>
+                          </div>
+
+                          <div className="space-y-2.5 px-1 sm:px-2">
+                            {[
+                              { no: 1, title: "Sampul Utama (Cover)", page: 1 },
+                              { no: 2, title: "Halaman Judul", page: 2 },
+                              { no: 3, title: "Lembar Pengesahan", page: 3 },
+                              { no: 4, title: "Kata Pengantar", page: 4 },
+                              { no: 5, title: "Daftar Isi", page: 5 },
+                              { no: 6, title: "BAB I. PENDAHULUAN", page: 6, sub: ["Latar Belakang Kegiatan", "Maksud & Tujuan", "Landasan Hukum & Dasar Pelaksanaan"] },
+                              { no: 7, title: "BAB II. PERENCANAAN KEGIATAN", page: 7, sub: ["Struktur Kepanitiaan (SK)", "Rancangan Jadwal & Rundown Acara"] },
+                              { no: 8, title: "BAB III. PELAKSANAAN KEGIATAN", page: 8, sub: ["Rangkaian Lomba Warga & Anak", "Malam Tirakatan 17-an", "Jalan Sehat & Panggung Pentas Seni"] },
+                              { no: 9, title: "BAB IV. PERTANGGUNGJAWABAN KEUANGAN", page: 9, sub: ["Realisasi Belanja Seksi Panitia", "Rekapitulasi Iuran & Swadaya RT", "Tabel Realisasi & Neraca Saldo Kas Sisa"] },
+                              { no: 10, title: "BAB V. EVALUASI", page: 10, sub: ["Tantangan Administrasi & Keuangan", "Kendala Kepanitiaan & Koordinasi", "Tantangan Logistik & Operasional", "Rekomendasi & Solusi Kepanitiaan Depan"] },
+                              { no: 11, title: "BAB VI. PENUTUP", page: 11 },
+                              { no: 12, title: "Lampiran & Dokumentasi Foto Kegiatan", page: 12 }
+                            ].map((item) => (
+                              <div key={item.no} className="space-y-1">
+                                <div className="flex items-baseline justify-between gap-1 text-[11px] sm:text-xs">
+                                  <span className="font-bold text-slate-800 shrink-0">
+                                    {item.no}. {item.title}
+                                  </span>
+                                  <span className="flex-1 border-b border-dotted border-slate-400 mx-1.5 -mb-0.5 opacity-75" />
+                                  <span className="font-mono text-slate-700 font-bold shrink-0">Hal. {item.page}</span>
+                                </div>
+                                {item.sub && (
+                                  <div className="pl-5 space-y-0.5">
+                                    {item.sub.map((subTitle, subIdx) => (
+                                      <div key={subIdx} className="flex items-baseline justify-between gap-1 text-[10px] text-slate-600">
+                                        <span className="shrink-0 italic">• {subTitle}</span>
+                                        <span className="flex-1 border-b border-dotted border-slate-300 mx-1.5 -mb-0.5 opacity-50" />
+                                        <span className="font-mono text-slate-500 shrink-0 text-[9.5px]">Hal. {item.page}</span>
+                                      </div>
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      );
+                    }
 
                     const lines = markdownText.split("\n");
                     const elements: React.ReactNode[] = [];
@@ -1662,6 +1818,7 @@ Laporan Pertanggungjawaban ini dibuat rangkap sebagai dokumentasi resmi dan arsi
                     const isBabIIPerencanaan = selectedTemplate === "formal" && (pageText.includes("### BAB II. PERENCANAAN KEGIATAN") || pageIndex === 6);
                     const isBabIVKeuangan = selectedTemplate === "formal" && (pageText.includes("### BAB IV. PERTANGGUNGJAWABAN KEUANGAN") || pageIndex === 8);
                     const isBabVIPenutup = selectedTemplate === "formal" && (pageText.includes("### BAB VI. PENUTUP") || pageIndex === 10);
+                    const isLampiranPage = selectedTemplate === "formal" && (pageText.includes("### LAMPIRAN") || pageText.includes("LAMPIRAN 1") || pageIndex === 11);
 
                     return (
                       <div key={`page-${pageIndex}`} className={getPaperClass()}>
@@ -1892,8 +2049,8 @@ Laporan Pertanggungjawaban ini dibuat rangkap sebagai dokumentasi resmi dan arsi
                                             {formatRp(totalPengeluaran)}
                                           </td>
                                         </tr>
-                                        <tr className={`${theme.sumBg} font-black text-[10px] ${theme.sumBorder}`}>
-                                          <td className="px-2 py-1.5">Sisa Saldo Kas Riil (Diserahkan Kembali Ke Kas RW)</td>
+                                         <tr className={`${theme.sumBg} font-black text-[10px] ${theme.sumBorder}`}>
+                                          <td className="px-2 py-1.5">Sisa Saldo Kas Riil (Dialihfungsikan untuk Konsolidasi Internal & Pembubaran Panitia)</td>
                                           <td className="px-2 py-1.5 text-center">
                                             <span className="px-1 py-0.2 rounded-full bg-slate-900 text-amber-400 font-bold text-[7.5px] uppercase">
                                               Kas Sisa
@@ -1907,6 +2064,12 @@ Laporan Pertanggungjawaban ini dibuat rangkap sebagai dokumentasi resmi dan arsi
                                     </table>
                                   </div>
                                 </div>
+                              </div>
+                            )}
+
+                            {/* Appended Content on Lampiran Page */}
+                            {isLampiranPage && (
+                              <div className="mt-6 space-y-4 text-xs border-t-2 border-slate-900 pt-4 print:break-inside-avoid">
                               </div>
                             )}
 
@@ -2069,6 +2232,62 @@ Laporan Pertanggungjawaban ini dibuat rangkap sebagai dokumentasi resmi dan arsi
                         >
                           <Download className="w-3.5 h-3.5 text-white" />
                           Unduh DOC
+                        </button>
+
+                        <button
+                          onClick={handleExportPNG}
+                          disabled={isExportingImage}
+                          className="flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-1 rounded text-[10px] font-black uppercase transition-all shadow-md disabled:opacity-50 cursor-pointer"
+                          title="Ekspor sebagai 1 gambar PNG utuh"
+                        >
+                          {isExportingImage ? (
+                            <RefreshCw className="w-3.5 h-3.5 text-white animate-spin" />
+                          ) : (
+                            <Download className="w-3.5 h-3.5 text-white" />
+                          )}
+                          PNG (1 File)
+                        </button>
+
+                        <button
+                          onClick={handleExportPNGZip}
+                          disabled={isExportingImage}
+                          className="flex items-center gap-1.5 bg-teal-600 hover:bg-teal-500 text-white px-3 py-1 rounded text-[10px] font-black uppercase transition-all shadow-md disabled:opacity-50 cursor-pointer"
+                          title="Ekspor gambar PNG per halaman dalam berkas .ZIP"
+                        >
+                          {isExportingImage ? (
+                            <RefreshCw className="w-3.5 h-3.5 text-white animate-spin" />
+                          ) : (
+                            <Archive className="w-3.5 h-3.5 text-white" />
+                          )}
+                          PNG (ZIP per Hal)
+                        </button>
+
+                        <button
+                          onClick={handleExportJPG}
+                          disabled={isExportingImage}
+                          className="flex items-center gap-1.5 bg-purple-600 hover:bg-purple-500 text-white px-3 py-1 rounded text-[10px] font-black uppercase transition-all shadow-md disabled:opacity-50 cursor-pointer"
+                          title="Ekspor sebagai 1 gambar JPG utuh"
+                        >
+                          {isExportingImage ? (
+                            <RefreshCw className="w-3.5 h-3.5 text-white animate-spin" />
+                          ) : (
+                            <Download className="w-3.5 h-3.5 text-white" />
+                          )}
+                          JPG (1 File)
+                        </button>
+
+                        <button
+                          onClick={handleExportJPGZip}
+                          disabled={isExportingImage}
+                          className="flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-1 rounded text-[10px] font-black uppercase transition-all shadow-md disabled:opacity-50 cursor-pointer"
+                          title="Ekspor gambar JPG per halaman dalam berkas .ZIP"
+                        >
+                          {isExportingImage ? (
+                            <RefreshCw className="w-3.5 h-3.5 text-white animate-spin" />
+                          ) : (
+                            <Archive className="w-3.5 h-3.5 text-white" />
+                          )}
+                          JPG (ZIP per Hal)
                         </button>
 
                         <button

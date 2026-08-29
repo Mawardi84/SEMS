@@ -830,7 +830,7 @@ Ketua Panitia membuka sidang pleno pertanggungjawaban dengan memanjatkan rasa sy
 - **Rekonsiliasi Kas:** Rekonsiliasi kas telah seimbang (balance) dengan seluruh nota dan bukti kuitansi terverifikasi lengkap.
 
 #### 4. Kesimpulan & Penegasan Pertanggungjawaban Akhir (Disampaikan oleh Ketua Panitia: ${ketuaName})
-Ketua Panitia menegaskan bahwa masa tugas kepanitiaan HUT RI Ke-81 telah tuntas dilaksanakan dengan penuh dedikasi dan kejujuran. Sisa saldo kas sebesar **Rp ${saldoSisa.toLocaleString('id-ID')}** diserahkan kembali secara resmi kepada kas pengurus RW 04.
+Ketua Panitia menegaskan bahwa masa tugas kepanitiaan HUT RI Ke-81 telah tuntas dilaksanakan dengan penuh dedikasi dan kejujuran. Sisa efisiensi dana kepanitiaan sebesar Rp 1.382.000 (bersumber dari Kas Donatur) akan dialihfungsikan untuk kegiatan Konsolidasi Internal dan Pembubaran Panitia. Kegiatan ini dirancang di luar lingkungan (ekskursi/pembinaan keakraban) guna melepas penat setelah satu bulan penuh menyiapkan acara kemerdekaan, sekaligus mempererat solidaritas antar pemuda dan warga yang tergabung dalam kepanitiaan tahun ini.
 
 ---
 
@@ -1314,13 +1314,13 @@ PANDUAN KHUSUS UNTUK TEMPLATE "${templateType}":
   ---
   Halaman 8: ### BAB III. PELAKSANAAN KEGIATAN (Uraian detail perlombaan, tirakatan, jalan sehat, dan persentase capaian)
   ---
-  Halaman 9: ### BAB IV. PERTANGGUNGJAWABAN KEUANGAN (Uraian posisi kas, penjelasan penerimaan Pamsimas total Rp 10.000.000 yang terdiri dari Sumbangan Pamsimas Rp 2.000.000 dan Dana Talangan 4 RT Rp 8.000.000 di mana panitia mengembalikan SPJ nota belanja riil Rp 2.000.000 per RT dan masing-masing pengurus RT yang mengganti/menyetorkan dana iuran langsung ke kas Pamsimas, JANGAN buat tabel keuangan/realisasi, sistem otomatis menyisipkan tabel realisasi seksi, RT, dan neraca saldo di bawah)
+  Halaman 9: ### BAB IV. PERTANGGUNGJAWABAN KEUANGAN (Uraian posisi kas, penjelasan penerimaan Pamsimas total Rp 10.000.000, serta penegasan bahwa sisa efisiensi dana kepanitiaan sebesar Rp 1.382.000 yang bersumber dari Kas Donatur dialihfungsikan untuk kegiatan Konsolidasi Internal dan Pembubaran Panitia di luar lingkungan untuk melepas penat dan mempererat solidaritas, bukan dikembalikan ke kas RW)
   ---
-  Halaman 10: ### BAB V. EVALUASI (Analisis kendala lapangan, solusi taktis, dan rekomendasi kepanitiaan mendatang)
+  Halaman 10: ### BAB V. EVALUASI (DILARANG MENYEBUT KENDALA CUACA ATAU HUJAN karena Juli-Agustus musim kemarau. Evaluasi WAJIB berfokus pada 4 poin: 1. Tantangan Administrasi & Pengelolaan Keuangan (keterlambatan nota & relokasi anggaran dadakan), 2. Kendala Koordinasi & Komposisi Panitia (struktur gemuk & beban kerja asimetris), 3. Tantangan Logistik & Operasional, 4. Rekomendasi & Solusi Kepanitiaan Ramping 9-11 orang)
   ---
-  Halaman 11: ### BAB VI. PENUTUP (Uraian akhir, ungkapan terima kasih mendalam, permohonan maaf, harapan masa depan)
+  Halaman 11: ### BAB VI. PENUTUP (Uraian akhir, ungkapan terima kasih mendalam, permohonan maaf, serta penegasan pengalihan sisa efisiensi dana Rp 1.382.000 untuk ekskursi pembubaran panitia)
   ---
-  Halaman 12: ### LAMPIRAN (Daftar dokumen pelengkap, absen, nota belanja)
+  Halaman 12: ### LAMPIRAN (Wajib menyertakan 5 Lampiran Lengkap: Lampiran 1: Surat Keputusan (SK) Pembentukan Panitia Pelaksana, Lampiran 2: Daftar Hadir & Rekapitulasi Presensi Rapat Pleno I, II, III & Petugas Lapangan, Lampiran 3: Buku Kas Umum (BKU) & Rekonsiliasi Kas, Lampiran 4: Laporan Rekonsiliasi Pamsimas & Swadaya, Lampiran 5: Dokumentasi Foto & Berkas Fisik Nota Belanja)
   Pastikan Anda menyelesaikan dan menulis KESELURUHAN 12 halaman tersebut secara lengkap dengan penjelasan komprehensif tanpa terputus. Jarak antar halaman dipisahkan tepat dengan "---".
 - Jika template "ringkas": Tulis naskah laporan ringkas/eksekutif yang ditujukan langsung untuk warga. Nada penulisan sangat guyub, hangat, santun, dan fokus pada kebersamaan. Sebutkan angka-angka utama (Kas Masuk, Kas Keluar, Sisa Kas, Swadaya Tunai), apresiasi kerukunan warga, rincian singkat kemeriahan program kerja, dan penutup yang menyentuh hati. Gunakan "---" untuk memisahkan halaman jika perlu.`;
 

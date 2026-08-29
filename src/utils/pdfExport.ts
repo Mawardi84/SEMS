@@ -206,12 +206,12 @@ export async function exportToPDF(elementId: string, filename: string) {
             }
           });
 
-          // 3. Expand target cloned root element to standard A4 print dimensions
+          // 3. Expand target cloned root element to standard Folio / F4 print dimensions (21.5cm x 33cm = 813px)
           const clonedTarget = clonedDoc.getElementById(elementId);
           if (clonedTarget) {
-            clonedTarget.style.width = "794px"; // Exact A4 pixel width at 96 DPI
-            clonedTarget.style.minWidth = "794px";
-            clonedTarget.style.maxWidth = "794px";
+            clonedTarget.style.width = "813px"; // Folio / F4 pixel width at 96 DPI (215mm)
+            clonedTarget.style.minWidth = "813px";
+            clonedTarget.style.maxWidth = "813px";
             clonedTarget.style.boxSizing = "border-box";
             clonedTarget.style.maxHeight = "none";
             clonedTarget.style.height = "auto";
@@ -296,13 +296,13 @@ export async function exportToPDF(elementId: string, filename: string) {
       throw new Error("Could not get canvas context");
     }
 
-    // A4 dimensions: 210mm x 297mm
+    // Folio / F4 dimensions: 215mm x 330mm (21.5cm x 33cm)
     // Margins: 10mm left/right, 12mm top/bottom
-    const pdf = new jsPDF("p", "mm", "a4");
+    const pdf = new jsPDF({ orientation: "p", unit: "mm", format: [215, 330] });
     const marginX = 10;
     const marginY = 12;
-    const printableWidth = 190; // 210 - 20
-    const printableHeight = 273; // 297 - 24
+    const printableWidth = 195; // 215 - 20
+    const printableHeight = 306; // 330 - 24
 
     // Convert printable height (273mm) into canvas pixels
     const pageCanvasHeight = Math.floor(canvas.width * (printableHeight / printableWidth));
@@ -380,7 +380,7 @@ export async function exportToPDF(elementId: string, filename: string) {
       if (pages.length > 1) {
         pdf.setFontSize(8);
         pdf.setTextColor(148, 163, 184); // slate-400
-        pdf.text(`Halaman ${i + 1} dari ${pages.length} • SEMS RW 04 Ngabean`, 105, 290, {
+        pdf.text(`Halaman ${i + 1} dari ${pages.length} • SEMS RW 04 Ngabean`, 107.5, 323, {
           align: "center",
         });
       }

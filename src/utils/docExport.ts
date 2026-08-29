@@ -256,13 +256,13 @@ export function exportToDOC(selectedUndangan: UndanganRapat, settings: SystemSet
   <title>${selectedUndangan.subject}</title>
   <style>
     @page {
-      size: A4;
-      margin: 1.0in 1.0in 1.0in 1.0in;
+      size: 215mm 330mm;
+      margin: 1.25cm 1.25cm 1.25cm 1.25cm;
     }
     body {
-      font-family: "Arial", "Calibri", "Helvetica", sans-serif;
+      font-family: "Georgia", "Times New Roman", serif;
       font-size: 11pt;
-      line-height: 1.6;
+      line-height: 1.5;
       color: #334155;
     }
     h1 {
@@ -281,38 +281,37 @@ export function exportToDOC(selectedUndangan: UndanganRapat, settings: SystemSet
     }
     p {
       margin-top: 0;
-      margin-bottom: 8pt;
+      margin-bottom: 10pt;
       text-align: justify;
     }
     ul, ol {
       margin-top: 0;
-      margin-bottom: 8pt;
+      margin-bottom: 10pt;
       padding-left: 20pt;
     }
     li {
-      margin-bottom: 3pt;
+      margin-bottom: 4pt;
     }
     .kop-title-1 {
-      font-size: 9.5pt;
+      font-size: 9pt;
       font-weight: bold;
-      color: #ef4444;
+      color: #1e293b;
       text-transform: uppercase;
-      letter-spacing: 0.05em;
+      letter-spacing: 0.02em;
     }
     .kop-title-2 {
-      font-size: 13.5pt;
-      font-weight: 800;
-      color: #1e293b;
+      font-size: 14pt;
+      font-weight: 900;
+      color: #0f172a;
       text-transform: uppercase;
     }
     .kop-address {
-      font-size: 9pt;
-      color: #64748b;
-      font-style: italic;
+      font-size: 8.5pt;
+      color: #475569;
     }
     .kop-contact {
       font-size: 8pt;
-      color: #94a3b8;
+      color: #64748b;
     }
   </style>
 </head>

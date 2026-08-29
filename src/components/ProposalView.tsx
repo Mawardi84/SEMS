@@ -25,11 +25,13 @@ import {
   Upload,
   X,
   Image,
-  Eye
+  Eye,
+  Archive
 } from "lucide-react";
 import { SeksiTask, SystemSetting, KeuanganTransaction, RKBAItem, Panitia } from "../types";
 import { exportToPDF } from "../utils/pdfExport";
 import { exportToWord } from "../utils/wordExport";
+import { exportToPNG, exportToJPG, exportToPNGZip, exportToJPGZip } from "../utils/imageExport";
 import { PDFPreviewModal } from "./PDFPreviewModal";
 import OrgChart from "./OrgChart";
 import DocumentPreviewRenderer from "./DocumentPreviewRenderer";
@@ -74,6 +76,7 @@ export default function ProposalView({
   const [isGenerating, setIsGenerating] = useState(false);
   const [copiedLPJ, setCopiedLPJ] = useState(false);
   const [isExportingPDF, setIsExportingPDF] = useState(false);
+  const [isExportingImage, setIsExportingImage] = useState(false);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
 
   // Custom LPJ Template settings & inputs
@@ -114,8 +117,8 @@ export default function ProposalView({
   // Custom LPJ Styling states
   const [paperTheme, setPaperTheme] = useState<"classic" | "creamy" | "minimal" | "green-gold">("classic");
   const [fontStyle, setFontStyle] = useState<"poppins" | "arial" | "mono">("poppins");
-  const [showWatermark, setShowWatermark] = useState<boolean>(true);
-  const [showStamp, setShowStamp] = useState<boolean>(true);
+  const [showWatermark, setShowWatermark] = useState<boolean>(false);
+  const [showStamp, setShowStamp] = useState<boolean>(false);
 
   // Logo HUT RI and offline fallback states
   const [eventLogo, setEventLogo] = useState<string>(() => {
@@ -452,6 +455,34 @@ Semarang, ${tanggalProposal}
     setIsPreviewOpen(false);
   };
 
+  const handleExportPNG = async () => {
+    setIsExportingImage(true);
+    await exportToPNG("printable-lpj-paper", `Proposal-${namaKegiatan.replace(/\s+/g, "-")}.png`);
+    setIsExportingImage(false);
+    setIsPreviewOpen(false);
+  };
+
+  const handleExportPNGZip = async () => {
+    setIsExportingImage(true);
+    await exportToPNGZip("printable-lpj-paper", `Proposal-${namaKegiatan.replace(/\s+/g, "-")}`);
+    setIsExportingImage(false);
+    setIsPreviewOpen(false);
+  };
+
+  const handleExportJPG = async () => {
+    setIsExportingImage(true);
+    await exportToJPG("printable-lpj-paper", `Proposal-${namaKegiatan.replace(/\s+/g, "-")}.jpg`);
+    setIsExportingImage(false);
+    setIsPreviewOpen(false);
+  };
+
+  const handleExportJPGZip = async () => {
+    setIsExportingImage(true);
+    await exportToJPGZip("printable-lpj-paper", `Proposal-${namaKegiatan.replace(/\s+/g, "-")}`);
+    setIsExportingImage(false);
+    setIsPreviewOpen(false);
+  };
+
   return (
     <div className="space-y-5">
       <PDFPreviewModal 
@@ -460,10 +491,29 @@ Semarang, ${tanggalProposal}
         title="Pratinjau Proposal" 
         onDownload={handleExportPDF}
         onExportWord={handleExportWord}
+        onExportPNG={handleExportPNG}
+        onExportPNGZip={handleExportPNGZip}
+        onExportJPG={handleExportJPG}
+        onExportJPGZip={handleExportJPGZip}
       >
-        <div className="space-y-8 print:space-y-0">
-           {/* Need to copy the content of printable-lpj-paper here */}
-        </div>
+        <DocumentPreviewRenderer
+          proposalMarkdown={proposalMarkdown}
+          paperTheme={paperTheme}
+          fontStyle={fontStyle}
+          namaKegiatan={namaKegiatan}
+          namaRW={namaRW}
+          namaKetua={namaKetua}
+          namaSekretaris={namaSekretaris}
+          namaBendahara={namaBendahara}
+          namaRWKetua={namaRWKetua}
+          eventLogo={eventLogo}
+          showStamp={showStamp}
+          useMockData={useMockData}
+          showLetterhead={true}
+          showSignature={true}
+        >
+           {/* Content rendered by DocumentPreviewRenderer */}
+        </DocumentPreviewRenderer>
       </PDFPreviewModal>
       
       {/* 1. Header Area */}
@@ -878,7 +928,7 @@ Semarang, ${tanggalProposal}
             {proposalMarkdown && !isGenerating && (
               (() => {
                 const getPaperClass = () => {
-                  let base = "relative p-8 sm:p-14 shadow-md max-w-[794px] min-h-[1123px] mx-auto select-text overflow-hidden transition-all duration-300 z-10 break-after-page flex flex-col justify-between print:min-h-0 print:shadow-none print:border-none print:p-0 print:mb-0 print:break-after-page ";
+                  let base = "relative p-8 sm:p-14 shadow-md max-w-[813px] min-h-[1247px] mx-auto select-text overflow-hidden transition-all duration-300 z-10 break-after-page flex flex-col justify-between print:min-h-0 print:shadow-none print:border-none print:p-0 print:mb-0 print:break-after-page ";
                   
                   if (paperTheme === "classic") {
                     base += "bg-white border-t-[8px] border-t-red-600 border border-slate-200 text-slate-900";
@@ -983,9 +1033,11 @@ Semarang, ${tanggalProposal}
                         <div className="space-y-1">
                           <p className="text-[9px] font-bold uppercase text-slate-500 tracking-wider">Ketua Panitia Pelaksana</p>
                           <div className="h-14 flex items-center justify-center relative">
-                            <span className="font-serif italic text-sm text-blue-700/80 tracking-widest font-bold rotate-[-3deg] select-none">
-                              {namaKetua}
-                            </span>
+                            {showStamp && (
+                              <span className="font-serif italic text-sm text-blue-700/80 tracking-widest font-bold rotate-[-3deg] select-none">
+                                {namaKetua}
+                              </span>
+                            )}
                           </div>
                           <p className="font-bold underline text-[11px] text-slate-800">{namaKetua}</p>
                         </div>
@@ -993,9 +1045,11 @@ Semarang, ${tanggalProposal}
                         <div className="space-y-1">
                           <p className="text-[9px] font-bold uppercase text-slate-500 tracking-wider">Sekretaris Panitia</p>
                           <div className="h-14 flex items-center justify-center relative">
-                            <span className="font-serif italic text-sm text-slate-500/80 tracking-widest font-bold rotate-[2deg] select-none">
-                              {namaSekretaris}
-                            </span>
+                            {showStamp && (
+                              <span className="font-serif italic text-sm text-slate-500/80 tracking-widest font-bold rotate-[2deg] select-none">
+                                {namaSekretaris}
+                              </span>
+                            )}
                           </div>
                           <p className="font-bold underline text-[11px] text-slate-800">{namaSekretaris}</p>
                         </div>
@@ -1004,9 +1058,11 @@ Semarang, ${tanggalProposal}
                         <div className="space-y-1 relative">
                           <p className="text-[9px] font-bold uppercase text-slate-500 tracking-wider">Bendahara Keuangan</p>
                           <div className="h-14 flex items-center justify-center relative z-10">
-                            <span className="font-serif italic text-sm text-emerald-700/80 tracking-widest font-bold rotate-[-1deg] select-none">
-                              {namaBendahara}
-                            </span>
+                            {showStamp && (
+                              <span className="font-serif italic text-sm text-emerald-700/80 tracking-widest font-bold rotate-[-1deg] select-none">
+                                {namaBendahara}
+                              </span>
+                            )}
                           </div>
                           <p className="font-bold underline text-[11px] text-slate-800">{namaBendahara}</p>
                         </div>
@@ -1016,17 +1072,23 @@ Semarang, ${tanggalProposal}
                           <div className="h-14 flex items-center justify-center relative">
                             {/* The circular stamp/seal */}
                             {showStamp && (
-                              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-20 h-20 rounded-full border-2 border-dashed border-indigo-600/60 flex items-center justify-center rotate-[-12deg] pointer-events-none select-none z-0 shadow-xs">
-                                <div className="w-[72px] h-[72px] rounded-full border border-double border-indigo-600/50 flex flex-col items-center justify-center text-[5px] font-sans font-bold text-indigo-600/70 text-center leading-none">
-                                  <span className="uppercase text-[4px]">PANITIA HUT-RI</span>
-                                  <Award className="w-3.5 h-3.5 text-indigo-600/80 my-0.5" />
-                                  <span className="uppercase text-[4.5px] tracking-tight">{namaRW.toUpperCase()} NGABEAN</span>
+                              <>
+                                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-20 h-20 rounded-full border-2 border-dashed border-indigo-600/60 flex items-center justify-center rotate-[-12deg] pointer-events-none select-none z-0 shadow-xs">
+                                  {settings?.stempelUrl ? (
+                                    <img src={settings.stempelUrl} alt="Stempel" className="w-full h-full object-contain opacity-80" />
+                                  ) : (
+                                    <div className="w-[72px] h-[72px] rounded-full border border-double border-indigo-600/50 flex flex-col items-center justify-center text-[5px] font-sans font-bold text-indigo-600/70 text-center leading-none">
+                                      <span className="uppercase text-[4px]">PANITIA HUT-RI</span>
+                                      <Award className="w-3.5 h-3.5 text-indigo-600/80 my-0.5" />
+                                      <span className="uppercase text-[4.5px] tracking-tight">{namaRW.toUpperCase()} NGABEAN</span>
+                                    </div>
+                                  )}
                                 </div>
-                              </div>
+                                <span className="font-serif italic text-sm text-indigo-800/80 tracking-widest font-bold rotate-[1deg] relative z-10 select-none">
+                                  {namaRWKetua}
+                                </span>
+                              </>
                             )}
-                            <span className="font-serif italic text-sm text-indigo-800/80 tracking-widest font-bold rotate-[1deg] relative z-10 select-none">
-                              {namaRWKetua}
-                            </span>
                           </div>
                           <p className="font-bold underline text-[11px] text-slate-800">{namaRWKetua}</p>
                         </div>
@@ -1146,6 +1208,56 @@ Semarang, ${tanggalProposal}
 
                   const renderMarkdownCleanly = (markdownText: string) => {
                     if (!markdownText) return null;
+
+                    if (markdownText.includes("### DAFTAR ISI") || markdownText.includes("DAFTAR ISI")) {
+                      return (
+                        <div key="toc-custom-proposal" className="space-y-4 my-2 font-sans">
+                          <div className={`border-b-2 ${theme.bar1} pb-2 mb-4 flex items-center justify-between`}>
+                            <h3 className={`text-xs sm:text-sm font-black tracking-wider uppercase ${theme.textAccent} font-sans flex items-center gap-2`}>
+                              <span className={`w-2.5 h-4.5 ${theme.bar1} rounded-xs inline-block`} />
+                              DAFTAR ISI PROPOSAL KEGIATAN
+                            </h3>
+                            <span className="text-[8.5px] font-mono font-bold uppercase bg-slate-100 text-slate-600 px-2 py-0.5 rounded border border-slate-200">
+                              Struktur Proposal Resmi
+                            </span>
+                          </div>
+
+                          <div className="space-y-2.5 px-1 sm:px-2">
+                            {[
+                              { no: 1, title: "Sampul & Judul Utama", page: 1 },
+                              { no: 2, title: "Kata Pengantar Panitia", page: 2 },
+                              { no: 3, title: "BAB I. PENDAHULUAN", page: 3, sub: ["Latar Belakang Kegiatan", "Maksud & Tujuan", "Sasaran Peserta & Wilayah"] },
+                              { no: 4, title: "BAB II. SUSUNAN PANITIA", page: 4, sub: ["Struktur Organisasi Kepanitiaan", "Pembagian Tugas Seksi"] },
+                              { no: 5, title: "BAB III. RENCANA PROGRAM KERJA", page: 5, sub: ["Rundown Acara Lomba & Pentas Seni", "Jadwal Persiapan H-30 s.d. Hari H"] },
+                              { no: 6, title: "BAB IV. RENCANA ANGGARAN BIAYA (RAB)", page: 6, sub: ["Estimasi Belanja Per Seksi", "Target Swadaya Warga & Donatur"] },
+                              { no: 7, title: "BAB V. PENAWARAN SPONSORSHIP", page: 7 },
+                              { no: 8, title: "BAB VI. PENUTUP & LEMBAR PENGESAHAN", page: 8 }
+                            ].map((item) => (
+                              <div key={item.no} className="space-y-1">
+                                <div className="flex items-baseline justify-between gap-1 text-[11px] sm:text-xs">
+                                  <span className="font-bold text-slate-800 shrink-0">
+                                    {item.no}. {item.title}
+                                  </span>
+                                  <span className="flex-1 border-b border-dotted border-slate-400 mx-1.5 -mb-0.5 opacity-75" />
+                                  <span className="font-mono text-slate-700 font-bold shrink-0">Hal. {item.page}</span>
+                                </div>
+                                {item.sub && (
+                                  <div className="pl-5 space-y-0.5">
+                                    {item.sub.map((subTitle, subIdx) => (
+                                      <div key={subIdx} className="flex items-baseline justify-between gap-1 text-[10px] text-slate-600">
+                                        <span className="shrink-0 italic">• {subTitle}</span>
+                                        <span className="flex-1 border-b border-dotted border-slate-300 mx-1.5 -mb-0.5 opacity-50" />
+                                        <span className="font-mono text-slate-500 shrink-0 text-[9.5px]">Hal. {item.page}</span>
+                                      </div>
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      );
+                    }
 
                     const lines = markdownText.split("\n");
                     const elements: React.ReactNode[] = [];
@@ -1831,6 +1943,62 @@ Semarang, ${tanggalProposal}
                         >
                           <Download className="w-3.5 h-3.5 text-white" />
                           Unduh DOC
+                        </button>
+
+                        <button
+                          onClick={handleExportPNG}
+                          disabled={isExportingImage}
+                          className="flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-1 rounded text-[10px] font-black uppercase transition-all shadow-md disabled:opacity-50 cursor-pointer"
+                          title="Ekspor sebagai 1 gambar PNG utuh"
+                        >
+                          {isExportingImage ? (
+                            <RefreshCw className="w-3.5 h-3.5 text-white animate-spin" />
+                          ) : (
+                            <Download className="w-3.5 h-3.5 text-white" />
+                          )}
+                          PNG (1 File)
+                        </button>
+
+                        <button
+                          onClick={handleExportPNGZip}
+                          disabled={isExportingImage}
+                          className="flex items-center gap-1.5 bg-teal-600 hover:bg-teal-500 text-white px-3 py-1 rounded text-[10px] font-black uppercase transition-all shadow-md disabled:opacity-50 cursor-pointer"
+                          title="Ekspor gambar PNG per halaman dalam berkas .ZIP"
+                        >
+                          {isExportingImage ? (
+                            <RefreshCw className="w-3.5 h-3.5 text-white animate-spin" />
+                          ) : (
+                            <Archive className="w-3.5 h-3.5 text-white" />
+                          )}
+                          PNG (ZIP per Hal)
+                        </button>
+
+                        <button
+                          onClick={handleExportJPG}
+                          disabled={isExportingImage}
+                          className="flex items-center gap-1.5 bg-purple-600 hover:bg-purple-500 text-white px-3 py-1 rounded text-[10px] font-black uppercase transition-all shadow-md disabled:opacity-50 cursor-pointer"
+                          title="Ekspor sebagai 1 gambar JPG utuh"
+                        >
+                          {isExportingImage ? (
+                            <RefreshCw className="w-3.5 h-3.5 text-white animate-spin" />
+                          ) : (
+                            <Download className="w-3.5 h-3.5 text-white" />
+                          )}
+                          JPG (1 File)
+                        </button>
+
+                        <button
+                          onClick={handleExportJPGZip}
+                          disabled={isExportingImage}
+                          className="flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-1 rounded text-[10px] font-black uppercase transition-all shadow-md disabled:opacity-50 cursor-pointer"
+                          title="Ekspor gambar JPG per halaman dalam berkas .ZIP"
+                        >
+                          {isExportingImage ? (
+                            <RefreshCw className="w-3.5 h-3.5 text-white animate-spin" />
+                          ) : (
+                            <Archive className="w-3.5 h-3.5 text-white" />
+                          )}
+                          JPG (ZIP per Hal)
                         </button>
 
                         <button

@@ -16,6 +16,7 @@ interface DocumentPreviewRendererProps {
   useMockData: boolean;
   showLetterhead?: boolean;
   showSignature?: boolean;
+  children?: React.ReactNode;
 }
 
 export default function DocumentPreviewRenderer({
@@ -34,9 +35,9 @@ export default function DocumentPreviewRenderer({
   showLetterhead = true,
   showSignature = true,
   children,
-}: DocumentPreviewRendererProps & { children: React.ReactNode }) {
+}: DocumentPreviewRendererProps) {
   const getPaperClass = () => {
-    let base = "relative p-8 sm:p-14 shadow-md max-w-[794px] min-h-[1123px] mx-auto select-text overflow-hidden transition-all duration-300 z-10 break-after-page flex flex-col justify-between print:min-h-0 print:shadow-none print:border-none print:p-0 print:mb-0 print:break-after-page ";
+    let base = "relative p-8 sm:p-14 shadow-md max-w-[813px] min-h-[1247px] mx-auto select-text overflow-hidden transition-all duration-300 z-10 break-after-page flex flex-col justify-between print:min-h-0 print:shadow-none print:border-none print:p-0 print:mb-0 print:break-after-page ";
     
     if (paperTheme === "classic") {
       base += "bg-white border-t-[8px] border-t-red-600 border border-slate-200 text-slate-900";

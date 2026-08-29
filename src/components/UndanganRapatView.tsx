@@ -96,7 +96,7 @@ export default function UndanganRapatView({
   const [showKetuaSignature, setShowKetuaSignature] = useState<boolean>(true);
   const [showBendaharaSignature, setShowBendaharaSignature] = useState<boolean>(false);
   const [showSekretarisSignature, setShowSekretarisSignature] = useState<boolean>(true);
-  const [showStempel, setShowStempel] = useState<boolean>(true);
+  const [showStempel, setShowStempel] = useState<boolean>(false);
 
   // Panitia/Invitees selection filter search
   const [panitiaSearchTerm, setPanitiaSearchTerm] = useState<string>("");
@@ -1688,11 +1688,11 @@ Demikian undangan ini kami sampaikan, atas perhatian dan kehadiran serta kerjasa
             </div>
           </div>
 
-          {/* Core Official A4 Letter Display Sheet */}
+          {/* Core Official Folio/F4 Letter Display Sheet */}
           <div className="bg-slate-100 p-1 sm:p-6 rounded-2xl flex justify-center no-print shadow-inner overflow-x-auto">
             <div 
               id="undangan-render-area"
-              className={`w-[794px] min-h-[1123px] bg-white p-12 shadow-2xl font-serif text-sm relative shrink-0 leading-relaxed border transition-all duration-300 ${
+              className={`w-[813px] min-h-[1247px] bg-white p-12 shadow-2xl font-serif text-sm relative shrink-0 leading-relaxed border transition-all duration-300 ${
                 paperTheme === 'creamy' ? 'bg-[#FAF6EE] text-[#423D33] border-[#EADFC9]' :
                 paperTheme === 'royal' ? 'bg-amber-50/50 text-slate-800 border-amber-200/50' :
                 paperTheme === 'minimal' ? 'font-sans text-[#2C3E50] border-slate-100 p-16' :
