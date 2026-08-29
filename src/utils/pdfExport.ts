@@ -26,22 +26,26 @@ export async function exportToPDF(elementId: string, filename: string) {
     jsPDF: { unit: 'mm', format: [215, 330], orientation: 'portrait' }
   };
 
+  const exportBtn = document.querySelector('[data-export-btn]') as HTMLElement | null;
+
   try {
-    // Show a temporary loading indicator if possible (user-friendly)
-    const exportBtn = document.querySelector('[data-export-btn]');
     if (exportBtn) exportBtn.textContent = 'Menyiapkan...';
 
-    await html2pdf().set(opt).from(element).save();
+    // Ensure element is visible
+    if (element.offsetWidth === 0 || element.offsetHeight === 0) {
+      throw new Error("Elemen dokumen tidak memiliki dimensi. Pastikan pratinjau dimuat.");
+    }
 
-    if (exportBtn) exportBtn.textContent = 'Ekspor PDF';
+    await html2pdf().set(opt).from(element).save();
   } catch (error: any) {
     console.error("PDF generation failed:", error);
     
-    if (exportBtn) exportBtn.textContent = 'Ekspor PDF';
-    
     alert(
       "Gagal mengekspor berkas PDF.\n\n" +
-      "Pastikan Anda memiliki koneksi internet yang stabil dan coba ulangi kembali."
+      "Pesan kesalahan: " + (error.message || "Unknown error") + "\n\n" +
+      "Silakan screenshot pesan ini dan kirimkan ke kami."
     );
+  } finally {
+    if (exportBtn) exportBtn.textContent = 'Ekspor PDF';
   }
 }
