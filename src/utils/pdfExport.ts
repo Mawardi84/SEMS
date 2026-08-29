@@ -181,7 +181,7 @@ export async function exportToPDF(elementId: string, filename: string) {
 
   try {
     const canvas = await html2canvas(element, {
-      scale: 2, // 2x scale for sharp High-DPI rendering
+      scale: 1.5, // Reduced scale for better performance and memory management
       useCORS: true,
       allowTaint: true,
       logging: false,
@@ -206,62 +206,23 @@ export async function exportToPDF(elementId: string, filename: string) {
             }
           });
 
-          // 3. Expand target cloned root element to standard Folio / F4 print dimensions (21.5cm x 33cm = 813px)
+          // 3. Expand target cloned root element
           const clonedTarget = clonedDoc.getElementById(elementId);
           if (clonedTarget) {
-            clonedTarget.style.width = "813px"; // Folio / F4 pixel width at 96 DPI (215mm)
+            clonedTarget.style.width = "813px";
             clonedTarget.style.minWidth = "813px";
             clonedTarget.style.maxWidth = "813px";
             clonedTarget.style.boxSizing = "border-box";
-            clonedTarget.style.maxHeight = "none";
             clonedTarget.style.height = "auto";
             clonedTarget.style.overflow = "visible";
             clonedTarget.style.backgroundColor = "#ffffff";
             clonedTarget.style.color = "#0f172a";
             clonedTarget.style.margin = "0 auto";
             clonedTarget.style.padding = "24px";
-
-            // Unconstrain all parents up to <body> to prevent container clipping
-            let parent = clonedTarget.parentElement;
-            while (parent && parent !== clonedDoc.body) {
-              parent.style.maxHeight = "none";
-              parent.style.height = "auto";
-              parent.style.overflow = "visible";
-              parent.style.display = "block";
-              parent = parent.parentElement;
-            }
-            if (clonedDoc.body) {
-              clonedDoc.body.style.maxHeight = "none";
-              clonedDoc.body.style.height = "auto";
-              clonedDoc.body.style.overflow = "visible";
-            }
+            clonedTarget.style.display = "block";
           }
 
-          // 4. Sanitize elements in cloned document without destroying borders or layout
-          const allNodes = clonedDoc.querySelectorAll("*");
-          allNodes.forEach((node) => {
-            const el = node as HTMLElement;
-            if (!el || !el.style) return;
-
-            // Strip effects that html2canvas turns into black boxes
-            el.style.boxShadow = "none";
-            el.style.textShadow = "none";
-            el.style.filter = "none";
-            el.style.backdropFilter = "none";
-
-            // Sanitize explicit inline colors
-            if (el.style.color) {
-              el.style.color = sanitizeCssText(el.style.color);
-            }
-            if (el.style.backgroundColor) {
-              el.style.backgroundColor = sanitizeCssText(el.style.backgroundColor);
-            }
-            if (el.style.borderColor) {
-              el.style.borderColor = sanitizeCssText(el.style.borderColor);
-            }
-          });
-
-          // 5. Inject CSS overrides to avoid page breaks inside cards, tables & signatures
+          // 4. Inject CSS overrides for print and pagination
           const styleOverride = clonedDoc.createElement("style");
           styleOverride.textContent = `
             *, *::before, *::after {
@@ -269,15 +230,15 @@ export async function exportToPDF(elementId: string, filename: string) {
               text-shadow: none !important;
               filter: none !important;
               backdrop-filter: none !important;
-              mix-blend-mode: normal !important;
               --tw-shadow: none !important;
               --tw-shadow-colored: none !important;
-              --tw-ring-shadow: none !important;
-              --tw-ring-offset-shadow: none !important;
             }
             body, html {
               background-color: #ffffff !important;
-              color: #0f172a !important;
+            }
+            .break-after-page {
+              page-break-after: always !important;
+              break-after: page !important;
             }
             table, tr, td, th, .card, blockquote, figure, h1, h2, h3, h4, .signature-block {
               break-inside: avoid !important;
