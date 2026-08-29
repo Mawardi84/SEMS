@@ -17,11 +17,11 @@ export async function exportToPDF(elementId: string, filename: string) {
     filename: filename,
     image: { type: 'jpeg', quality: 0.98 },
     html2canvas: { 
-      scale: 1.5, // Balance between quality and performance
+      scale: 1, // Reduced to 1 for faster performance
       useCORS: true, 
       logging: false,
       backgroundColor: "#ffffff",
-      letterRendering: true
+      letterRendering: false // Disabled to prevent hanging on complex layouts
     },
     jsPDF: { unit: 'mm', format: [215, 330], orientation: 'portrait' }
   };
