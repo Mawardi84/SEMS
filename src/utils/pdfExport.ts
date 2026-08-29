@@ -1,73 +1,106 @@
-import html2pdf from "html2pdf.js";
-
-// Offscreen 1x1 canvas context used for 100% reliable color parsing & conversion
-const colorCanvas = document.createElement("canvas");
-colorCanvas.width = 1;
-colorCanvas.height = 1;
-const colorCtx = colorCanvas.getContext("2d", { willReadFrequently: true });
+import { jsPDF } from "jspdf";
+import { toCanvas } from "html-to-image";
 
 /**
- * Converts ANY valid CSS color string (oklch, oklab, color-mix, lab, light-dark, hex, hsl, etc.)
- * into standard rgb(...) or rgba(...) format compatible with html2canvas.
+ * Analyzes a row of pixels in a canvas context to determine its "blankness" score (0.0 to 1.0).
  */
-function toRgbOrRgba(colorStr: string): string {
-  if (
-    !colorStr ||
-    colorStr === "transparent" ||
-    colorStr === "rgba(0, 0, 0, 0)" ||
-    colorStr === "inherit" ||
-    colorStr === "initial" ||
-    colorStr === "none"
-  ) {
-    return "rgba(0, 0, 0, 0)";
-  }
-
-  if (
-    /^rgba?\(/i.test(colorStr) ||
-    (/^#[0-9a-f]{3,8}$/i.test(colorStr) && colorStr.length !== 5 && colorStr.length !== 9)
-  ) {
-    return colorStr;
-  }
-
-  if (!colorCtx) return "rgb(15, 23, 42)";
-
+function getRowBlankness(
+  ctx: CanvasRenderingContext2D,
+  y: number,
+  width: number,
+  step: number = 6
+): number {
   try {
-    colorCtx.clearRect(0, 0, 1, 1);
-    colorCtx.fillStyle = "rgba(0, 0, 0, 0)";
-    colorCtx.fillStyle = colorStr;
+    const imgData = ctx.getImageData(0, y, width, 1).data;
+    let whitePixels = 0;
+    let totalSampled = 0;
 
-    const fillRes = colorCtx.fillStyle;
-    if (fillRes && fillRes !== "rgba(0, 0, 0, 0)" && fillRes !== "#000000") {
-      if (fillRes.startsWith("#") || fillRes.startsWith("rgb")) {
-        return fillRes;
+    for (let x = 0; x < width; x += step) {
+      const idx = x * 4;
+      const r = imgData[idx];
+      const g = imgData[idx + 1];
+      const b = imgData[idx + 2];
+      const a = imgData[idx + 3];
+
+      totalSampled++;
+      if (a < 15 || (r >= 238 && g >= 238 && b >= 238)) {
+        whitePixels++;
       }
     }
 
-    colorCtx.fillRect(0, 0, 1, 1);
-    const [r, g, b, a] = colorCtx.getImageData(0, 0, 1, 1).data;
-    if (a === 0) return "rgba(0, 0, 0, 0)";
-    if (a === 255) return `rgb(${r}, ${g}, ${b})`;
-    return `rgba(${r}, ${g}, ${b}, ${(a / 255).toFixed(3)})`;
+    return totalSampled > 0 ? whitePixels / totalSampled : 1.0;
   } catch (e) {
-    return "rgb(15, 23, 42)";
+    return 1.0;
   }
 }
 
 /**
- * Sanitizes CSS text containing oklch, oklab, color-mix, lab, light-dark, or color functions.
+ * Finds the optimal Y coordinate in the canvas to split pages cleanly
  */
-function sanitizeCssText(cssText: string): string {
-  if (!cssText) return cssText;
+function findOptimalPageBreak(
+  ctx: CanvasRenderingContext2D,
+  startY: number,
+  targetEndY: number,
+  canvasWidth: number,
+  minSearchY: number
+): number {
+  if (targetEndY >= ctx.canvas.height) {
+    return ctx.canvas.height;
+  }
 
-  const colorFuncRegex = /(oklch|oklab|color-mix|lab|light-dark|color)\((?:[^()]+|\((?:[^()]+|\([^()]*\))*\))*\)/gi;
-  return cssText.replace(colorFuncRegex, (match) => {
-    return toRgbOrRgba(match);
-  });
+  const searchStart = Math.min(targetEndY, ctx.canvas.height - 1);
+  const searchEnd = Math.max(minSearchY, startY + 50);
+
+  let bestY = searchStart;
+  let maxBlankness = -1;
+
+  let currentBandStart = -1;
+  let maxBandLength = 0;
+  let bestBandMid = searchStart;
+
+  for (let y = searchStart; y >= searchEnd; y--) {
+    const blankness = getRowBlankness(ctx, y, canvasWidth, 6);
+
+    if (blankness > maxBlankness) {
+      maxBlankness = blankness;
+      bestY = y;
+    }
+
+    if (blankness >= 0.95) {
+      if (currentBandStart === -1) {
+        currentBandStart = y;
+      }
+    } else {
+      if (currentBandStart !== -1) {
+        const bandLength = currentBandStart - y;
+        if (bandLength > maxBandLength) {
+          maxBandLength = bandLength;
+          bestBandMid = Math.floor((currentBandStart + y + 1) / 2);
+        }
+        currentBandStart = -1;
+      }
+    }
+  }
+
+  if (currentBandStart !== -1) {
+    const bandLength = currentBandStart - searchEnd;
+    if (bandLength > maxBandLength) {
+      maxBandLength = bandLength;
+      bestBandMid = Math.floor((currentBandStart + searchEnd) / 2);
+    }
+  }
+
+  if (maxBandLength >= 6) {
+    return bestBandMid;
+  }
+
+  if (maxBlankness >= 0.88) {
+    return bestY;
+  }
+
+  return targetEndY;
 }
 
-/**
- * Exports the element to a PDF file using html2pdf.js for robust layout preservation.
- */
 export async function exportToPDF(elementId: string, filename: string) {
   const element = document.getElementById(elementId);
   if (!element) {
@@ -76,58 +109,116 @@ export async function exportToPDF(elementId: string, filename: string) {
     return;
   }
 
-  // Define PDF options for F4/Folio (215mm x 330mm)
-  const opt = {
-    margin: [10, 10, 12, 10], // top, left, bottom, right
-    filename: filename,
-    image: { type: 'jpeg', quality: 0.98 },
-    html2canvas: { 
-      scale: 1, // Reduced to 1 for faster performance
-      useCORS: true, 
-      logging: false,
-      backgroundColor: "#ffffff",
-      letterRendering: false, // Disabled to prevent hanging on complex layouts
-      onclone: (clonedDoc: Document) => {
-        // Sanitize all <style> tags text content
-        const styles = clonedDoc.querySelectorAll("style");
-        styles.forEach((style) => {
-          if (style.textContent) {
-            style.textContent = sanitizeCssText(style.textContent);
-          }
-        });
-
-        // Sanitize all inline [style] attributes
-        const styledElements = clonedDoc.querySelectorAll("[style]");
-        styledElements.forEach((el) => {
-          const htmlEl = el as HTMLElement;
-          if (htmlEl.style.cssText) {
-            htmlEl.style.cssText = sanitizeCssText(htmlEl.style.cssText);
-          }
-        });
-      }
-    },
-    jsPDF: { unit: 'mm', format: [215, 330], orientation: 'portrait' }
-  };
-
   const exportBtn = document.querySelector('[data-export-btn]') as HTMLElement | null;
 
   try {
     if (exportBtn) exportBtn.textContent = 'Menyiapkan...';
 
-    // Ensure element is visible
-    if (element.offsetWidth === 0 || element.offsetHeight === 0) {
-      throw new Error("Elemen dokumen tidak memiliki dimensi. Pastikan pratinjau dimuat.");
+    // Add temporary styling for export
+    const originalWidth = element.style.width;
+    const originalDisplay = element.style.display;
+    element.style.width = "813px";
+    element.style.display = "block";
+
+    const canvas = await toCanvas(element, {
+      pixelRatio: 1.5,
+      backgroundColor: "#ffffff",
+      style: {
+        boxShadow: "none",
+        color: "#0f172a"
+      },
+      filter: (node) => {
+        if (node instanceof HTMLElement && node.classList.contains("no-print")) return false;
+        return true;
+      }
+    });
+
+    // Restore styling
+    element.style.width = originalWidth;
+    element.style.display = originalDisplay;
+
+    const ctx = canvas.getContext("2d", { willReadFrequently: true });
+    if (!ctx) {
+      throw new Error("Could not get canvas context");
     }
 
-    await html2pdf().set(opt).from(element).save();
+    // Folio / F4 dimensions: 215mm x 330mm (21.5cm x 33cm)
+    const pdf = new jsPDF({ orientation: "p", unit: "mm", format: [215, 330] });
+    const marginX = 10;
+    const marginY = 12;
+    const printableWidth = 195; // 215 - 20
+    const printableHeight = 306; // 330 - 24
+
+    const pageCanvasHeight = Math.floor(canvas.width * (printableHeight / printableWidth));
+
+    const pages: { startY: number; endY: number }[] = [];
+    let currentY = 0;
+
+    while (currentY < canvas.height) {
+      const remainingHeight = canvas.height - currentY;
+      if (remainingHeight <= pageCanvasHeight) {
+        pages.push({ startY: currentY, endY: canvas.height });
+        break;
+      }
+
+      const targetEndY = currentY + pageCanvasHeight;
+      const minSearchY = currentY + Math.floor(pageCanvasHeight * 0.65);
+      const breakY = findOptimalPageBreak(ctx, currentY, targetEndY, canvas.width, minSearchY);
+
+      pages.push({ startY: currentY, endY: breakY });
+      currentY = breakY;
+    }
+
+    for (let i = 0; i < pages.length; i++) {
+      const p = pages[i];
+      const sliceHeight = p.endY - p.startY;
+
+      if (sliceHeight <= 0) continue;
+
+      if (i > 0) {
+        pdf.addPage();
+      }
+
+      const tempCanvas = document.createElement("canvas");
+      tempCanvas.width = canvas.width;
+      tempCanvas.height = sliceHeight;
+
+      const tempCtx = tempCanvas.getContext("2d");
+      if (tempCtx) {
+        tempCtx.fillStyle = "#ffffff";
+        tempCtx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
+        tempCtx.drawImage(
+          canvas,
+          0,
+          p.startY,
+          canvas.width,
+          sliceHeight,
+          0,
+          0,
+          canvas.width,
+          sliceHeight
+        );
+      }
+
+      const sliceData = tempCanvas.toDataURL("image/jpeg", 0.95);
+      const pdfSliceHeight = (sliceHeight * printableWidth) / canvas.width;
+
+      pdf.addImage(
+        sliceData,
+        "JPEG",
+        marginX,
+        marginY,
+        printableWidth,
+        pdfSliceHeight,
+        undefined,
+        "FAST"
+      );
+    }
+
+    pdf.save(filename);
   } catch (error: any) {
     console.error("PDF generation failed:", error);
-    
-    alert(
-      "Gagal mengekspor berkas PDF.\n\n" +
-      "Pesan kesalahan: " + (error.message || "Unknown error") + "\n\n" +
-      "Silakan screenshot pesan ini dan kirimkan ke kami."
-    );
+    alert("Gagal mengekspor berkas PDF.\n\nDetail: " + (error.message || "Unknown error"));
   } finally {
     if (exportBtn) exportBtn.textContent = 'Ekspor PDF';
   }
