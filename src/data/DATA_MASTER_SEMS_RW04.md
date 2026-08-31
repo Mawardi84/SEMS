@@ -1,173 +1,251 @@
 # MASTER DATA & DOKUMENTASI LENGKAP SISTEM INFORMASI SEMS RW 04 NGABEAN
 **Peringatan Hari Ulang Tahun Kemerdekaan Republik Indonesia Ke-81**
-*Rukun Warga 04 Ngabean, Kecamatan Gunungpati, Kota Semarang*
+*Rukun Warga 04 Kelurahan Ngabean, Kecamatan Gunungpati, Kota Semarang*
 
 > 💡 **PETUNJUK PEMULIHAN OTOMATIS (AUTO-RESTORE):**
-> File ini berisi dokumentasi naratif resmi dan snapshot data terstruktur (JSON). Jika database `db.json` hilang atau terhapus, server SEMS akan secara otomatis memindai dan membaca file ini (`DATA_MASTER_SEMS_RW04.md`) untuk memulihkan seluruh konfigurasi, kegiatan, RKBA, transaksi buku kas utama, buku kas donasi, voucher non-kas, notulensi rapat, dan LPJ tanpa perlu upload ulang manual!
+> File ini berisi dokumentasi naratif resmi, tabel komparasi final RAB vs Realisasi, Buku Kas 1 & 2 lengkap, daftar inventaris non-kas, dan snapshot data terstruktur (JSON). File ini merupakan **Single Source of Truth** untuk sistem SEMS RW 04 Ngabean.
 
 ---
 
 ## 1. INFORMASI UMUM & KONFIGURASI SISTEM
 - **Kop Surat Baris 1:** PANITIA PERINGATAN HARI ULANG TAHUN KEMERDEKAAN RI KE-81
 - **Kop Surat Baris 2:** RUKUN WARGA 04 NGABEAN
-- **Kop Surat Baris 3:** Kecamatan Semarang Barat, Kota Semarang, Jawa Tengah
-- **Kop Surat Baris 4:** Sekretariat: Balai RW 04 Ngabean, Telp: +62 812-3456-7890 | Kode Pos: 50141
+- **Kop Surat Baris 3:** Kecamatan Gunungpati, Kota Semarang, Jawa Tengah
+- **Kop Surat Baris 4:** Sekretariat: Balai RW 04 Ngabean, Telp: - | Kode Pos: 50225
 - **Daftar Wilayah RT:** RT 01, RT 02, RT 03, RT 04 (Total: 4 RT)
-- **Target Iuran Pokok per RT:** **Rp 2.000.000,00** (Total Proyeksi 4 RT = **Rp 8.000.000,00**)
-- **Pagu Anggaran Maksimal per Seksi:**
-  1. Acara: Rp 3.000.000,00
-  2. Seksi Lomba: Rp 2.208.500,00
-  3. Seksi Pentas Seni: Rp 2.000.000,00
-  4. Perlengkapan: Rp 3.000.000,00
-  5. Konsumsi: Rp 2.000.000,00
-  6. Seksi Hadiah Dan Doorprize: Rp 4.500.000,00
-  7. Sekretaris: Rp 1.000.000,00
-  8. Bendahara: Rp 1.000.000,00
-  9. Humas: Rp 1.000.000,00
-  10. Keamanan dan Kebersihan: Rp 1.000.000,00
-  11. Seksi Dokumentasi dan Publikasi: Rp 1.000.000,00
-  12. Seksi Dana Usaha: Rp 1.000.000,00
+- **Target Iuran Pokok per RT:** **Rp 2.000.000,00** (Total 4 RT = **Rp 8.000.000,00** via Dana Talangan Pamsimas)
+- **Sumbangan Murni Pamsimas RW 04:** **Rp 2.000.000,00** (Hibah Murni)
+- **Donatur & Sponsor Tunai:** **Rp 4.000.000,00**
+- **Total Pemasukan Kas Keseluruhan:** **Rp 14.000.000,00**
+- **Total Realisasi Belanja (Netto):** **Rp 12.618.000,00**
+- **Sisa Saldo Kas Akhir (Surplus):** **Rp 1.382.000,00** (Dialokasikan untuk Konsolidasi Internal / Pembubaran Panitia)
 
 ---
 
-## 2. SUSUNAN PANITIA INTI
-| No | Nama | Jabatan | Seksi | Asal RT | Kontak / No. HP |
-|---|---|---|---|---|---|
-| 1 | Ketua Panitia | Ketua Panitia | Acara | RT 01 | 081234567890 |
-| 2 | Sekretaris Panitia | Sekretaris | Sekretaris | RT 02 | 081234567891 |
-| 3 | Bendahara Panitia | Bendahara | Bendahara | RT 03 | 081234567892 |
+## 2. SUSUNAN KEPANITIAAN LEAN STRUCTURE (4 DIVISI & 22 ANGGOTA)
+
+### A. BPH & Kesekretariatan (Pagu: Rp 1.050.000 | Realisasi: Rp 523.000)
+1. **Karto** — Penanggung Jawab (Ketua RW 04)
+2. **Muh Zaenun** — Ketua Panitia
+3. **Faldan** — Wakil Ketua Panitia
+4. **Mawardi** — Sekretaris
+5. **Dias Ayu** — Bendahara
+
+### B. Divisi Acara Terpadu (Pagu: Rp 5.300.000 | Realisasi: Rp 4.909.000)
+6. **Ade Rahmat** — Koordinator Divisi Acara Terpadu
+7. **Gunarso** — Sub-Koordinator Lomba
+8. **Eva** — Sub-Koordinator Pentas Seni & Hiburan
+9. **Rika** — Anggota Pentas Seni
+10. **Jihan** — Anggota Acara
+
+### C. Divisi Operasional Lapangan (Pagu: Rp 11.200.000 | Realisasi: Rp 7.186.000)
+11. **Sandy** — Koordinator Logistik & Perlengkapan
+12. **Teddy** — Koordinator Hadiah & Doorprize
+13. **Indra** — Anggota Hadiah & Doorprize
+14. **Tatak** — Anggota Perlengkapan
+15. **Yogo** — Anggota Perlengkapan
+16. **Dea** — Koordinator Konsumsi
+17. **Agung** — Koordinator Keamanan & Kebersihan
+18. **Rio** — Anggota Keamanan & Kebersihan
+
+### D. Support & Humas (Pagu: Rp 0 | Realisasi: Rp 0)
+19. **Dita** — Koordinator Humas
+20. **Ervan** — Koordinator Kemitraan & Dana Usaha
+21. **Wenny** — Koordinator Dokumentasi & Publikasi
+22. **Winne** — Anggota Dokumentasi & Publikasi
 
 ---
 
-## 3. DAFTAR AGENDA & KEGIATAN
-1. **ACT-001 | Lomba Anak & Remaja**
-   - Tanggal: Minggu, 9 Agustus 2026 (08:00 - 16:00 WIB)
+## 3. DAFTAR AGENDA UTAMA KEGIATAN
+1. **ACT-001 | Lomba Anak (01 Agustus s/d 16 Agustus 2026)**
+   - Tanggal: 01 s/d 16 Agustus 2026 (08:00 - 15:30 WIB)
    - Lokasi: Lapangan RW 04 Ngabean
-   - Status: SELESAI
-2. **ACT-002 | Malam Tirakatan**
-   - Tanggal: Minggu, 16 Agustus 2026 (19:30 - 22:00 WIB)
+   - PIC: Gunarso
+   - Deskripsi: Perlombaan tradisional edukatif anak-anak menyemarakkan kemerdekaan.
+2. **ACT-002 | Malam Tirakatan & Lomba Warga**
+   - Tanggal: Minggu, 16 Agustus 2026 (19:30 - 23:30 WIB)
    - Lokasi: Balai RW 04 Ngabean
-   - Status: SELESAI
-3. **ACT-003 | Jalan Sehat & Doorprize**
-   - Tanggal: Senin, 17 Agustus 2026 (06:30 - 11:30 WIB)
+   - PIC: Ade Rahmat
+   - Deskripsi: Doa bersama malam kemerdekaan dan pemotongan tumpeng. Kegiatan setelah Tirakatan (16 Agustus 2026) meliputi: Lomba Ibu-ibu Tebak Gaya, Lomba Bapak-bapak Pukul Paku, dilanjutkan Lomba Remaja Estafet Sarung.
+3. **ACT-003 | Jalan Sehat & Doorprize Warga**
+   - Tanggal: Minggu, 23 Agustus 2026 (06:30 - 11:30 WIB)
    - Lokasi: Rute Keliling RW 04 & Panggung Utama
-   - Status: SELESAI
-4. **ACT-004 | Resepsi & Pentas Seni Tarling**
-   - Tanggal: Sabtu, 22 Agustus 2026 (19:00 - 23:00 WIB)
+   - PIC: Sandy & Teddy
+   - Deskripsi: Jalan sehat bersama dengan dihibur dengan Band Sendang Bunder, dilanjutkan dengan pembagian Hadiah Lomba Anak-anak, lalu acara inti pengundian doorprize jalan sehat.
+4. **ACT-004 | Malam Puncak / Resepsi & Hiburan Dangdut**
+   - Tanggal: Minggu, 23 Agustus 2026 (19:00 - 23:30 WIB)
    - Lokasi: Panggung Utama Balai RW 04 Ngabean
-   - Status: SELESAI
+   - PIC: Muh Zaenun
+   - Deskripsi: Masih pada tanggal yang sama (23 Agustus 2026 malam), dilanjutkan dengan malam puncak / resepsi dengan menampilkan pentas seni tari dari anak-anak dilanjutkan acara utama hiburan dangdut solo organ.
 
 ---
 
-## 4. RKBA (RENCANA KERJA & BASELINE ANGGARAN) - 13 ITEM
-| Kode | Nama Item Belanja | Seksi | Sumber Dana | RAB Baseline (Rp) | Realisasi Riil (Rp) | Status Realisasi |
-|---|---|---|---|---|---|---|
-| ACT-001 | Lomba Anak & Remaja | Seksi Lomba | Kas Utama | 1.500.000 | 2.208.500 | Over Budget (+708.500) |
-| ACT-002 | Sound Tirakat | Perlengkapan | Donasi Warga | 300.000 | 200.000 | Lebih Hemat (-100.000) |
-| ACT-003 | Hadiah / Doorprize Jalan Sehat | Seksi Hadiah Dan Doorprize | Kas Utama | 4.500.000 | 3.374.000 | Lebih Hemat (-1.126.000) |
-| ACT-004 | Konsumsi Jalan Sehat | Konsumsi | Kas Utama | 0 | 550.000 | Realisasi Kas (+550.000) |
-| ACT-005 | Sound Jalan Sehat | Perlengkapan | Sponsorship | 0 | 0 | Ditanggung Pak RW |
-| ACT-006 | Cetak Kupon Jalan Sehat | Sekretaris | Sponsorship | 0 | 0 | Donatur Percetakan |
-| ACT-007 | Konsumsi 40 box Resepsi | Konsumsi | Kas Utama | 500.000 | 500.000 | Sesuai Baseline |
-| ACT-008 | Panggung + Tratak Resepsi | Perlengkapan | Kas Utama | 750.000 | 750.000 | Sesuai Baseline |
-| ACT-009 | Sound Resepsi | Perlengkapan | Kas Utama | 1.200.000 | 1.200.000 | Sesuai Baseline |
-| ACT-010 | Tarling / Tarting Resepsi | Seksi Pentas Seni | Kas Utama | 1.500.000 | 1.500.000 | Sesuai Baseline |
-| ACT-011 | MMT / Banner | Seksi Dokumentasi dan Publikasi | Kas Utama | 400.000 | 245.000 | Lebih Hemat (-155.000) |
-| ACT-012 | Proposal Kegiatan | Sekretaris | Kas Utama | 258.000 | 258.000 | Sesuai Realisasi |
-| ACT-013 | Trashbag & ID Card | Humas | Sponsorship | 0 | 0 | Swadaya Panitia |
+## 4. LAPORAN FINAL: KOMPARASI RAB vs REALISASI (TABEL LENGKAP)
+
+| No | Uraian Pengeluaran | Volume / Detail | Pagu RAB Awal (Rp) | Target Revisi (Rp) | Realisasi Belanja (Rp) | Selisih (Awal vs Realisasi) | Keterangan |
+|---|---|---|---|---|---|---|---|
+| **A** | **Lomba Anak-anak** | | | | | | |
+| 1 | Hadiah Lomba | Semua hadiah lomba | 1.500.000 | 1.500.000 | 1.057.500 | 442.500 | Hadiah anak |
+| 2 | Tambahan: Perlengkapan Teknis Lomba | Riil Lapangan | 0 | 0 | 499.500 | -499.500 | Tali, cup, solasi, dll |
+| 3 | Tambahan: Konsumsi Panitia lomba | Riil Lapangan | 0 | 0 | 30.000 | -30.000 | Es Teh |
+| **B** | **Malam Tirakatan** | | | | | | |
+| 4 | Malam Tirakatan | Sewa Sound system | 300.000 | 300.000 | 200.000 | 100.000 | Sound dan lampu |
+| 5 | Tambahan : Game Remaja | Lomba Tebak Gaya | 0 | 0 | 225.000 | -225.000 | Hadiah uang tunai |
+| 6 | Tambahan : Lomba Bapak-bapak/Ibu-ibu | Lomba Pukul Paku | 0 | 0 | 369.000 | -369.000 | Hadiah lomba bapak ibu |
+| 7 | Tambahan : Game Jabutan | Game Jabutan | 0 | 0 | 576.000 | -576.000 | Hadiah Game Jabutan 1 & 2 |
+| **C** | **Jalan Sehat** | | | | | | |
+| 8 | Doorprize & Hadiah | Jalan Sehat | 4.500.000 | 4.500.000 | 3.374.000 | 1.126.000 | Grosir, gelang emas Semar |
+| 9 | Konsumsi Acara Jalan Sehat | Air mineral 17 dus | 3.600.000 | 0 | 415.000 | 3.185.000 | Air mineral 17 dus |
+| **D** | **Malam Resepsi** | | | | | | |
+| 10 | Sewa Panggung & Dekor (Tratak) | Sewa 1 & 2 digabung | 750.000 | 750.000 | 1.510.000 | -760.000 | Total sewa panggung & tratak |
+| 11 | Sound system Resepsi | Sound Resepsi | 1.250.000 | 1.250.000 | 1.200.000 | 50.000 | Pelunasan Sound |
+| 12 | Solo Organ & Penyanyi | Tarling / Solo Organ | 1.500.000 | 1.500.000 | 1.300.000 | 200.000 | Netto (sisa 200k masuk donasi) |
+| 13 | Konsumsi Malam Resepsi | 40 Box & Lainnya | 1.500.000 | 500.000 | 374.000 | 1.126.000 | Konsumsi resepsi & snack |
+| 14 | Sewa Kostum Pentas Seni | Make up & Acc tari | 1.500.000 | 0 | 196.000 | 1.304.000 | Kostum swadaya, beli make up & acc |
+| 15 | Tambahan: Konsumsi Panitia / Transport | Riil Lapangan | 0 | 0 | 160.000 | -160.000 | Makan & transport panitia belanja |
+| **E** | **Biaya Lain-Lain** | | | | | | |
+| 16 | Cetak MMT 4x5 meter | Banner Acara | 400.000 | 400.000 | 200.000 | 200.000 | MMT & Konsumsi MMT |
+| 17 | Cetak Proposal & Dokumen | Proposal | 100.000 | 100.000 | 258.000 | -158.000 | Realisasi cetak proposal |
+| 18 | Cetak ID Card (30 @10.000) | ID Card | 300.000 | 0 | 0 | 300.000 | Dibuat sendiri (Rp 0) |
+| 19 | Cetak Kupon & Atribut | Print, ID tali | 250.000 | 0 | 65.000 | 185.000 | Efisiensi cetak & Tali ID |
+| 20 | Tambahan : Biaya tak terduga lainnya | Biaya tak terduga | 0 | 0 | 609.000 | -609.000 | Konsumsi sound, bambu, dekor, bongkar |
+| 21 | Plastik Trashbag | Kebersihan | 100.000 | 0 | 0 | 100.000 | Swadaya panitia |
+| | **SUBTOTAL PENGELUARAN KESELURUHAN** | | **17.550.000** | **10.800.000** | **12.618.000** | **4.932.000** | |
+| | Subsidi dari Kas RW (Konsumsi Jalan Sehat) | | -2.300.000 | 0 | 0 | -2.300.000 | |
+| | **TOTAL KEBUTUHAN ANGGARAN PROPOSAL (NETTO)** | | **15.250.000** | **10.800.000** | **12.618.000** | **2.632.000** | |
+
+### Ringkasan Keuangan Akhir:
+- **Dana Iuran 4 RT (Talangan Pamsimas):** Rp 8.000.000,00
+- **Sumbangan Murni Pamsimas:** Rp 2.000.000,00
+- **Total Dana Donatur / Sponsor:** Rp 4.000.000,00
+- **Total Kas Masuk Keseluruhan:** **Rp 14.000.000,00**
+- **Total Realisasi Belanja (Netto):** **Rp 12.618.000,00**
+- **SISA SALDO KAS AKHIR (Surplus):** **Rp 1.382.000,00**
 
 ---
 
-## 5. BUKU KAS UTAMA (28 TRANSAKSI)
-* **Total Pemasukan:** **Rp 10.000.000,00** (Penerimaan Kas Pamsimas: Rp 8.000.000 Talangan 4 RT @ Rp 2 Jt + Rp 2.000.000 Sumbangan/Donasi Pamsimas)
-* **Total Pengeluaran Riil (27 Trx):** **Rp 9.999.500,00**
-* **Sisa Saldo Kas Utama:** **Rp 500,00**
+## 5. BUKU BESAR KAS 1 (DANA TALANGAN PAMSIMAS & SWADAYA) - 33 TRANSAKSI MUTASI
 
-### Rincian Transaksi Buku Utama:
-1. `2026-07-18` | **Pemasukan:** Kas Pamsimas (Talangan 4 RT Rp 8 Jt + Donasi Rp 2 Jt) | `Rp 10.000.000` | BKM-BU-01 | Pengelola Pamsimas
-2. `2026-07-27` | **Pengeluaran:** DP Sound Resepsi (TF) | `Rp 300.000` | BKK-BU-01 | Vendor Audio Sound
-3. `2026-07-29` | **Pengeluaran:** Cetak Proposal (TF) | `Rp 258.000` | BKK-BU-02 | Percetakan & Fotocopy
-4. `2026-08-01` | **Pengeluaran:** Perlengkapan lomba anak (Rafia, Pluit, kapur) | `Rp 35.000` | BKK-BU-03 | Toko Alat Tulis
-5. `2026-08-01` | **Pengeluaran:** Perlengkapan lomba (Air minum kerupuk) | `Rp 47.000` | BKK-BU-04 | Warung Kelontong
-6. `2026-08-01` | **Pengeluaran:** Print naskah lomba | `Rp 6.000` | BKK-BU-05 | Rental Komputer
-7. `2026-08-02` | **Pengeluaran:** Es teh lomba | `Rp 30.000` | BKK-BU-06 | Warung Es
-8. `2026-08-02` | **Pengeluaran:** Perlengkapan lomba anak (Tali & Cup minum) | `Rp 50.000` | BKK-BU-07 | Toko Plastik
-9. `2026-08-08` | **Pengeluaran:** Makan + Transport belanja doorprize | `Rp 160.000` | BKK-BU-08 | Panitia Belanja
-10. `2026-08-08` | **Pengeluaran:** Belanja Hadiah jalan sehat (Alifa grosir) | `Rp 834.000` | BKK-BU-09 | Alifa Grosir
-11. `2026-08-08` | **Pengeluaran:** Belanja Hadiah jalan sehat (Pusat grosir) | `Rp 235.500` | BKK-BU-10 | Pusat Grosir
-12. `2026-08-08` | **Pengeluaran:** Belanja Hadiah jalan sehat (Delamas) | `Rp 967.000` | BKK-BU-11 | Toko Delamas
-13. `2026-08-08` | **Pengeluaran:** Belanja Hadiah jalan sehat (Lainnya) | `Rp 740.500` | BKK-BU-12 | Mitra Toko Perabot
-14. `2026-08-08` | **Pengeluaran:** CO Gelang Semar (Hadiah Utama Jalan Sehat) | `Rp 597.000` | BKK-BU-13 | Semar Nusantara
-15. `2026-08-10` | **Pengeluaran:** Belanja hadiah lomba anak Co shopee | `Rp 309.000` | BKK-BU-14 | Shopee Marketplace
-16. `2026-08-13` | **Pengeluaran:** Belanja Jajan hadiah lomba anak (mas out) | `Rp 149.000` | BKK-BU-15 | Toko Snack Mas Out
-17. `2026-08-14` | **Pengeluaran:** Belanja perlengkapan lomba (spon, print, lem, dll) | `Rp 187.500` | BKK-BU-16 | Toko Bahan Prakarya
-18. `2026-08-15` | **Pengeluaran:** Solasi | `Rp 12.000` | BKK-BU-17 | Fotocopy
-19. `2026-08-16` | **Pengeluaran:** Print + beli tali | `Rp 23.000` | BKK-BU-18 | Rental & Toko Tali
-20. `2026-08-16` | **Pengeluaran:** Panggung + tratak | `Rp 750.000` | BKK-BU-19 | Tenda Berkah
-21. `2026-08-16` | **Pengeluaran:** Tarting / Honor grup seni Tarling | `Rp 1.500.000` | BKK-BU-20 | Grup Tarling Nada Kencana
-22. `2026-08-16` | **Pengeluaran:** Pelunasan sound resepsi | `Rp 900.000` | BKK-BU-21 | Vendor Audio Sound
-23. `2026-08-16` | **Pengeluaran:** Konsumsi panitia malam resepsi (40 box) | `Rp 500.000` | BKK-BU-22 | Katering Ibu RT 02
-24. `2026-08-16` | **Pengeluaran:** Cup plastik | `Rp 38.000` | BKK-BU-23 | Toko Plastik
-25. `2026-08-16` | **Pengeluaran:** Belanja hadiah Jabutan (Sesi 1) | `Rp 257.000` | BKK-BU-24 | Toko Mainan
-26. `2026-08-16` | **Pengeluaran:** Belanja hadiah Jabutan (Sesi 2) | `Rp 319.000` | BKK-BU-25 | Toko Mainan
-27. `2026-08-16` | **Pengeluaran:** Konsumsi jalan sehat | `Rp 550.000` | BKK-BU-26 | Katering Snack Sehat
-28. `2026-08-16` | **Pengeluaran:** MMT (1 MMT Berbayar Rp 245rb, 1 MMT gratis donatur) | `Rp 245.000` | BKK-BU-27 | Percetakan Digital Printing
-
----
-
-## 6. BUKU KAS DONASI (9 TRANSAKSI)
-* **Total Donasi Masuk (5 Donatur):** **Rp 3.200.000,00**
-* **Total Pengeluaran Donasi (4 Trx):** **Rp 1.206.000,00**
-* **Sisa Saldo Buku Donasi:** **Rp 1.994.000,00**
-* **Sisa Saldo Kas Gabungan (Utama + Donasi):** **Rp 1.994.500,00** (Diserahterimakan ke Kas RW 04)
-
-### Rincian Transaksi Buku Donasi:
-1. `2026-07-20` | **Pemasukan:** Donasi Mas Agung (TF) | `Rp 300.000` | BKM-BD-01
-2. `2026-08-06` | **Pemasukan:** Donasi Prettywear (Cash Rp 2.000.000 + 1 Unit Mesin Cuci) | `Rp 2.000.000` | BKM-BD-03
-3. `2026-08-09` | **Pemasukan:** Donasi Jihan (Cash) | `Rp 200.000` | BKM-BD-02
-4. `2026-08-12` | **Pemasukan:** Donasi Selo Agung (Cash) | `Rp 500.000` | BKM-BD-04
-5. `2026-08-12` | **Pemasukan:** Donasi Mas Adi (Cash) | `Rp 200.000` | BKM-BD-05
-6. `2026-08-16` | **Pengeluaran:** Hadiah uang tunai lomba remaja | `Rp 225.000` | BKK-BD-01
-7. `2026-08-16` | **Pengeluaran:** Sound tirakat (Realisasi dari dana donasi) | `Rp 200.000` | BKK-BD-02
-8. `2026-08-19` | **Pengeluaran:** Belanja hadiah lomba anak | `Rp 600.000` | BKK-BD-04
-9. `2026-08-20` | **Pengeluaran:** Beli alat make up untuk nari anak | `Rp 181.000` | BKK-BD-03
+| No | Tanggal | Uraian Keterangan Transaksi | Seksi / Bidang | Sub-Akun Beban | Debit (Masuk) | Kredit (Keluar) | Saldo Akhir |
+|---|---|---|---|---|---|---|---|
+| 1 | 18 Jul 2026 | Penerimaan Dana Talangan Pamsimas | Bendahara | Penerimaan | Rp 8.000.000 | Rp 0 | Rp 8.000.000 |
+| 2 | 18 Jul 2026 | Sumbangan Pamsimas | Bendahara | Penerimaan | Rp 2.000.000 | Rp 0 | Rp 10.000.000 |
+| 3 | 27 Jul 2026 | DP Sound (TF) | Seksi Acara Terpadu | Sewa Alat & Panggung | Rp 0 | Rp 300.000 | Rp 9.700.000 |
+| 4 | 29 Jul 2026 | Cetak Proposal (TF) | BPH & Kesekretariatan | Administrasi | Rp 0 | Rp 258.000 | Rp 9.442.000 |
+| 5 | 1 Ags 2026 | Perlengkapan lomba anak (Rafia, peluit, kapur) | Seksi Logistik & Perlengkapan | Perlengkapan Lomba | Rp 0 | Rp 35.000 | Rp 9.407.000 |
+| 6 | 1 Ags 2026 | Perlengkapan lomba (Air minum kerupuk) | Seksi Logistik & Perlengkapan | Perlengkapan Lomba | Rp 0 | Rp 47.000 | Rp 9.360.000 |
+| 7 | 1 Ags 2026 | Print | BPH & Kesekretariatan | Administrasi | Rp 0 | Rp 6.000 | Rp 9.354.000 |
+| 8 | 2 Ags 2026 | Es teh lomba | Seksi Konsumsi | Konsumsi Lapangan | Rp 0 | Rp 30.000 | Rp 9.324.000 |
+| 9 | 2 Ags 2026 | Perlengkapan lomba anak (Tali & cup minum) | Seksi Logistik & Perlengkapan | Perlengkapan Lomba | Rp 0 | Rp 50.000 | Rp 9.274.000 |
+| 10 | 8 Ags 2026 | Makan + Transport | Seksi Konsumsi | Konsumsi Lapangan | Rp 0 | Rp 160.000 | Rp 9.114.000 |
+| 11 | 8 Ags 2026 | Belanja Hadiah jalan sehat (Alifa grosir) | Seksi Logistik & Perlengkapan | Hadiah & Doorprize | Rp 0 | Rp 834.000 | Rp 8.280.000 |
+| 12 | 8 Ags 2026 | Belanja Hadiah jalan sehat (Pusat grosir) | Seksi Logistik & Perlengkapan | Hadiah & Doorprize | Rp 0 | Rp 235.500 | Rp 8.044.500 |
+| 13 | 8 Ags 2026 | Belanja Hadiah jalan sehat (Delamas) | Seksi Logistik & Perlengkapan | Hadiah & Doorprize | Rp 0 | Rp 967.000 | Rp 7.077.500 |
+| 14 | 8 Ags 2026 | Belanja Hadiah jalan sehat (Tambahan/Lainnya) | Seksi Logistik & Perlengkapan | Hadiah & Doorprize | Rp 0 | Rp 740.500 | Rp 6.337.000 |
+| 15 | 13 Ags 2026 | Belanja jajan hadiah lomba anak (mas out) | Seksi Logistik & Perlengkapan | Hadiah & Doorprize | Rp 0 | Rp 149.000 | Rp 6.188.000 |
+| 16 | 10 Ags 2026 | Belanja hadiah lomba anak co shopee | Seksi Logistik & Perlengkapan | Hadiah & Doorprize | Rp 0 | Rp 309.000 | Rp 5.879.000 |
+| 17 | 14 Ags 2026 | Belanja perlengkapan lomba (Spon, print, lem tembak, pita, kertas, double tape, konsumsi, cup minum) | Seksi Logistik & Perlengkapan | Perlengkapan Lomba | Rp 0 | Rp 187.500 | Rp 5.691.500 |
+| 18 | 8 Ags 2026 | CO selang semar | Seksi Logistik & Perlengkapan | Hadiah & Doorprize | Rp 0 | Rp 597.000 | Rp 5.094.500 |
+| 19 | 16 Ags 2026 | Print + beli tali | BPH & Kesekretariatan | Administrasi | Rp 0 | Rp 23.000 | Rp 5.071.500 |
+| 20 | 15 Ags 2026 | Solasi + dll | Seksi Logistik & Perlengkapan | Perlengkapan Lomba | Rp 0 | Rp 12.000 | Rp 5.059.500 |
+| 21 | 16 Ags 2026 | Cup plastik | Seksi Logistik & Perlengkapan | Perlengkapan Lomba | Rp 0 | Rp 38.000 | Rp 5.021.500 |
+| 22 | 16 Ags 2026 | Belanja hadiah jabutan 1 | Seksi Logistik & Perlengkapan | Hadiah & Doorprize | Rp 0 | Rp 257.000 | Rp 4.764.500 |
+| 23 | 16 Ags 2026 | Belanja hadiah jabutan 2 | Seksi Logistik & Perlengkapan | Hadiah & Doorprize | Rp 0 | Rp 319.000 | Rp 4.445.500 |
+| 24 | 22 Ags 2026 | Konsumsi jalan sehat air mineral 17 dus | Seksi Konsumsi | Konsumsi Lapangan | Rp 0 | Rp 415.000 | Rp 4.030.500 |
+| 25 | 22 Ags 2026 | MMT + konsumsi | BPH & Kesekretariatan | Administrasi | Rp 0 | Rp 200.000 | Rp 3.830.500 |
+| 26 | 23 Ags 2026 | Panggung + tratak | Seksi Acara Terpadu | Sewa Alat & Panggung | Rp 0 | Rp 750.000 | Rp 3.080.500 |
+| 27 | 23 Ags 2026 | Tarling | Seksi Acara Terpadu | Hiburan & Pentas | Rp 0 | Rp 1.500.000 | Rp 1.580.500 |
+| 28 | 23 Ags 2026 | Pelunasan sound | Seksi Acara Terpadu | Sewa Alat & Panggung | Rp 0 | Rp 900.000 | Rp 680.500 |
+| 29 | 19 Ags 2026 | Hadiah lomba anak | Seksi Logistik & Perlengkapan | Hadiah & Doorprize | Rp 0 | Rp 599.500 | Rp 81.000 |
+| 30 | 23 Ags 2026 | Tali ID card | BPH & Kesekretariatan | Administrasi | Rp 0 | Rp 36.000 | Rp 45.000 |
+| 31 | 23 Ags 2026 | Lem tembak | Seksi Logistik & Perlengkapan | Perlengkapan Lomba | Rp 0 | Rp 10.000 | Rp 35.000 |
+| 32 | 23 Ags 2026 | Acc tari anak | Seksi Acara Terpadu | Hiburan & Pentas | Rp 0 | Rp 15.000 | Rp 20.000 |
+| 33 | 23 Ags 2026 | Kertas coklat | Seksi Logistik & Perlengkapan | Perlengkapan Lomba | Rp 0 | Rp 20.000 | Rp 0 |
+| | **TOTAL MUTASI KAS 1** | | | | **Rp 10.000.000** | **Rp 10.000.000** | **Rp 0** |
 
 ---
 
-## 7. REKAPITULASI DONASI NON-KAS (VOUCHER UMKM & BARANG)
-Total: **68 Voucher Kuliner UMKM** dan **1 Unit Mesin Cuci Doorprize**:
-1. **Martabak 5758:** 5 Voucher
-2. **Bakso Bang Somat (Mbak Sri):** 15 Voucher
-3. **Kacang Ijo Mas Puput:** 5 Voucher
-4. **NasGor Mas Tatak:** 5 Voucher
-5. **Kebab Ireng Manis:** 8 Voucher
-6. **NasGor Mas Eko:** 5 Voucher
-7. **Kedai Terang Bulan – Ngrembel Asri Malam:** 25 Voucher
-8. **Prettywear Store:** 1 Unit Mesin Cuci (Hadiah Utama Jalan Sehat)
-9. **Donatur Percetakan:** 1 Buah MMT Donatur & Cetak Kupon Gratis
+## 6. BUKU BESAR KAS 2 (DANA DONASI & SPONSOR) - 22 TRANSAKSI MUTASI
+
+| No | Tanggal | Uraian Keterangan Transaksi | Seksi / Bidang | Sub-Akun Beban | Debit (Masuk) | Kredit (Keluar) | Saldo Akhir |
+|---|---|---|---|---|---|---|---|
+| 1 | 20 Jul 2026 | Donasi Mas Agung (TF) | Dana Usaha / Donatur | Penerimaan Donasi | Rp 300.000 | Rp 0 | Rp 300.000 |
+| 2 | 9 Ags 2026 | Donasi Jihan (Cash) | Dana Usaha / Donatur | Penerimaan Donasi | Rp 200.000 | Rp 0 | Rp 500.000 |
+| 3 | 6 Ags 2026 | Donasi Prettywear (Cash) | Dana Usaha / Donatur | Penerimaan Donasi | Rp 2.000.000 | Rp 0 | Rp 2.500.000 |
+| 4 | 12 Ags 2026 | Donasi Selo Agung (Cash) | Dana Usaha / Donatur | Penerimaan Donasi | Rp 500.000 | Rp 0 | Rp 3.000.000 |
+| 5 | 12 Ags 2026 | Donasi Mas Adi | Dana Usaha / Donatur | Penerimaan Donasi | Rp 200.000 | Rp 0 | Rp 3.200.000 |
+| 6 | 24 Ags 2026 | Donasi Warung Satinah | Dana Usaha / Donatur | Penerimaan Donasi | Rp 200.000 | Rp 0 | Rp 3.400.000 |
+| 7 | 24 Ags 2026 | Donasi Apotek Gunungpati | Dana Usaha / Donatur | Penerimaan Donasi | Rp 300.000 | Rp 0 | Rp 3.700.000 |
+| 8 | 24 Ags 2026 | Donasi Jarwo Motor | Dana Usaha / Donatur | Penerimaan Donasi | Rp 100.000 | Rp 0 | Rp 3.800.000 |
+| 9 | 24 Ags 2026 | Kembalian Uang Tarling (Sisa Buku 1) | BPH & Kesekretariatan | Pengembalian Dana | Rp 200.000 | Rp 0 | Rp 4.000.000 |
+| 10 | 16 Ags 2026 | Hadiah uang tunai lomba remaja | Seksi Acara Terpadu | Hadiah & Doorprize | Rp 0 | Rp 225.000 | Rp 3.775.000 |
+| 11 | 23 Ags 2026 | Sound tirakat + konsumsi | Seksi Acara Terpadu | Sewa & Konsumsi | Rp 0 | Rp 200.000 | Rp 3.575.000 |
+| 12 | 20 Ags 2026 | Beli alat make up untuk tari anak | Seksi Acara Terpadu | Hiburan & Pentas | Rp 0 | Rp 181.000 | Rp 3.394.000 |
+| 13 | 22 Ags 2026 | Hadiah lomba bapak ibu | Seksi Logistik & Perlengkapan | Hadiah & Doorprize | Rp 0 | Rp 369.000 | Rp 3.025.000 |
+| 14 | 24 Ags 2026 | Panggung + Tratak (Tambahan) | Seksi Acara Terpadu | Sewa Alat & Panggung | Rp 0 | Rp 760.000 | Rp 2.265.000 |
+| 15 | 24 Ags 2026 | Konsumsi bambu | Seksi Konsumsi | Konsumsi Lapangan | Rp 0 | Rp 150.000 | Rp 2.115.000 |
+| 16 | 24 Ags 2026 | Beli kertas manggar + konsumsi | Seksi Logistik & Perlengkapan | Perlengkapan Lomba | Rp 0 | Rp 100.000 | Rp 2.015.000 |
+| 17 | 24 Ags 2026 | Konsumsi dekor panggung | Seksi Konsumsi | Konsumsi Lapangan | Rp 0 | Rp 77.000 | Rp 1.938.000 |
+| 18 | 24 Ags 2026 | Konsumsi sound | Seksi Konsumsi | Konsumsi Lapangan | Rp 0 | Rp 95.000 | Rp 1.843.000 |
+| 19 | 24 Ags 2026 | Konsumsi bongkar panggung | Seksi Konsumsi | Konsumsi Lapangan | Rp 0 | Rp 9.000 | Rp 1.834.000 |
+| 20 | 24 Ags 2026 | Kebutuhan pentas seni | Seksi Acara Terpadu | Konsumsi Lapangan | Rp 0 | Rp 78.000 | Rp 1.756.000 |
+| 21 | 24 Ags 2026 | konsumsi pentas seni tari anak | Seksi Konsumsi | Konsumsi Lapangan | Rp 0 | Rp 242.000 | Rp 1.514.000 |
+| 22 | 24 Ags 2026 | Virgin konsumsi snack | Seksi Konsumsi | Konsumsi Lapangan | Rp 0 | Rp 132.000 | Rp 1.382.000 |
+| | **TOTAL MUTASI KAS 2** | | | | **Rp 4.000.000** | **Rp 2.618.000** | **Rp 1.382.000** |
+
+---
+
+## 7. DAFTAR SPONSOR RESMI & INVENTARIS SUMBANGAN BARANG / VOUCHER (NON-KAS)
+
+### A. Daftar Sponsor Resmi HUT RI Ke-81 RW 04 Ngabean:
+1. **Prettywear** — Sponsor Utama Tunai & Doorprize Mesin Cuci 2 Tabung
+2. **Selo Agung** — Sponsor Tunai Operasional
+3. **Apotek Gunungpati** — Sponsor Tunai Operasional
+4. **BnD Shop** — Sponsor Resmi Perayaan Kemerdekaan
+5. **Ngrembel Asri** — Sponsor Resmi Perayaan Kemerdekaan
+6. **7 Gerai Kuliner UMKM Warga RW 04** — Sponsor Voucher Doorprize Kuliner
+
+### B. Inventaris Hadiah Doorprize Non-Kas & Voucher UMKM:
+
+| No | Nama Donatur / Sponsor | Bentuk Donasi / Barang | Volume / Jumlah | Keterangan Pemanfaatan |
+|---|---|---|---|---|
+| 1 | Prettywear | Barang - Mesin Cuci 2 Tabung | 1 Unit | Hadiah Utama / Doorprize Jalan Sehat |
+| 2 | BnD Shop | Doorprize & Souvenir Kemerdekaan | 1 Paket | Doorprize Jalan Sehat |
+| 3 | Ngrembel Asri (Terang Bulan) | Voucher Kuliner / Wisata | 25 Voucher | Doorprize Jalan Sehat |
+| 4 | Bakso Bang Somat | Voucher UMKM Kuliner | 15 Voucher | Doorprize Jalan Sehat |
+| 5 | Nasi Goreng Tatak | Voucher UMKM Kuliner | 5 Voucher | Doorprize Jalan Sehat |
+| 6 | Nasi Goreng Mas Eko | Voucher UMKM Kuliner | 5 Voucher | Doorprize Jalan Sehat |
+| 7 | Martabak 5758 | Voucher UMKM Kuliner | 5 Voucher | Doorprize Jalan Sehat |
+| 8 | Kebab Ireng Manis | Voucher UMKM Kuliner | 8 Voucher | Doorprize Jalan Sehat |
+| 9 | Bubur Kacang Hijau Mas Puput | Voucher UMKM Kuliner | 5 Voucher | Doorprize Jalan Sehat |
+| | **TOTAL SPONSORSHIP & VOUCHER** | | **68+ Voucher & Merchandise** | Ditambah 1 Unit Mesin Cuci 2 Tabung |
 
 ---
 
 ## 8. RISALAH NOTULENSI RAPAT PLENO
-1. **Rapat Pleno I (Kamis, 2 Juli 2026):** Pembahasan Usulan RAB Awal 13 Item Belanja (Pagu Awal Rp 15.250.000,00).
-2. **Rapat Pleno II (Minggu, 19 Juli 2026):** Pengesahan Perubahan Anggaran (RAB Revisi II Final Rp 10.908.000,00).
-3. **Rapat Pleno III (Senin, 24 Agustus 2026):** Laporan Evaluasi Pelaksanaan, Rekonsiliasi Kas Buku Utama & Donasi, serta Penerimaan 68 Voucher UMKM & 1 Mesin Cuci.
+1. **Rapat Pleno I (Kamis, 2 Juli 2026):** Pembentukan 4 Divisi Lean Structure Panitia & Pembahasan Usulan RAB Awal 13 Item Belanja (Pagu Awal Rp 17.550.000,00).
+2. **Rapat Pleno II (Minggu, 19 Juli 2026):** Pengesahan Perubahan Anggaran (Target Revisi Rp 10.800.000,00) dan Penerimaan Dana Talangan Pamsimas Rp 10.000.000.
+3. **Rapat Pleno III (Senin, 24 Agustus 2026):** Laporan Evaluasi Pelaksanaan, Rekonsiliasi Kas Buku Utama & Donasi, Penerimaan 68 Voucher UMKM & 1 Mesin Cuci, serta Penetapan Alokasi Sisa Saldo Kas Rp 1.382.000 untuk ekskursi pembubaran panitia.
 
 ---
 
 ## 9. LAPORAN PERTANGGUNGJAWABAN (LPJ MASTER)
 - **Nomor Dokumen:** LPJ-HUT81/RW04/2026
 - **Status:** SIAP DISAMPAIKAN
-- **Status Rekonsiliasi:** 100% Terekonsiliasi
-- **Bagian LPJ:**
-  - Bagian A: Laporan Pendahuluan (Ketua Panitia)
-  - Bagian B: Laporan Pelaksanaan Kegiatan (Sekretaris)
-  - Bagian C: Laporan Administrasi & Persuratan (Sekretaris)
-  - Bagian D: Laporan Keuangan Buku Utama & Buku Donasi (Bendahara)
-  - Bagian E: Perubahan Anggaran & Evaluasi RAB vs Realisasi (Bendahara)
-  - Bagian F: Rekonsiliasi Keuangan & Serah Terima Sisa Saldo (Bendahara)
-  - Bagian G: Kesimpulan dan Pertanggungjawaban (Ketua Panitia)
-  - Bagian H: Pengesahan LPJ (Ketua RW 04)
+- **Status Rekonsiliasi:** 100% Terekonsiliasi (Dana Talangan RT 01-04 Lunas via penyerahan nota SPJ)
+- **Struktur Dokumen Resmi (12 Halaman):**
+  - Halaman 1: Cover / Sampul Judul Resmi
+  - Halaman 2: Lembar Pengesahan Panitia & Ketua RW 04 Ngabean
+  - Halaman 3: Kata Pengantar
+  - Halaman 4: Daftar Isi
+  - Halaman 5: BAB I. PENDAHULUAN (Latar Belakang, Maksud & Tujuan, Landasan Hukum)
+  - Halaman 6: BAB II. PERENCANAAN KEGIATAN (Struktur Kepanitiaan 4 Lean Divisions, Jadwal & Rundown)
+  - Halaman 7: BAB III. PELAKSANAAN KEGIATAN (Rangkaian Lomba, Tirakatan, Jalan Sehat, Resepsi Pentas Seni)
+  - Halaman 8: BAB IV. PERTANGGUNGJAWABAN KEUANGAN (Realisasi Belanja Divisi, Rekap Swadaya RT & Dana Talangan)
+  - Halaman 9: TABEL KOMPARASI REALISASI & REKONSILIASI KAS (Tabel Komparasi Realisasi Belanja & Neraca Kas)
+  - Halaman 10: BAB V. EVALUASI (Tantangan Administrasi, Koordinasi, Logistik, dan Rekomendasi Tim Ramping)
+  - Halaman 11: BAB VI. PENUTUP (Permohonan Maaf, Ucapan Terima Kasih Spesifik, dan Penetapan Alokasi Sisa Kas Rp 1.382.000 untuk Ekskursi Pembubaran Panitia)
+  - Halaman 12: LAMPIRAN DOKUMEN RESMI (Lampiran 1: BKU, Lampiran 2: Rekonsiliasi Pamsimas & RT, Lampiran 3: Dokumentasi Foto & Nota Belanja)
 
 ---
 
@@ -183,1104 +261,1323 @@ Total: **68 Voucher Kuliner UMKM** dan **1 Unit Mesin Cuci Doorprize**:
       "RT 04"
     ],
     "seksiList": [
-      "Sekretaris",
-      "Bendahara",
-      "Humas",
-      "Acara",
-      "Seksi Lomba",
-      "Seksi Pentas Seni",
-      "Perlengkapan",
-      "Konsumsi",
-      "Keamanan dan Kebersihan",
-      "Seksi Dokumentasi dan Publikasi",
-      "Seksi Dana Usaha",
-      "Seksi Hadiah Dan Doorprize"
+      "BPH & Kesekretariatan",
+      "Divisi Acara Terpadu",
+      "Divisi Operasional Lapangan",
+      "Support & Humas"
     ],
     "targetIuranPerRT": 2000000,
     "paguAnggaranSeksi": {
-      "Sekretaris": 1000000,
-      "Bendahara": 1000000,
-      "Humas": 1000000,
-      "Acara": 3000000,
-      "Seksi Lomba": 2208500,
-      "Seksi Pentas Seni": 2000000,
-      "Perlengkapan": 3000000,
-      "Konsumsi": 2000000,
-      "Keamanan dan Kebersihan": 1000000,
-      "Seksi Dokumentasi dan Publikasi": 1000000,
-      "Seksi Dana Usaha": 1000000,
-      "Seksi Hadiah Dan Doorprize": 4500000
+      "BPH & Kesekretariatan": 1050000,
+      "Divisi Acara Terpadu": 5300000,
+      "Divisi Operasional Lapangan": 11200000,
+      "Support & Humas": 0
     },
     "sheetId": "1SEMS_RW04_NGABEAN_SPREADSHEET_ID_XYZ123",
     "sheetApiKey": "AIzaSyFakeKey_SEMS_GoogleSheetsAPI_2026",
     "themeColor": "red",
     "kopLine1": "PANITIA PERINGATAN HARI ULANG TAHUN KEMERDEKAAN RI KE-81",
     "kopLine2": "RUKUN WARGA 04 NGABEAN",
-    "kopLine3": "Kecamatan Semarang Barat, Kota Semarang, Jawa Tengah",
-    "kopLine4": "Sekretariat: Balai RW 04 Ngabean, Telp: +62 812-3456-7890 | Kode Pos: 50141",
+    "kopLine3": "Kecamatan Gunungpati, Kota Semarang, Jawa Tengah",
+    "kopLine4": "Sekretariat: Balai RW 04 Ngabean, Telp: - | Kode Pos: 50225",
     "logoStyle": "flag",
     "logoUrl": "",
     "kopStyle": "classic-centered"
   },
   "panitia": [
     {
-      "id": "p-1",
-      "name": "Ketua Panitia",
-      "role": "Ketua Panitia",
-      "phone": "081234567890",
-      "rt": "RT 01",
-      "seksi": "Acara"
+      "id": "p-01",
+      "name": "Karto",
+      "role": "Penanggung Jawab",
+      "seksi": "BPH & Kesekretariatan",
+      "rt": "RW 04",
+      "phone": "-"
     },
     {
-      "id": "p-2",
-      "name": "Sekretaris Panitia",
-      "role": "Sekretaris",
-      "phone": "081234567891",
+      "id": "p-02",
+      "name": "Muh Zaenun",
+      "role": "Ketua",
+      "seksi": "BPH & Kesekretariatan",
       "rt": "RT 02",
-      "seksi": "Sekretaris"
+      "phone": "-"
     },
     {
-      "id": "p-3",
-      "name": "Bendahara Panitia",
-      "role": "Bendahara",
-      "phone": "081234567892",
+      "id": "p-03",
+      "name": "Faldan",
+      "role": "Wakil",
+      "seksi": "BPH & Kesekretariatan",
       "rt": "RT 03",
-      "seksi": "Bendahara"
+      "phone": "-"
+    },
+    {
+      "id": "p-04",
+      "name": "Mawardi",
+      "role": "Sekretaris",
+      "seksi": "BPH & Kesekretariatan",
+      "rt": "RT 01",
+      "phone": "-"
+    },
+    {
+      "id": "p-05",
+      "name": "Dias Ayu",
+      "role": "Bendahara",
+      "seksi": "BPH & Kesekretariatan",
+      "rt": "RT 04",
+      "phone": "-"
+    },
+    {
+      "id": "p-06",
+      "name": "Ade Rahmat",
+      "role": "Koordinator",
+      "seksi": "Divisi Acara Terpadu",
+      "rt": "RT 01",
+      "phone": "-"
+    },
+    {
+      "id": "p-07",
+      "name": "Gunarso",
+      "role": "Sub-Koordinator Lomba",
+      "seksi": "Divisi Acara Terpadu",
+      "rt": "RT 03",
+      "phone": "-"
+    },
+    {
+      "id": "p-08",
+      "name": "Eva",
+      "role": "Sub-Koordinator Pentas Seni",
+      "seksi": "Divisi Acara Terpadu",
+      "rt": "RT 02",
+      "phone": "-"
+    },
+    {
+      "id": "p-09",
+      "name": "Rika",
+      "role": "Anggota",
+      "seksi": "Divisi Acara Terpadu",
+      "rt": "RT 02",
+      "phone": "-"
+    },
+    {
+      "id": "p-10",
+      "name": "Jihan",
+      "role": "Anggota",
+      "seksi": "Divisi Acara Terpadu",
+      "rt": "RT 04",
+      "phone": "-"
+    },
+    {
+      "id": "p-11",
+      "name": "Sandy",
+      "role": "Koordinator Logistik & Perlengkapan",
+      "seksi": "Divisi Operasional Lapangan",
+      "rt": "RT 04",
+      "phone": "-"
+    },
+    {
+      "id": "p-12",
+      "name": "Teddy",
+      "role": "Koordinator Hadiah & Doorprize",
+      "seksi": "Divisi Operasional Lapangan",
+      "rt": "RT 02",
+      "phone": "-"
+    },
+    {
+      "id": "p-13",
+      "name": "Indra",
+      "role": "Anggota",
+      "seksi": "Divisi Operasional Lapangan",
+      "rt": "RT 02",
+      "phone": "-"
+    },
+    {
+      "id": "p-14",
+      "name": "Tatak",
+      "role": "Anggota",
+      "seksi": "Divisi Operasional Lapangan",
+      "rt": "RT 03",
+      "phone": "-"
+    },
+    {
+      "id": "p-15",
+      "name": "Yogo",
+      "role": "Anggota",
+      "seksi": "Divisi Operasional Lapangan",
+      "rt": "RT 04",
+      "phone": "-"
+    },
+    {
+      "id": "p-16",
+      "name": "Dea",
+      "role": "Koordinator Konsumsi",
+      "seksi": "Divisi Operasional Lapangan",
+      "rt": "RT 01",
+      "phone": "-"
+    },
+    {
+      "id": "p-17",
+      "name": "Agung",
+      "role": "Koordinator Keamanan & Kebersihan",
+      "seksi": "Divisi Operasional Lapangan",
+      "rt": "RT 03",
+      "phone": "-"
+    },
+    {
+      "id": "p-18",
+      "name": "Rio",
+      "role": "Anggota",
+      "seksi": "Divisi Operasional Lapangan",
+      "rt": "RT 03",
+      "phone": "-"
+    },
+    {
+      "id": "p-19",
+      "name": "Dita",
+      "role": "Koordinator Humas",
+      "seksi": "Support & Humas",
+      "rt": "RT 01",
+      "phone": "-"
+    },
+    {
+      "id": "p-20",
+      "name": "Ervan",
+      "role": "Koordinator Kemitraan & Dana Usaha",
+      "seksi": "Support & Humas",
+      "rt": "RT 04",
+      "phone": "-"
+    },
+    {
+      "id": "p-21",
+      "name": "Wenny",
+      "role": "Koordinator Dokumentasi & Publikasi",
+      "seksi": "Support & Humas",
+      "rt": "RT 02",
+      "phone": "-"
+    },
+    {
+      "id": "p-22",
+      "name": "Winne",
+      "role": "Anggota",
+      "seksi": "Support & Humas",
+      "rt": "RT 02",
+      "phone": "-"
     }
   ],
   "kegiatan": [
     {
-      "id": "keg-1",
-      "activityCode": "ACT-001",
-      "name": "Lomba Anak & Remaja",
-      "date": "2026-08-09",
-      "time": "08:00 - 16:00 WIB",
-      "location": "Lapangan RW 04",
-      "description": "Perlombaan kemerdekaan kategori anak-anak dan remaja",
-      "status": "SELESAI"
+      "id": "act-01",
+      "code": "ACT-001",
+      "name": "Lomba Anak (01 Agustus s/d 16 Agustus 2026)",
+      "date": "2026-08-01",
+      "time": "08:00 - 15:30 WIB",
+      "location": "Lapangan RW 04 Ngabean",
+      "desc": "Perlombaan tradisional edukatif anak-anak menyemarakkan kemerdekaan.",
+      "pic": "Gunarso",
+      "status": "Terlaksana",
+      "targetAudience": "Anak-anak RT 01-04"
     },
     {
-      "id": "keg-2",
-      "activityCode": "ACT-002",
-      "name": "Malam Tirakatan",
+      "id": "act-02",
+      "code": "ACT-002",
+      "name": "Malam Tirakatan & Lomba Warga",
       "date": "2026-08-16",
-      "time": "19:30 - 22:00 WIB",
-      "location": "Balai RW 04",
-      "description": "Malam tirakatan, doa bersama, dan tumpengan",
-      "status": "SELESAI"
+      "time": "19:30 - 23:30 WIB",
+      "location": "Balai RW 04 Ngabean",
+      "desc": "Doa bersama malam kemerdekaan dan pemotongan tumpeng. Kegiatan setelah Tirakatan (16 Agustus 2026) meliputi: Lomba Ibu-ibu Tebak Gaya, Lomba Bapak-bapak Pukul Paku, dilanjutkan Lomba Remaja Estafet Sarung.",
+      "pic": "Ade Rahmat",
+      "status": "Terlaksana",
+      "targetAudience": "Seluruh Warga RW 04 Ngabean"
     },
     {
-      "id": "keg-3",
-      "activityCode": "ACT-003",
-      "name": "Jalan Sehat & Doorprize",
-      "date": "2026-08-17",
+      "id": "act-03",
+      "code": "ACT-003",
+      "name": "Jalan Sehat & Doorprize Warga",
+      "date": "2026-08-23",
       "time": "06:30 - 11:30 WIB",
       "location": "Rute Keliling RW 04 & Panggung Utama",
-      "description": "Jalan sehat warga RW 04 disertai pembagian doorprize",
-      "status": "SELESAI"
+      "desc": "Jalan sehat bersama dengan dihibur dengan Band Sendang Bunder, dilanjutkan dengan pembagian Hadiah Lomba Anak-anak, lalu acara inti pengundian doorprize jalan sehat.",
+      "pic": "Sandy",
+      "status": "Terlaksana",
+      "targetAudience": "Seluruh Warga & Tokoh Masyarakat"
     },
     {
-      "id": "keg-4",
-      "activityCode": "ACT-004",
-      "name": "Resepsi & Pentas Seni Tarling",
-      "date": "2026-08-22",
-      "time": "19:00 - 23:00 WIB",
-      "location": "Panggung Utama Balai RW 04",
-      "description": "Resepsi penutupan HUT RI, pembagian hadiah, dan pentas seni Tarling",
-      "status": "SELESAI"
+      "id": "act-04",
+      "code": "ACT-004",
+      "name": "Malam Puncak / Resepsi & Hiburan Dangdut",
+      "date": "2026-08-23",
+      "time": "19:00 - 23:30 WIB",
+      "location": "Panggung Utama Balai RW 04 Ngabean",
+      "desc": "Malam puncak / resepsi dengan menampilkan pentas seni tari dari anak-anak dilanjutkan acara utama hiburan dangdut solo organ.",
+      "pic": "Muh Zaenun",
+      "status": "Terlaksana",
+      "targetAudience": "Warga, Tamu Undangan, dan Mitra Sponsor"
     }
   ],
   "rkba": [
     {
       "id": "rkba-01",
+      "item": "Hadiah Lomba Anak",
       "activityCode": "ACT-001",
-      "kegiatanId": "keg-1",
-      "name": "Lomba Anak & Remaja",
-      "seksi": "Seksi Lomba",
+      "seksi": "Divisi Acara Terpadu",
       "qty": 1,
       "unit": "Paket",
-      "price: 1500000,
+      "price": 1500000,
       "total": 1500000,
       "fundingSource": "Kas Utama",
       "status": "Disetujui",
-      "activityStatus": "SELESAI",
-      "isLockedBaseline": true,
-      "notes": "RAB Rp 1.500.000 | Realisasi Riil Rp 2.208.500 (Over Budget - gabungan biaya Buku Utama Rp 1.202.500 & Buku Donasi Rp 1.006.000)",
-      "dateAdded": "2026-07-02"
+      "notes": "Hadiah lomba anak 4 RT"
     },
     {
       "id": "rkba-02",
+      "item": "Sewa Sound System Malam Tirakatan",
       "activityCode": "ACT-002",
-      "kegiatanId": "keg-2",
-      "name": "Sound Tirakat",
-      "seksi": "Perlengkapan",
+      "seksi": "Divisi Acara Terpadu",
       "qty": 1,
       "unit": "Paket",
       "price": 300000,
       "total": 300000,
-      "fundingSource": "Donasi Warga",
+      "fundingSource": "Kas Donatur",
       "status": "Disetujui",
-      "activityStatus": "SELESAI",
-      "isLockedBaseline": true,
-      "notes": "RAB Rp 300.000 | Realisasi Riil Rp 200.000 (Lebih Hemat - dibiayai dari Dana Donasi)",
-      "dateAdded": "2026-07-02"
+      "notes": "Sound system dan lampu tirakatan"
     },
     {
       "id": "rkba-03",
+      "item": "Doorprize & Hadiah Jalan Sehat",
       "activityCode": "ACT-003",
-      "kegiatanId": "keg-3",
-      "name": "Hadiah / Doorprize Jalan Sehat",
-      "seksi": "Seksi Hadiah Dan Doorprize",
+      "seksi": "Divisi Operasional Lapangan",
       "qty": 1,
       "unit": "Paket",
       "price": 4500000,
       "total": 4500000,
       "fundingSource": "Kas Utama",
       "status": "Disetujui",
-      "activityStatus": "SELESAI",
-      "isLockedBaseline": true,
-      "notes": "RAB Rp 4.500.000 | Realisasi Riil Rp 3.374.000 (Lebih Hemat - termasuk pembelian Gelang Semar Rp 597.000)",
-      "dateAdded": "2026-07-02"
+      "notes": "Doorprize perabot grosir, gelang emas Semar"
     },
     {
       "id": "rkba-04",
-      "activityCode": "ACT-004",
-      "kegiatanId": "keg-3",
-      "name": "Konsumsi Jalan Sehat",
-      "seksi": "Konsumsi",
-      "qty": 1,
-      "unit": "Paket",
-      "price": 0,
-      "total": 0,
+      "item": "Konsumsi Jalan Sehat",
+      "activityCode": "ACT-003",
+      "seksi": "Divisi Operasional Lapangan",
+      "qty": 17,
+      "unit": "Dus",
+      "price": 24411,
+      "total": 415000,
       "fundingSource": "Kas Utama",
       "status": "Disetujui",
-      "activityStatus": "SELESAI",
-      "isLockedBaseline": true,
-      "notes": "RAB Rp 0 | Realisasi Riil Rp 550.000 (Temuan: Di RAB awal ditanggung RW, pada realisasi dibayar panitia)",
-      "dateAdded": "2026-07-02"
+      "notes": "Air mineral 17 dus"
     },
     {
       "id": "rkba-05",
-      "activityCode": "ACT-005",
-      "kegiatanId": "keg-3",
-      "name": "Sound Jalan Sehat",
-      "seksi": "Perlengkapan",
+      "item": "Sewa Panggung & Tratak Resepsi",
+      "activityCode": "ACT-004",
+      "seksi": "Divisi Acara Terpadu",
       "qty": 1,
       "unit": "Paket",
-      "price": 0,
-      "total": 0,
-      "fundingSource": "Sponsorship",
+      "price": 1510000,
+      "total": 1510000,
+      "fundingSource": "Kas Utama",
       "status": "Disetujui",
-      "activityStatus": "SELESAI",
-      "isLockedBaseline": true,
-      "notes": "RAB Rp 0 | Realisasi Rp 0 (Ditanggung penuh oleh Pak RW)",
-      "dateAdded": "2026-07-02"
+      "notes": "Total panggung utama dan tratak samping"
     },
     {
       "id": "rkba-06",
-      "activityCode": "ACT-006",
-      "kegiatanId": "keg-3",
-      "name": "Cetak Kupon Jalan Sehat",
-      "seksi": "Sekretaris",
-      "qty": 1,
-      "unit": "Paket",
-      "price": 0,
-      "total": 0,
-      "fundingSource": "Sponsorship",
-      "status": "Disetujui",
-      "activityStatus": "SELESAI",
-      "isLockedBaseline": true,
-      "notes": "RAB Rp 0 | Realisasi Rp 0 (Ada donatur / Ditanggung percetakan mitra)",
-      "dateAdded": "2026-07-02"
-    },
-    {
-      "id": "rkba-07",
-      "activityCode": "ACT-007",
-      "kegiatanId": "keg-4",
-      "name": "Konsumsi 40 box Resepsi",
-      "seksi": "Konsumsi",
-      "qty": 40,
-      "unit": "Box",
-      "price": 12500,
-      "total": 500000,
-      "fundingSource": "Kas Utama",
-      "status": "Disetujui",
-      "activityStatus": "SELESAI",
-      "isLockedBaseline": true,
-      "notes": "RAB Rp 500.000 | Realisasi Riil Rp 500.000 (Sesuai)",
-      "dateAdded": "2026-07-02"
-    },
-    {
-      "id": "rkba-08",
-      "activityCode": "ACT-008",
-      "kegiatanId": "keg-4",
-      "name": "Panggung + Tratak Resepsi",
-      "seksi": "Perlengkapan",
-      "qty": 1,
-      "unit": "Paket",
-      "price": 750000,
-      "total": 750000,
-      "fundingSource": "Kas Utama",
-      "status": "Disetujui",
-      "activityStatus": "SELESAI",
-      "isLockedBaseline": true,
-      "notes": "RAB Rp 750.000 | Realisasi Riil Rp 750.000 (Sesuai - Nego vendor)",
-      "dateAdded": "2026-07-02"
-    },
-    {
-      "id": "rkba-09",
-      "activityCode": "ACT-009",
-      "kegiatanId": "keg-4",
-      "name": "Sound Resepsi",
-      "seksi": "Perlengkapan",
+      "item": "Sound System Resepsi",
+      "activityCode": "ACT-004",
+      "seksi": "Divisi Acara Terpadu",
       "qty": 1,
       "unit": "Paket",
       "price": 1200000,
       "total": 1200000,
       "fundingSource": "Kas Utama",
       "status": "Disetujui",
-      "activityStatus": "SELESAI",
-      "isLockedBaseline": true,
-      "notes": "RAB Rp 1.200.000 | Realisasi Riil Rp 1.200.000 (Sesuai - DP Rp 300.000 + Pelunasan Rp 900.000)",
-      "dateAdded": "2026-07-02"
+      "notes": "DP + Pelunasan sound system resepsi"
+    },
+    {
+      "id": "rkba-07",
+      "item": "Solo Organ & Tarling",
+      "activityCode": "ACT-004",
+      "seksi": "Divisi Acara Terpadu",
+      "qty": 1,
+      "unit": "Paket",
+      "price": 1300000,
+      "total": 1300000,
+      "fundingSource": "Kas Utama",
+      "status": "Disetujui",
+      "notes": "Honor seni Tarling netto (sisa 200k masuk donasi)"
+    },
+    {
+      "id": "rkba-08",
+      "item": "Konsumsi Malam Resepsi",
+      "activityCode": "ACT-004",
+      "seksi": "Divisi Operasional Lapangan",
+      "qty": 1,
+      "unit": "Paket",
+      "price": 374000,
+      "total": 374000,
+      "fundingSource": "Kas Utama",
+      "status": "Disetujui",
+      "notes": "40 box nasi dan konsumsi tamu"
+    },
+    {
+      "id": "rkba-09",
+      "item": "Make Up & Perlengkapan Tari Anak",
+      "activityCode": "ACT-004",
+      "seksi": "Divisi Acara Terpadu",
+      "qty": 1,
+      "unit": "Paket",
+      "price": 196000,
+      "total": 196000,
+      "fundingSource": "Kas Donatur",
+      "status": "Disetujui",
+      "notes": "Make up (181k) + Aksesoris (15k), kostum swadaya"
     },
     {
       "id": "rkba-10",
-      "activityCode": "ACT-010",
-      "kegiatanId": "keg-4",
-      "name": "Tarling / Tarting Resepsi",
-      "seksi": "Seksi Pentas Seni",
+      "item": "Cetak Banner MMT 4x5 meter",
+      "activityCode": "ACT-001",
+      "seksi": "BPH & Kesekretariatan",
       "qty": 1,
-      "unit": "Grup",
-      "price": 1500000,
-      "total": 1500000,
+      "unit": "Paket",
+      "price": 200000,
+      "total": 200000,
       "fundingSource": "Kas Utama",
       "status": "Disetujui",
-      "activityStatus": "SELESAI",
-      "isLockedBaseline": true,
-      "notes": "RAB Rp 1.500.000 | Realisasi Riil Rp 1.500.000 (Sesuai)",
-      "dateAdded": "2026-07-02"
+      "notes": "MMT backdrop panggung dan konsumsi pasang"
     },
     {
       "id": "rkba-11",
-      "activityCode": "ACT-011",
-      "name": "MMT / Banner",
-      "seksi": "Seksi Dokumentasi dan Publikasi",
-      "qty": 1,
-      "unit": "Paket",
-      "price": 400000,
-      "total": 400000,
-      "fundingSource": "Kas Utama",
-      "status": "Disetujui",
-      "activityStatus": "SELESAI",
-      "isLockedBaseline": true,
-      "notes": "RAB Rp 400.000 | Realisasi Riil Rp 245.000 (1 MMT Berbayar Rp 245.000 + 1 MMT dari donatur/Gratis)",
-      "dateAdded": "2026-07-02"
-    },
-    {
-      "id": "rkba-12",
-      "activityCode": "ACT-012",
-      "name": "Proposal Kegiatan",
-      "seksi": "Sekretaris",
+      "item": "Cetak Proposal & Dokumen",
+      "activityCode": "ACT-001",
+      "seksi": "BPH & Kesekretariatan",
       "qty": 1,
       "unit": "Paket",
       "price": 258000,
       "total": 258000,
       "fundingSource": "Kas Utama",
       "status": "Disetujui",
-      "activityStatus": "SELESAI",
-      "isLockedBaseline": true,
-      "notes": "RAB Rp 258.000 | Realisasi Riil Rp 258.000 (Sesuai realisasi cetak)",
-      "dateAdded": "2026-07-02"
+      "notes": "Penggandaan proposal dan jilid"
+    },
+    {
+      "id": "rkba-12",
+      "item": "Tali ID Card & Cetak Atribut",
+      "activityCode": "ACT-001",
+      "seksi": "BPH & Kesekretariatan",
+      "qty": 1,
+      "unit": "Paket",
+      "price": 65000,
+      "total": 65000,
+      "fundingSource": "Kas Utama",
+      "status": "Disetujui",
+      "notes": "Print juknis (6k), print tali (23k), tali ID (36k)"
     },
     {
       "id": "rkba-13",
-      "activityCode": "ACT-013",
-      "name": "Trashbag & ID Card",
-      "seksi": "Humas",
+      "item": "Biaya Tak Terduga & Logistik Lapangan",
+      "activityCode": "ACT-004",
+      "seksi": "Divisi Operasional Lapangan",
       "qty": 1,
       "unit": "Paket",
-      "price": 0,
-      "total": 0,
-      "fundingSource": "Sponsorship",
+      "price": 609000,
+      "total": 609000,
+      "fundingSource": "Kas Donatur",
       "status": "Disetujui",
-      "activityStatus": "SELESAI",
-      "isLockedBaseline": true,
-      "notes": "RAB Rp 0 | Realisasi Rp 0 (Ditanggung panitia/donatur)",
-      "dateAdded": "2026-07-02"
+      "notes": "Konsumsi bongkar panggung, bambu umbul-umbul, dekor, sound operator"
     }
   ],
   "keuangan": [
     {
-      "id": "trx-bu-01",
-      "type": "Masuk",
+      "id": "tx-k1-01",
       "date": "2026-07-18",
-      "category": "Dana Talangan / Pinjaman",
-      "amount": 10000000,
-      "notes": "[Buku Utama] Penerimaan Kas Pamsimas (TF): Rp 8.000.000 (Talangan 4 RT @ Rp 2 Jt) + Rp 2.000.000 (Sumbangan/Donasi Pamsimas)",
-      "paymentMethod": "Transfer",
-      "proofStatus": "Lengkap",
-      "proofNumber": "BKM-BU-01",
-      "vendor": "Pengelola Pamsimas RW 04"
-    },
-    {
-      "id": "trx-bu-02",
-      "type": "Keluar",
-      "date": "2026-07-27",
-      "category": "Sewa Sound System",
-      "amount": 300000,
-      "notes": "[Buku Utama] DP Sound (TF)",
-      "refId": "rkba-09",
-      "activityId": "keg-4",
-      "activityName": "Resepsi & Pentas Seni Tarling",
-      "seksi": "Perlengkapan",
-      "paymentMethod": "Transfer",
-      "proofStatus": "Lengkap",
-      "proofNumber": "BKK-BU-01",
-      "vendor": "Vendor Audio Sound"
-    },
-    {
-      "id": "trx-bu-03",
-      "type": "Keluar",
-      "date": "2026-07-29",
-      "category": "Cetak & Jilid Proposal",
-      "amount": 258000,
-      "notes": "[Buku Utama] Cetak Proposal (TF)",
-      "refId": "rkba-12",
-      "seksi": "Sekretaris",
-      "paymentMethod": "Transfer",
-      "proofStatus": "Lengkap",
-      "proofNumber": "BKK-BU-02",
-      "vendor": "Percetakan & Fotocopy"
-    },
-    {
-      "id": "trx-bu-04",
-      "type": "Keluar",
-      "date": "2026-08-01",
-      "category": "Perlengkapan Lomba",
-      "amount": 35000,
-      "notes": "[Buku Utama] Perlengkapan lomba anak (Rafia, Pluit, kapur)",
-      "refId": "rkba-01",
-      "activityId": "keg-1",
-      "activityName": "Lomba Anak & Remaja",
-      "seksi": "Seksi Lomba",
-      "paymentMethod": "Tunai",
-      "proofStatus": "Lengkap",
-      "proofNumber": "BKK-BU-03",
-      "vendor": "Toko Alat Tulis"
-    },
-    {
-      "id": "trx-bu-05",
-      "type": "Keluar",
-      "date": "2026-08-01",
-      "category": "Perlengkapan Lomba",
-      "amount": 47000,
-      "notes": "[Buku Utama] Perlengkapan lomba (Air minum kerupuk)",
-      "refId": "rkba-01",
-      "activityId": "keg-1",
-      "activityName": "Lomba Anak & Remaja",
-      "seksi": "Seksi Lomba",
-      "paymentMethod": "Tunai",
-      "proofStatus": "Lengkap",
-      "proofNumber": "BKK-BU-04",
-      "vendor": "Warung Kelontong"
-    },
-    {
-      "id": "trx-bu-06",
-      "type": "Keluar",
-      "date": "2026-08-01",
-      "category": "Administrasi & Print",
-      "amount": 6000,
-      "notes": "[Buku Utama] Print naskah lomba",
-      "refId": "rkba-01",
-      "activityId": "keg-1",
-      "activityName": "Lomba Anak & Remaja",
-      "seksi": "Sekretaris",
-      "paymentMethod": "Tunai",
-      "proofStatus": "Lengkap",
-      "proofNumber": "BKK-BU-05",
-      "vendor": "Rental Komputer"
-    },
-    {
-      "id": "trx-bu-07",
-      "type": "Keluar",
-      "date": "2026-08-02",
-      "category": "Konsumsi Panitia / Lomba",
-      "amount": 30000,
-      "notes": "[Buku Utama] Es teh lomba",
-      "refId": "rkba-01",
-      "activityId": "keg-1",
-      "activityName": "Lomba Anak & Remaja",
-      "seksi": "Konsumsi",
-      "paymentMethod": "Tunai",
-      "proofStatus": "Lengkap",
-      "proofNumber": "BKK-BU-06",
-      "vendor": "Warung Es"
-    },
-    {
-      "id": "trx-bu-08",
-      "type": "Keluar",
-      "date": "2026-08-02",
-      "category": "Perlengkapan Lomba",
-      "amount": 50000,
-      "notes": "[Buku Utama] Perlengkapan lomba anak (Tali & Cup minum)",
-      "refId": "rkba-01",
-      "activityId": "keg-1",
-      "activityName": "Lomba Anak & Remaja",
-      "seksi": "Seksi Lomba",
-      "paymentMethod": "Tunai",
-      "proofStatus": "Lengkap",
-      "proofNumber": "BKK-BU-07",
-      "vendor": "Toko Plastik"
-    },
-    {
-      "id": "trx-bu-09",
-      "type": "Keluar",
-      "date": "2026-08-08",
-      "category": "Operasional & Transport",
-      "amount": 160000,
-      "notes": "[Buku Utama] Makan + Transport belanja doorprize",
-      "seksi": "Humas",
-      "paymentMethod": "Tunai",
-      "proofStatus": "Lengkap",
-      "proofNumber": "BKK-BU-08",
-      "vendor": "Panitia Belanja"
-    },
-    {
-      "id": "trx-bu-10",
-      "type": "Keluar",
-      "date": "2026-08-08",
-      "category": "Belanja Doorprize",
-      "amount": 834000,
-      "notes": "[Buku Utama] Belanja Hadiah jalan sehat (Alifa grosir)",
-      "refId": "rkba-03",
-      "activityId": "keg-3",
-      "activityName": "Jalan Sehat & Doorprize",
-      "seksi": "Seksi Hadiah Dan Doorprize",
-      "paymentMethod": "Tunai",
-      "proofStatus": "Lengkap",
-      "proofNumber": "BKK-BU-09",
-      "vendor": "Alifa Grosir"
-    },
-    {
-      "id": "trx-bu-11",
-      "type": "Keluar",
-      "date": "2026-08-08",
-      "category": "Belanja Doorprize",
-      "amount": 235500,
-      "notes": "[Buku Utama] Belanja Hadiah jalan sehat (Pusat grosir)",
-      "refId": "rkba-03",
-      "activityId": "keg-3",
-      "activityName": "Jalan Sehat & Doorprize",
-      "seksi": "Seksi Hadiah Dan Doorprize",
-      "paymentMethod": "Tunai",
-      "proofStatus": "Lengkap",
-      "proofNumber": "BKK-BU-10",
-      "vendor": "Pusat Grosir"
-    },
-    {
-      "id": "trx-bu-12",
-      "type": "Keluar",
-      "date": "2026-08-08",
-      "category": "Belanja Doorprize",
-      "amount": 967000,
-      "notes": "[Buku Utama] Belanja Hadiah jalan sehat (Delamas)",
-      "refId": "rkba-03",
-      "activityId": "keg-3",
-      "activityName": "Jalan Sehat & Doorprize",
-      "seksi": "Seksi Hadiah Dan Doorprize",
-      "paymentMethod": "Tunai",
-      "proofStatus": "Lengkap",
-      "proofNumber": "BKK-BU-11",
-      "vendor": "Toko Delamas"
-    },
-    {
-      "id": "trx-bu-13",
-      "type": "Keluar",
-      "date": "2026-08-08",
-      "category": "Belanja Doorprize",
-      "amount": 740500,
-      "notes": "[Buku Utama] Belanja Hadiah jalan sehat (Lainnya)",
-      "refId": "rkba-03",
-      "activityId": "keg-3",
-      "activityName": "Jalan Sehat & Doorprize",
-      "seksi": "Seksi Hadiah Dan Doorprize",
-      "paymentMethod": "Tunai",
-      "proofStatus": "Lengkap",
-      "proofNumber": "BKK-BU-12",
-      "vendor": "Mitra Toko Perabot"
-    },
-    {
-      "id": "trx-bu-14",
-      "type": "Keluar",
-      "date": "2026-08-08",
-      "category": "Belanja Doorprize",
-      "amount": 597000,
-      "notes": "[Buku Utama] CO Gelang Semar (Hadiah Utama Jalan Sehat)",
-      "refId": "rkba-03",
-      "activityId": "keg-3",
-      "activityName": "Jalan Sehat & Doorprize",
-      "seksi": "Seksi Hadiah Dan Doorprize",
-      "paymentMethod": "Transfer",
-      "proofStatus": "Lengkap",
-      "proofNumber": "BKK-BU-13",
-      "vendor": "Semar Nusantara"
-    },
-    {
-      "id": "trx-bu-15",
-      "type": "Keluar",
-      "date": "2026-08-10",
-      "category": "Hadiah Lomba",
-      "amount": 309000,
-      "notes": "[Buku Utama] Belanja hadiah lomba anak Co shopee",
-      "refId": "rkba-01",
-      "activityId": "keg-1",
-      "activityName": "Lomba Anak & Remaja",
-      "seksi": "Seksi Lomba",
-      "paymentMethod": "Transfer",
-      "proofStatus": "Lengkap",
-      "proofNumber": "BKK-BU-14",
-      "vendor": "Shopee Marketplace"
-    },
-    {
-      "id": "trx-bu-16",
-      "type": "Keluar",
-      "date": "2026-08-13",
-      "category": "Hadiah Lomba",
-      "amount": 149000,
-      "notes": "[Buku Utama] Belanja Jajan hadiah lomba anak (mas out)",
-      "refId": "rkba-01",
-      "activityId": "keg-1",
-      "activityName": "Lomba Anak & Remaja",
-      "seksi": "Seksi Lomba",
-      "paymentMethod": "Tunai",
-      "proofStatus": "Lengkap",
-      "proofNumber": "BKK-BU-15",
-      "vendor": "Toko Snack Mas Out"
-    },
-    {
-      "id": "trx-bu-17",
-      "type": "Keluar",
-      "date": "2026-08-14",
-      "category": "Perlengkapan Lomba",
-      "amount": 187500,
-      "notes": "[Buku Utama] Belanja perlengkapan lomba (spon, print, lem, dll)",
-      "refId": "rkba-01",
-      "activityId": "keg-1",
-      "activityName": "Lomba Anak & Remaja",
-      "seksi": "Seksi Lomba",
-      "paymentMethod": "Tunai",
-      "proofStatus": "Lengkap",
-      "proofNumber": "BKK-BU-16",
-      "vendor": "Toko Bahan Prakarya"
-    },
-    {
-      "id": "trx-bu-18",
-      "type": "Keluar",
-      "date": "2026-08-15",
-      "category": "Perlengkapan",
-      "amount": 12000,
-      "notes": "[Buku Utama] Solasi",
-      "seksi": "Perlengkapan",
-      "paymentMethod": "Tunai",
-      "proofStatus": "Lengkap",
-      "proofNumber": "BKK-BU-17",
-      "vendor": "Fotocopy"
-    },
-    {
-      "id": "trx-bu-19",
-      "type": "Keluar",
-      "date": "2026-08-16",
-      "category": "Administrasi & Perlengkapan",
-      "amount": 23000,
-      "notes": "[Buku Utama] Print + beli tali",
-      "seksi": "Sekretaris",
-      "paymentMethod": "Tunai",
-      "proofStatus": "Lengkap",
-      "proofNumber": "BKK-BU-18",
-      "vendor": "Rental & Toko Tali"
-    },
-    {
-      "id": "trx-bu-20",
-      "type": "Keluar",
-      "date": "2026-08-16",
-      "category": "Sewa Panggung & Tratak",
-      "amount": 750000,
-      "notes": "[Buku Utama] Panggung + tratak",
-      "refId": "rkba-08",
-      "activityId": "keg-4",
-      "activityName": "Resepsi & Pentas Seni Tarling",
-      "seksi": "Perlengkapan",
-      "paymentMethod": "Tunai",
-      "proofStatus": "Lengkap",
-      "proofNumber": "BKK-BU-19",
-      "vendor": "Tenda Berkah"
-    },
-    {
-      "id": "trx-bu-21",
-      "type": "Keluar",
-      "date": "2026-08-16",
-      "category": "Pentas Seni Tarling",
-      "amount": 1500000,
-      "notes": "[Buku Utama] Tarting / Honor grup seni Tarling",
-      "refId": "rkba-10",
-      "activityId": "keg-4",
-      "activityName": "Resepsi & Pentas Seni Tarling",
-      "seksi": "Seksi Pentas Seni",
-      "paymentMethod": "Tunai",
-      "proofStatus": "Lengkap",
-      "proofNumber": "BKK-BU-20",
-      "vendor": "Grup Tarling Nada Kencana"
-    },
-    {
-      "id": "trx-bu-22",
-      "type": "Keluar",
-      "date": "2026-08-16",
-      "category": "Sewa Sound System",
-      "amount": 900000,
-      "notes": "[Buku Utama] Pelunasan sound",
-      "refId": "rkba-09",
-      "activityId": "keg-4",
-      "activityName": "Resepsi & Pentas Seni Tarling",
-      "seksi": "Perlengkapan",
-      "paymentMethod": "Tunai",
-      "proofStatus": "Lengkap",
-      "proofNumber": "BKK-BU-21",
-      "vendor": "Vendor Audio Sound"
-    },
-    {
-      "id": "trx-bu-23",
-      "type": "Keluar",
-      "date": "2026-08-16",
-      "category": "Konsumsi Resepsi",
-      "amount": 500000,
-      "notes": "[Buku Utama] Konsumsi panitia malam resepsi (40 box)",
-      "refId": "rkba-07",
-      "activityId": "keg-4",
-      "activityName": "Resepsi & Pentas Seni Tarling",
-      "seksi": "Konsumsi",
-      "paymentMethod": "Tunai",
-      "proofStatus": "Lengkap",
-      "proofNumber": "BKK-BU-22",
-      "vendor": "Katering Ibu RT 02"
-    },
-    {
-      "id": "trx-bu-24",
-      "type": "Keluar",
-      "date": "2026-08-16",
-      "category": "Konsumsi",
-      "amount": 38000,
-      "notes": "[Buku Utama] Cup plastik",
-      "seksi": "Konsumsi",
-      "paymentMethod": "Tunai",
-      "proofStatus": "Lengkap",
-      "proofNumber": "BKK-BU-23",
-      "vendor": "Toko Plastik"
-    },
-    {
-      "id": "trx-bu-25",
-      "type": "Keluar",
-      "date": "2026-08-16",
-      "category": "Hadiah Lomba",
-      "amount": 257000,
-      "notes": "[Buku Utama] Belanja hadiah Jabutan (Sesi 1)",
-      "refId": "rkba-01",
-      "activityId": "keg-1",
-      "activityName": "Lomba Anak & Remaja",
-      "seksi": "Seksi Lomba",
-      "paymentMethod": "Tunai",
-      "proofStatus": "Lengkap",
-      "proofNumber": "BKK-BU-24",
-      "vendor": "Toko Mainan"
-    },
-    {
-      "id": "trx-bu-26",
-      "type": "Keluar",
-      "date": "2026-08-16",
-      "category": "Hadiah Lomba",
-      "amount": 319000,
-      "notes": "[Buku Utama] Belanja hadiah Jabutan (Sesi 2)",
-      "refId": "rkba-01",
-      "activityId": "keg-1",
-      "activityName": "Lomba Anak & Remaja",
-      "seksi": "Seksi Lomba",
-      "paymentMethod": "Tunai",
-      "proofStatus": "Lengkap",
-      "proofNumber": "BKK-BU-25",
-      "vendor": "Toko Mainan"
-    },
-    {
-      "id": "trx-bu-27",
-      "type": "Keluar",
-      "date": "2026-08-16",
-      "category": "Konsumsi Jalan Sehat",
-      "amount": 550000,
-      "notes": "[Buku Utama] Konsumsi jalan sehat (Realisasi dibayar kas panitia)",
-      "refId": "rkba-04",
-      "activityId": "keg-3",
-      "activityName": "Jalan Sehat & Doorprize",
-      "seksi": "Konsumsi",
-      "paymentMethod": "Tunai",
-      "proofStatus": "Lengkap",
-      "proofNumber": "BKK-BU-26",
-      "vendor": "Katering Snack Sehat"
-    },
-    {
-      "id": "trx-bu-28",
-      "type": "Keluar",
-      "date": "2026-08-16",
-      "category": "Cetak MMT & Banner",
-      "amount": 245000,
-      "notes": "[Buku Utama] MMT (1 MMT Berbayar Rp 245rb, 1 MMT gratis donatur)",
-      "refId": "rkba-11",
-      "seksi": "Seksi Dokumentasi dan Publikasi",
-      "paymentMethod": "Tunai",
-      "proofStatus": "Lengkap",
-      "proofNumber": "BKK-BU-27",
-      "vendor": "Percetakan Digital Printing"
-    },
-    {
-      "id": "trx-bd-01",
+      "desc": "Penerimaan Dana Talangan Pamsimas",
       "type": "Masuk",
-      "date": "2026-07-20",
-      "category": "Donasi Tunai",
-      "amount": 300000,
-      "notes": "[Buku Donasi] Donasi Mas Agung (TF)",
-      "paymentMethod": "Transfer",
-      "proofStatus": "Lengkap",
-      "proofNumber": "BKM-BD-01",
-      "vendor": "Mas Agung"
+      "amount": 8000000,
+      "seksi": "BPH & Kesekretariatan",
+      "recipient": "Bendahara",
+      "subAkun": "Penerimaan",
+      "fundingSource": "Kas Utama",
+      "status": "Lunas",
+      "docRef": "BKM-BU-01",
+      "notes": "Dana Talangan 4 RT @ Rp 2.000.000"
     },
     {
-      "id": "trx-bd-02",
+      "id": "tx-k1-02",
+      "date": "2026-07-18",
+      "desc": "Sumbangan Pamsimas",
       "type": "Masuk",
-      "date": "2026-08-09",
-      "category": "Donasi Tunai",
-      "amount": 200000,
-      "notes": "[Buku Donasi] Donasi Jihan (Cash)",
-      "paymentMethod": "Tunai",
-      "proofStatus": "Lengkap",
-      "proofNumber": "BKM-BD-02",
-      "vendor": "Mbak Jihan"
-    },
-    {
-      "id": "trx-bd-03",
-      "type": "Masuk",
-      "date": "2026-08-06",
-      "category": "Donasi Tunai & Barang",
       "amount": 2000000,
-      "notes": "[Buku Donasi] Donasi Prettywear (Cash Rp 2.000.000 + 1 Unit Mesin Cuci Doorprize)",
-      "paymentMethod": "Tunai",
-      "proofStatus": "Lengkap",
-      "proofNumber": "BKM-BD-03",
-      "vendor": "Prettywear Store"
+      "seksi": "BPH & Kesekretariatan",
+      "recipient": "Bendahara",
+      "subAkun": "Penerimaan",
+      "fundingSource": "Kas Utama",
+      "status": "Lunas",
+      "docRef": "BKM-BU-02",
+      "notes": "Sumbangan sukarela murni Pamsimas RW 04"
     },
     {
-      "id": "trx-bd-04",
-      "type": "Masuk",
-      "date": "2026-08-12",
-      "category": "Donasi Tunai",
-      "amount": 500000,
-      "notes": "[Buku Donasi] Donasi Selo Agung (Cash)",
-      "paymentMethod": "Tunai",
-      "proofStatus": "Lengkap",
-      "proofNumber": "BKM-BD-04",
-      "vendor": "Selo Agung"
-    },
-    {
-      "id": "trx-bd-05",
-      "type": "Masuk",
-      "date": "2026-08-12",
-      "category": "Donasi Tunai",
-      "amount": 200000,
-      "notes": "[Buku Donasi] Donasi Mas Adi (Cash)",
-      "paymentMethod": "Tunai",
-      "proofStatus": "Lengkap",
-      "proofNumber": "BKM-BD-05",
-      "vendor": "Mas Adi"
-    },
-    {
-      "id": "trx-bd-06",
+      "id": "tx-k1-03",
+      "date": "2026-07-27",
+      "desc": "DP Sound (TF)",
       "type": "Keluar",
+      "amount": 300000,
+      "seksi": "Divisi Acara Terpadu",
+      "recipient": "Vendor Audio Sound",
+      "subAkun": "Sewa Alat & Panggung",
+      "fundingSource": "Kas Utama",
+      "status": "Lunas",
+      "docRef": "BKK-BU-01",
+      "notes": "DP Sound system resepsi"
+    },
+    {
+      "id": "tx-k1-04",
+      "date": "2026-07-29",
+      "desc": "Cetak Proposal (TF)",
+      "type": "Keluar",
+      "amount": 258000,
+      "seksi": "BPH & Kesekretariatan",
+      "recipient": "Percetakan & Fotocopy",
+      "subAkun": "Administrasi",
+      "fundingSource": "Kas Utama",
+      "status": "Lunas",
+      "docRef": "BKK-BU-02",
+      "notes": "Realisasi cetak proposal & jilid"
+    },
+    {
+      "id": "tx-k1-05",
+      "date": "2026-08-01",
+      "desc": "Perlengkapan lomba anak (Rafia, peluit, kapur)",
+      "type": "Keluar",
+      "amount": 35000,
+      "seksi": "Divisi Operasional Lapangan",
+      "recipient": "Toko Alat Tulis",
+      "subAkun": "Perlengkapan Lomba",
+      "fundingSource": "Kas Utama",
+      "status": "Lunas",
+      "docRef": "BKK-BU-03",
+      "notes": "Perlengkapan teknis lomba anak"
+    },
+    {
+      "id": "tx-k1-06",
+      "date": "2026-08-01",
+      "desc": "Perlengkapan lomba (Air minum kerupuk)",
+      "type": "Keluar",
+      "amount": 47000,
+      "seksi": "Divisi Operasional Lapangan",
+      "recipient": "Warung Kelontong",
+      "subAkun": "Perlengkapan Lomba",
+      "fundingSource": "Kas Utama",
+      "status": "Lunas",
+      "docRef": "BKK-BU-04",
+      "notes": "Air minum dan kerupuk lomba anak"
+    },
+    {
+      "id": "tx-k1-07",
+      "date": "2026-08-01",
+      "desc": "Print",
+      "type": "Keluar",
+      "amount": 6000,
+      "seksi": "BPH & Kesekretariatan",
+      "recipient": "Rental Komputer",
+      "subAkun": "Administrasi",
+      "fundingSource": "Kas Utama",
+      "status": "Lunas",
+      "docRef": "BKK-BU-05",
+      "notes": "Print naskah dan juknis"
+    },
+    {
+      "id": "tx-k1-08",
+      "date": "2026-08-02",
+      "desc": "Es teh lomba",
+      "type": "Keluar",
+      "amount": 30000,
+      "seksi": "Divisi Operasional Lapangan",
+      "recipient": "Warung Es",
+      "subAkun": "Konsumsi Lapangan",
+      "fundingSource": "Kas Utama",
+      "status": "Lunas",
+      "docRef": "BKK-BU-06",
+      "notes": "Konsumsi panitia lomba lapangan"
+    },
+    {
+      "id": "tx-k1-09",
+      "date": "2026-08-02",
+      "desc": "Perlengkapan lomba anak (Tali & cup minum)",
+      "type": "Keluar",
+      "amount": 50000,
+      "seksi": "Divisi Operasional Lapangan",
+      "recipient": "Toko Plastik",
+      "subAkun": "Perlengkapan Lomba",
+      "fundingSource": "Kas Utama",
+      "status": "Lunas",
+      "docRef": "BKK-BU-07",
+      "notes": "Tali dan cup minum lomba anak"
+    },
+    {
+      "id": "tx-k1-10",
+      "date": "2026-08-08",
+      "desc": "Makan + Transport",
+      "type": "Keluar",
+      "amount": 160000,
+      "seksi": "Divisi Operasional Lapangan",
+      "recipient": "Panitia Belanja",
+      "subAkun": "Konsumsi Lapangan",
+      "fundingSource": "Kas Utama",
+      "status": "Lunas",
+      "docRef": "BKK-BU-08",
+      "notes": "Makan & transport panitia belanja doorprize"
+    },
+    {
+      "id": "tx-k1-11",
+      "date": "2026-08-08",
+      "desc": "Belanja Hadiah jalan sehat (Alifa grosir)",
+      "type": "Keluar",
+      "amount": 834000,
+      "seksi": "Divisi Operasional Lapangan",
+      "recipient": "Alifa Grosir",
+      "subAkun": "Hadiah & Doorprize",
+      "fundingSource": "Kas Utama",
+      "status": "Lunas",
+      "docRef": "BKK-BU-09",
+      "notes": "Belanja hadiah doorprize grosir"
+    },
+    {
+      "id": "tx-k1-12",
+      "date": "2026-08-08",
+      "desc": "Belanja Hadiah jalan sehat (Pusat grosir)",
+      "type": "Keluar",
+      "amount": 235500,
+      "seksi": "Divisi Operasional Lapangan",
+      "recipient": "Pusat Grosir",
+      "subAkun": "Hadiah & Doorprize",
+      "fundingSource": "Kas Utama",
+      "status": "Lunas",
+      "docRef": "BKK-BU-10",
+      "notes": "Belanja hadiah doorprize pusat grosir"
+    },
+    {
+      "id": "tx-k1-13",
+      "date": "2026-08-08",
+      "desc": "Belanja Hadiah jalan sehat (Delamas)",
+      "type": "Keluar",
+      "amount": 967000,
+      "seksi": "Divisi Operasional Lapangan",
+      "recipient": "Toko Delamas",
+      "subAkun": "Hadiah & Doorprize",
+      "fundingSource": "Kas Utama",
+      "status": "Lunas",
+      "docRef": "BKK-BU-11",
+      "notes": "Belanja perabot hadiah doorprize"
+    },
+    {
+      "id": "tx-k1-14",
+      "date": "2026-08-08",
+      "desc": "Belanja Hadiah jalan sehat (Tambahan/Lainnya)",
+      "type": "Keluar",
+      "amount": 740500,
+      "seksi": "Divisi Operasional Lapangan",
+      "recipient": "Mitra Toko Perabot",
+      "subAkun": "Hadiah & Doorprize",
+      "fundingSource": "Kas Utama",
+      "status": "Lunas",
+      "docRef": "BKK-BU-12",
+      "notes": "Belanja perabot & peralatan rumah tangga"
+    },
+    {
+      "id": "tx-k1-15",
+      "date": "2026-08-13",
+      "desc": "Belanja jajan hadiah lomba anak (mas out)",
+      "type": "Keluar",
+      "amount": 149000,
+      "seksi": "Divisi Operasional Lapangan",
+      "recipient": "Toko Snack Mas Out",
+      "subAkun": "Hadiah & Doorprize",
+      "fundingSource": "Kas Utama",
+      "status": "Lunas",
+      "docRef": "BKK-BU-13",
+      "notes": "Jajan bingkisan hadiah lomba anak"
+    },
+    {
+      "id": "tx-k1-16",
+      "date": "2026-08-10",
+      "desc": "Belanja hadiah lomba anak co shopee",
+      "type": "Keluar",
+      "amount": 309000,
+      "seksi": "Divisi Operasional Lapangan",
+      "recipient": "Shopee Marketplace",
+      "subAkun": "Hadiah & Doorprize",
+      "fundingSource": "Kas Utama",
+      "status": "Lunas",
+      "docRef": "BKK-BU-14",
+      "notes": "Paket hadiah mainan edukasi anak via Shopee"
+    },
+    {
+      "id": "tx-k1-17",
+      "date": "2026-08-14",
+      "desc": "Belanja perlengkapan lomba (Spon, print, lem tembak, pita, kertas, double tape, konsumsi, cup minum)",
+      "type": "Keluar",
+      "amount": 187500,
+      "seksi": "Divisi Operasional Lapangan",
+      "recipient": "Toko Bahan Prakarya",
+      "subAkun": "Perlengkapan Lomba",
+      "fundingSource": "Kas Utama",
+      "status": "Lunas",
+      "docRef": "BKK-BU-15",
+      "notes": "Perlengkapan estafet & lomba lapangan"
+    },
+    {
+      "id": "tx-k1-18",
+      "date": "2026-08-08",
+      "desc": "CO selang semar",
+      "type": "Keluar",
+      "amount": 597000,
+      "seksi": "Divisi Operasional Lapangan",
+      "recipient": "Semar Nusantara",
+      "subAkun": "Hadiah & Doorprize",
+      "fundingSource": "Kas Utama",
+      "status": "Lunas",
+      "docRef": "BKK-BU-16",
+      "notes": "Gelang emas Semar Nusantara (Hadiah Utama)"
+    },
+    {
+      "id": "tx-k1-19",
       "date": "2026-08-16",
-      "category": "Hadiah Lomba",
-      "amount": 225000,
-      "notes": "[Buku Donasi] Hadiah uang tunai lomba remaja",
-      "refId": "rkba-01",
-      "activityId": "keg-1",
-      "activityName": "Lomba Anak & Remaja",
-      "seksi": "Seksi Lomba",
-      "paymentMethod": "Tunai",
-      "proofStatus": "Lengkap",
-      "proofNumber": "BKK-BD-01",
-      "vendor": "Pemenang Lomba Remaja"
+      "desc": "Print + beli tali",
+      "type": "Keluar",
+      "amount": 23000,
+      "seksi": "BPH & Kesekretariatan",
+      "recipient": "Rental & Toko Tali",
+      "subAkun": "Administrasi",
+      "fundingSource": "Kas Utama",
+      "status": "Lunas",
+      "docRef": "BKK-BU-17",
+      "notes": "Print lampiran dan tali pengikat"
     },
     {
-      "id": "trx-bd-07",
+      "id": "tx-k1-20",
+      "date": "2026-08-15",
+      "desc": "Solasi + dll",
       "type": "Keluar",
+      "amount": 12000,
+      "seksi": "Divisi Operasional Lapangan",
+      "recipient": "Fotocopy",
+      "subAkun": "Perlengkapan Lomba",
+      "fundingSource": "Kas Utama",
+      "status": "Lunas",
+      "docRef": "BKK-BU-18",
+      "notes": "Solasi dan perekat teknis lomba"
+    },
+    {
+      "id": "tx-k1-21",
       "date": "2026-08-16",
-      "category": "Sewa Sound System",
+      "desc": "Cup plastik",
+      "type": "Keluar",
+      "amount": 38000,
+      "seksi": "Divisi Operasional Lapangan",
+      "recipient": "Toko Plastik",
+      "subAkun": "Perlengkapan Lomba",
+      "fundingSource": "Kas Utama",
+      "status": "Lunas",
+      "docRef": "BKK-BU-19",
+      "notes": "Cup plastik untuk game panggung dan lomba"
+    },
+    {
+      "id": "tx-k1-22",
+      "date": "2026-08-16",
+      "desc": "Belanja hadiah jabutan 1",
+      "type": "Keluar",
+      "amount": 257000,
+      "seksi": "Divisi Operasional Lapangan",
+      "recipient": "Toko Mainan",
+      "subAkun": "Hadiah & Doorprize",
+      "fundingSource": "Kas Utama",
+      "status": "Lunas",
+      "docRef": "BKK-BU-20",
+      "notes": "Hadiah game jabutan tirakatan sesi 1"
+    },
+    {
+      "id": "tx-k1-23",
+      "date": "2026-08-16",
+      "desc": "Belanja hadiah jabutan 2",
+      "type": "Keluar",
+      "amount": 319000,
+      "seksi": "Divisi Operasional Lapangan",
+      "recipient": "Toko Mainan",
+      "subAkun": "Hadiah & Doorprize",
+      "fundingSource": "Kas Utama",
+      "status": "Lunas",
+      "docRef": "BKK-BU-21",
+      "notes": "Hadiah game jabutan tirakatan sesi 2"
+    },
+    {
+      "id": "tx-k1-24",
+      "date": "2026-08-22",
+      "desc": "Konsumsi jalan sehat air mineral 17 dus",
+      "type": "Keluar",
+      "amount": 415000,
+      "seksi": "Divisi Operasional Lapangan",
+      "recipient": "Agen Air Mineral",
+      "subAkun": "Konsumsi Lapangan",
+      "fundingSource": "Kas Utama",
+      "status": "Lunas",
+      "docRef": "BKK-BU-22",
+      "notes": "Air mineral 17 dus untuk peserta jalan sehat"
+    },
+    {
+      "id": "tx-k1-25",
+      "date": "2026-08-22",
+      "desc": "MMT + konsumsi",
+      "type": "Keluar",
       "amount": 200000,
-      "notes": "[Buku Donasi] Sound tirakat (Realisasi dari dana donasi)",
-      "refId": "rkba-02",
-      "activityId": "keg-2",
-      "activityName": "Malam Tirakatan",
-      "seksi": "Perlengkapan",
-      "paymentMethod": "Tunai",
-      "proofStatus": "Lengkap",
-      "proofNumber": "BKK-BD-02",
-      "vendor": "Sound Tirakatan Mas Joko"
+      "seksi": "BPH & Kesekretariatan",
+      "recipient": "Percetakan Digital Printing",
+      "subAkun": "Administrasi",
+      "fundingSource": "Kas Utama",
+      "status": "Lunas",
+      "docRef": "BKK-BU-23",
+      "notes": "Cetak Banner MMT panggung & konsumsi pasang"
     },
     {
-      "id": "trx-bd-08",
+      "id": "tx-k1-26",
+      "date": "2026-08-23",
+      "desc": "Panggung + tratak",
       "type": "Keluar",
-      "date": "2026-08-20",
-      "category": "Pentas Seni & Tari",
-      "amount": 181000,
-      "notes": "[Buku Donasi] Beli alat make up untuk nari anak",
-      "refId": "rkba-10",
-      "activityId": "keg-4",
-      "activityName": "Resepsi & Pentas Seni Tarling",
-      "seksi": "Seksi Pentas Seni",
-      "paymentMethod": "Tunai",
-      "proofStatus": "Lengkap",
-      "proofNumber": "BKK-BD-03",
-      "vendor": "Toko Kosmetik"
+      "amount": 750000,
+      "seksi": "Divisi Acara Terpadu",
+      "recipient": "Tenda Berkah",
+      "subAkun": "Sewa Alat & Panggung",
+      "fundingSource": "Kas Utama",
+      "status": "Lunas",
+      "docRef": "BKK-BU-24",
+      "notes": "Sewa panggung dan tratak utama (tahap 1)"
     },
     {
-      "id": "trx-bd-09",
+      "id": "tx-k1-27",
+      "date": "2026-08-23",
+      "desc": "Tarling",
       "type": "Keluar",
+      "amount": 1500000,
+      "seksi": "Divisi Acara Terpadu",
+      "recipient": "Grup Seni Tarling",
+      "subAkun": "Hiburan & Pentas",
+      "fundingSource": "Kas Utama",
+      "status": "Lunas",
+      "docRef": "BKK-BU-25",
+      "notes": "Honor pentas seni Tarling (Sisa 200k dikembalikan ke kas donasi)"
+    },
+    {
+      "id": "tx-k1-28",
+      "date": "2026-08-23",
+      "desc": "Pelunasan sound",
+      "type": "Keluar",
+      "amount": 900000,
+      "seksi": "Divisi Acara Terpadu",
+      "recipient": "Vendor Audio Sound",
+      "subAkun": "Sewa Alat & Panggung",
+      "fundingSource": "Kas Utama",
+      "status": "Lunas",
+      "docRef": "BKK-BU-26",
+      "notes": "Pelunasan sewa sound system panggung resepsi"
+    },
+    {
+      "id": "tx-k1-29",
       "date": "2026-08-19",
-      "category": "Hadiah Lomba",
-      "amount": 600000,
-      "notes": "[Buku Donasi] Belanja hadiah lomba anak",
-      "refId": "rkba-01",
-      "activityId": "keg-1",
-      "activityName": "Lomba Anak & Remaja",
-      "seksi": "Seksi Lomba",
-      "paymentMethod": "Tunai",
-      "proofStatus": "Lengkap",
-      "proofNumber": "BKK-BD-04",
-      "vendor": "Toko Mainan Anak"
+      "desc": "Hadiah lomba anak",
+      "type": "Keluar",
+      "amount": 599500,
+      "seksi": "Divisi Operasional Lapangan",
+      "recipient": "Toko Hadiah & ATK",
+      "subAkun": "Hadiah & Doorprize",
+      "fundingSource": "Kas Utama",
+      "status": "Lunas",
+      "docRef": "BKK-BU-27",
+      "notes": "Pelunasan seluruh paket hadiah lomba anak"
+    },
+    {
+      "id": "tx-k1-30",
+      "date": "2026-08-23",
+      "desc": "Tali ID card",
+      "type": "Keluar",
+      "amount": 36000,
+      "seksi": "BPH & Kesekretariatan",
+      "recipient": "Fotocopy & ATK",
+      "subAkun": "Administrasi",
+      "fundingSource": "Kas Utama",
+      "status": "Lunas",
+      "docRef": "BKK-BU-28",
+      "notes": "Tali gantungan ID Card panitia"
+    },
+    {
+      "id": "tx-k1-31",
+      "date": "2026-08-23",
+      "desc": "Lem tembak",
+      "type": "Keluar",
+      "amount": 10000,
+      "seksi": "Divisi Operasional Lapangan",
+      "recipient": "Toko ATK",
+      "subAkun": "Perlengkapan Lomba",
+      "fundingSource": "Kas Utama",
+      "status": "Lunas",
+      "docRef": "BKK-BU-29",
+      "notes": "Refill lem tembak dekorasi"
+    },
+    {
+      "id": "tx-k1-32",
+      "date": "2026-08-23",
+      "desc": "Acc tari anak",
+      "type": "Keluar",
+      "amount": 15000,
+      "seksi": "Divisi Acara Terpadu",
+      "recipient": "Toko Aksesoris",
+      "subAkun": "Hiburan & Pentas",
+      "fundingSource": "Kas Utama",
+      "status": "Lunas",
+      "docRef": "BKK-BU-30",
+      "notes": "Aksesoris tari anak pentas seni"
+    },
+    {
+      "id": "tx-k1-33",
+      "date": "2026-08-23",
+      "desc": "Kertas coklat",
+      "type": "Keluar",
+      "amount": 20000,
+      "seksi": "Divisi Operasional Lapangan",
+      "recipient": "Toko ATK",
+      "subAkun": "Perlengkapan Lomba",
+      "fundingSource": "Kas Utama",
+      "status": "Lunas",
+      "docRef": "BKK-BU-31",
+      "notes": "Kertas coklat pembungkus hadiah"
+    },
+    {
+      "id": "tx-k2-01",
+      "date": "2026-07-20",
+      "desc": "Donasi Mas Agung (TF)",
+      "type": "Masuk",
+      "amount": 300000,
+      "seksi": "Support & Humas",
+      "recipient": "Mas Agung",
+      "subAkun": "Penerimaan Donasi",
+      "fundingSource": "Kas Donatur",
+      "status": "Lunas",
+      "docRef": "BKM-BD-01",
+      "notes": "Donasi simpatisan via transfer"
+    },
+    {
+      "id": "tx-k2-02",
+      "date": "2026-08-09",
+      "desc": "Donasi Jihan (Cash)",
+      "type": "Masuk",
+      "amount": 200000,
+      "seksi": "Support & Humas",
+      "recipient": "Jihan",
+      "subAkun": "Penerimaan Donasi",
+      "fundingSource": "Kas Donatur",
+      "status": "Lunas",
+      "docRef": "BKM-BD-02",
+      "notes": "Donasi warga cash"
+    },
+    {
+      "id": "tx-k2-03",
+      "date": "2026-08-06",
+      "desc": "Donasi Prettywear (Cash)",
+      "type": "Masuk",
+      "amount": 2000000,
+      "seksi": "Support & Humas",
+      "recipient": "Prettywear",
+      "subAkun": "Penerimaan Donasi",
+      "fundingSource": "Kas Donatur",
+      "status": "Lunas",
+      "docRef": "BKM-BD-03",
+      "notes": "Sponsorship tunai Prettywear (Plus 1 Mesin Cuci)"
+    },
+    {
+      "id": "tx-k2-04",
+      "date": "2026-08-12",
+      "desc": "Donasi Selo Agung (Cash)",
+      "type": "Masuk",
+      "amount": 500000,
+      "seksi": "Support & Humas",
+      "recipient": "Selo Agung",
+      "subAkun": "Penerimaan Donasi",
+      "fundingSource": "Kas Donatur",
+      "status": "Lunas",
+      "docRef": "BKM-BD-04",
+      "notes": "Sponsor resmi Selo Agung"
+    },
+    {
+      "id": "tx-k2-05",
+      "date": "2026-08-12",
+      "desc": "Donasi Mas Adi",
+      "type": "Masuk",
+      "amount": 200000,
+      "seksi": "Support & Humas",
+      "recipient": "Mas Adi",
+      "subAkun": "Penerimaan Donasi",
+      "fundingSource": "Kas Donatur",
+      "status": "Lunas",
+      "docRef": "BKM-BD-05",
+      "notes": "Donasi simpatisan dermawan"
+    },
+    {
+      "id": "tx-k2-06",
+      "date": "2026-08-24",
+      "desc": "Donasi Warung Satinah",
+      "type": "Masuk",
+      "amount": 200000,
+      "seksi": "Support & Humas",
+      "recipient": "Warung Satinah",
+      "subAkun": "Penerimaan Donasi",
+      "fundingSource": "Kas Donatur",
+      "status": "Lunas",
+      "docRef": "BKM-BD-06",
+      "notes": "Donasi sponsor kuliner warga"
+    },
+    {
+      "id": "tx-k2-07",
+      "date": "2026-08-24",
+      "desc": "Donasi Apotek Gunungpati",
+      "type": "Masuk",
+      "amount": 300000,
+      "seksi": "Support & Humas",
+      "recipient": "Apotek Gunungpati",
+      "subAkun": "Penerimaan Donasi",
+      "fundingSource": "Kas Donatur",
+      "status": "Lunas",
+      "docRef": "BKM-BD-07",
+      "notes": "Sponsor Apotek Gunungpati"
+    },
+    {
+      "id": "tx-k2-08",
+      "date": "2026-08-24",
+      "desc": "Donasi Jarwo Motor",
+      "type": "Masuk",
+      "amount": 100000,
+      "seksi": "Support & Humas",
+      "recipient": "Jarwo Motor",
+      "subAkun": "Penerimaan Donasi",
+      "fundingSource": "Kas Donatur",
+      "status": "Lunas",
+      "docRef": "BKM-BD-08",
+      "notes": "Donasi UMKM bengkel warga"
+    },
+    {
+      "id": "tx-k2-09",
+      "date": "2026-08-24",
+      "desc": "Kembalian Uang Tarling (Sisa Buku 1)",
+      "type": "Masuk",
+      "amount": 200000,
+      "seksi": "BPH & Kesekretariatan",
+      "recipient": "Grup Tarling",
+      "subAkun": "Pengembalian Dana",
+      "fundingSource": "Kas Donatur",
+      "status": "Lunas",
+      "docRef": "BKM-BD-09",
+      "notes": "Kembalian efisiensi honor Tarling dari Kas 1"
+    },
+    {
+      "id": "tx-k2-10",
+      "date": "2026-08-16",
+      "desc": "Hadiah uang tunai lomba remaja",
+      "type": "Keluar",
+      "amount": 225000,
+      "seksi": "Divisi Acara Terpadu",
+      "recipient": "Pemenang Lomba Remaja",
+      "subAkun": "Hadiah & Doorprize",
+      "fundingSource": "Kas Donatur",
+      "status": "Lunas",
+      "docRef": "BKK-BD-01",
+      "notes": "Hadiah game tebak gaya remaja"
+    },
+    {
+      "id": "tx-k2-11",
+      "date": "2026-08-23",
+      "desc": "Sound tirakat + konsumsi",
+      "type": "Keluar",
+      "amount": 200000,
+      "seksi": "Divisi Acara Terpadu",
+      "recipient": "Vendor Audio & Konsumsi",
+      "subAkun": "Sewa & Konsumsi",
+      "fundingSource": "Kas Donatur",
+      "status": "Lunas",
+      "docRef": "BKK-BD-02",
+      "notes": "Sewa sound system malam tirakatan dan konsumsi"
+    },
+    {
+      "id": "tx-k2-12",
+      "date": "2026-08-20",
+      "desc": "Beli alat make up untuk tari anak",
+      "type": "Keluar",
+      "amount": 181000,
+      "seksi": "Divisi Acara Terpadu",
+      "recipient": "Toko Kosmetik",
+      "subAkun": "Hiburan & Pentas",
+      "fundingSource": "Kas Donatur",
+      "status": "Lunas",
+      "docRef": "BKK-BD-03",
+      "notes": "Make up & perlengkapan penari anak"
+    },
+    {
+      "id": "tx-k2-13",
+      "date": "2026-08-22",
+      "desc": "Hadiah lomba bapak ibu",
+      "type": "Keluar",
+      "amount": 369000,
+      "seksi": "Divisi Operasional Lapangan",
+      "recipient": "Pemenang Lomba Bapak/Ibu",
+      "subAkun": "Hadiah & Doorprize",
+      "fundingSource": "Kas Donatur",
+      "status": "Lunas",
+      "docRef": "BKK-BD-04",
+      "notes": "Hadiah lomba pukul paku bapak-bapak dan ibu-ibu"
+    },
+    {
+      "id": "tx-k2-14",
+      "date": "2026-08-24",
+      "desc": "Panggung + Tratak (Tambahan)",
+      "type": "Keluar",
+      "amount": 760000,
+      "seksi": "Divisi Acara Terpadu",
+      "recipient": "Tenda Berkah",
+      "subAkun": "Sewa Alat & Panggung",
+      "fundingSource": "Kas Donatur",
+      "status": "Lunas",
+      "docRef": "BKK-BD-05",
+      "notes": "Tambahan tratak & panggung samping resepsi"
+    },
+    {
+      "id": "tx-k2-15",
+      "date": "2026-08-24",
+      "desc": "Konsumsi bambu",
+      "type": "Keluar",
+      "amount": 150000,
+      "seksi": "Divisi Operasional Lapangan",
+      "recipient": "Panitia Pasang Umbul-umbul",
+      "subAkun": "Konsumsi Lapangan",
+      "fundingSource": "Kas Donatur",
+      "status": "Lunas",
+      "docRef": "BKK-BD-06",
+      "notes": "Konsumsi gotong royong pasang tiang bambu & umbul-umbul"
+    },
+    {
+      "id": "tx-k2-16",
+      "date": "2026-08-24",
+      "desc": "Beli kertas manggar + konsumsi",
+      "type": "Keluar",
+      "amount": 100000,
+      "seksi": "Divisi Operasional Lapangan",
+      "recipient": "Toko Prakarya & Warung",
+      "subAkun": "Perlengkapan Lomba",
+      "fundingSource": "Kas Donatur",
+      "status": "Lunas",
+      "docRef": "BKK-BD-07",
+      "notes": "Dekorasi kertas manggar dan konsumsi kerja bakti"
+    },
+    {
+      "id": "tx-k2-17",
+      "date": "2026-08-24",
+      "desc": "Konsumsi dekor panggung",
+      "type": "Keluar",
+      "amount": 77000,
+      "seksi": "Divisi Operasional Lapangan",
+      "recipient": "Warung Makan",
+      "subAkun": "Konsumsi Lapangan",
+      "fundingSource": "Kas Donatur",
+      "status": "Lunas",
+      "docRef": "BKK-BD-08",
+      "notes": "Konsumsi panitia lembur dekorasi panggung"
+    },
+    {
+      "id": "tx-k2-18",
+      "date": "2026-08-24",
+      "desc": "Konsumsi sound",
+      "type": "Keluar",
+      "amount": 95000,
+      "seksi": "Divisi Operasional Lapangan",
+      "recipient": "Warung Makan",
+      "subAkun": "Konsumsi Lapangan",
+      "fundingSource": "Kas Donatur",
+      "status": "Lunas",
+      "docRef": "BKK-BD-09",
+      "notes": "Konsumsi operator sound system"
+    },
+    {
+      "id": "tx-k2-19",
+      "date": "2026-08-24",
+      "desc": "Konsumsi bongkar panggung",
+      "type": "Keluar",
+      "amount": 9000,
+      "seksi": "Divisi Operasional Lapangan",
+      "recipient": "Warung Es",
+      "subAkun": "Konsumsi Lapangan",
+      "fundingSource": "Kas Donatur",
+      "status": "Lunas",
+      "docRef": "BKK-BD-10",
+      "notes": "Es teh kerja bakti bongkar panggung"
+    },
+    {
+      "id": "tx-k2-20",
+      "date": "2026-08-24",
+      "desc": "Kebutuhan pentas seni",
+      "type": "Keluar",
+      "amount": 78000,
+      "seksi": "Divisi Acara Terpadu",
+      "recipient": "Toko ATK & Properti",
+      "subAkun": "Konsumsi Lapangan",
+      "fundingSource": "Kas Donatur",
+      "status": "Lunas",
+      "docRef": "BKK-BD-11",
+      "notes": "Kebutuhan pendukung panggung & artis"
+    },
+    {
+      "id": "tx-k2-21",
+      "date": "2026-08-24",
+      "desc": "konsumsi pentas seni tari anak",
+      "type": "Keluar",
+      "amount": 242000,
+      "seksi": "Divisi Operasional Lapangan",
+      "recipient": "Katering Snack",
+      "subAkun": "Konsumsi Lapangan",
+      "fundingSource": "Kas Donatur",
+      "status": "Lunas",
+      "docRef": "BKK-BD-12",
+      "notes": "Konsumsi nasi & snack penari anak"
+    },
+    {
+      "id": "tx-k2-22",
+      "date": "2026-08-24",
+      "desc": "Virgin konsumsi snack",
+      "type": "Keluar",
+      "amount": 132000,
+      "seksi": "Divisi Operasional Lapangan",
+      "recipient": "Virgin Cake & Bakery",
+      "subAkun": "Konsumsi Lapangan",
+      "fundingSource": "Kas Donatur",
+      "status": "Lunas",
+      "docRef": "BKK-BD-13",
+      "notes": "Snack box tamu undangan khusus malam resepsi"
     }
   ],
-  "tasks": [],
+  "tasks": [
+    {
+      "id": "t-1",
+      "title": "Penyusunan LPJ Lengkap & Rekonsiliasi 4 RT",
+      "desc": "Penyusunan BKU, Laporan Rekonsiliasi Pamsimas, dan Nota Belanja",
+      "status": "Selesai",
+      "assignee": "Mawardi",
+      "dueDate": "2026-08-25",
+      "seksi": "BPH & Kesekretariatan"
+    },
+    {
+      "id": "t-2",
+      "title": "Serah Terima Berkas Nota SPJ ke RT 01-04",
+      "desc": "Penyerahan berkas fisik nota belanja Rp 2.000.000 ke masing-masing RT",
+      "status": "Selesai",
+      "assignee": "Dias Ayu",
+      "dueDate": "2026-08-26",
+      "seksi": "BPH & Kesekretariatan"
+    },
+    {
+      "id": "t-3",
+      "title": "Pengadaan Hadiah Doorprize & Gelang Emas",
+      "desc": "Belanja hadiah di Alifa Grosir, Delamas, dan Semar Nusantara",
+      "status": "Selesai",
+      "assignee": "Teddy",
+      "dueDate": "2026-08-08",
+      "seksi": "Divisi Operasional Lapangan"
+    },
+    {
+      "id": "t-4",
+      "title": "Koordinasi Panggung, Tratak, dan Sound System",
+      "desc": "Instalasi panggung utama, tratak samping, dan audio sound resepsi",
+      "status": "Selesai",
+      "assignee": "Ade Rahmat",
+      "dueDate": "2026-08-22",
+      "seksi": "Divisi Acara Terpadu"
+    },
+    {
+      "id": "t-5",
+      "title": "Pelaksanaan Rangkaian Lomba Anak & Remaja",
+      "desc": "Pelaksanaan lomba tradisional di Lapangan RW 04",
+      "status": "Selesai",
+      "assignee": "Gunarso",
+      "dueDate": "2026-08-09",
+      "seksi": "Divisi Acara Terpadu"
+    },
+    {
+      "id": "t-6",
+      "title": "Distribusi Air Mineral 17 Dus Jalan Sehat",
+      "desc": "Penataan pos air minum untuk rute jalan sehat warga",
+      "status": "Selesai",
+      "assignee": "Dea",
+      "dueDate": "2026-08-17",
+      "seksi": "Divisi Operasional Lapangan"
+    },
+    {
+      "id": "t-7",
+      "title": "Himpun 68 Voucher UMKM & 1 Mesin Cuci",
+      "desc": "Koordinasi sponsor Prettywear dan 7 gerai kuliner warga",
+      "status": "Selesai",
+      "assignee": "Ervan",
+      "dueDate": "2026-08-15",
+      "seksi": "Support & Humas"
+    },
+    {
+      "id": "t-8",
+      "title": "Dokumentasi & Publikasi Pentas Seni Tarling",
+      "desc": "Liputan foto video panggung hiburan dan penyerahan piala",
+      "status": "Selesai",
+      "assignee": "Wenny",
+      "dueDate": "2026-08-22",
+      "seksi": "Support & Humas"
+    },
+    {
+      "id": "t-9",
+      "title": "Pengamanan & Kebersihan Lingkungan Pasca Acara",
+      "desc": "Pembersihan lapangan dan pembongkaran instalasi panggung",
+      "status": "Selesai",
+      "assignee": "Agung",
+      "dueDate": "2026-08-24",
+      "seksi": "Divisi Operasional Lapangan"
+    },
+    {
+      "id": "t-10",
+      "title": "Rapat Pleno III Evaluasi & Pembubaran Panitia",
+      "desc": "Laporan pertanggungjawaban akhir dan persiapan ekskursi panitia",
+      "status": "Selesai",
+      "assignee": "Muh Zaenun",
+      "dueDate": "2026-08-24",
+      "seksi": "BPH & Kesekretariatan"
+    }
+  ],
   "notulensi": [
     {
-      "id": "notulensi_seed_1",
-      "title": "Rapat Pleno I Pembahasan & Pengesahan RAB Awal",
-      "date": "Kamis, 2 Juli 2026",
-      "time": "19:30 - 22:00 WIB",
-      "location": "Balai RW 04 Ngabean",
-      "leader": "Ketua Panitia",
-      "attendeesCount": 18,
-      "attendeesList": "Ketua RW, Sekretaris, Bendahara, Humas, Acara, Perlengkapan, Konsumsi, Perwakilan RT",
-      "agenda": "1. Pembahasan Usulan RKBA 13 Item Kegiatan (Total Pagu Awal Rp 15.250.000)\n2. Rencana Penggalangan Dana & Iuran RT\n3. Strategi Efisiensi dan Negosiasi Vendor",
-      "notesRaw": "- Seluruh 13 usulan belanja masuk dengan total Rp 15.250.000.\n- Dilakukan arahan efisiensi dan negosiasi vendor untuk putaran berikutnya.",
-      "decisions": "- Menetapkan RAB Awal HUT RI Ke-81 sebesar Rp 15.250.000.\n- Menyetujui pencarian donatur swadaya dan sponsorship untuk memangkas pos belanja cetak dan konsumsi.",
-      "contentMarkdown": "# NOTULENSI RAPAT KOORDINASI KEPANITIAAN\n## RAPAT PLENO I PEMBAHASAN RAB AWAL\n**HUT KEMERDEKAAN REPUBLIK INDONESIA KE-81 - RW 04 NGABEAN**\n\n---\n\n### I. IDENTITAS & INFORMASI RAPAT\n- **Hari / Tanggal** : Kamis, 2 Juli 2026\n- **Waktu**          : 19:30 - 22:00 WIB\n- **Tempat**         : Balai RW 04 Ngabean\n- **Pimpinan Rapat** : Ketua Panitia\n- **Jumlah Peserta** : 18 Orang\n\n---\n\n### II. KEPUTUSAN UTAMA RAPAT\n- Menetapkan usulan RAB Awal 13 item sebesar Rp 15.250.000,00.\n- Menginstruksikan panitia untuk melakukan negosiasi harga vendor dan menjajaki donasi natura/gratis.",
-      "actionItems": [
-        {
-          "id": "ai_0",
-          "task": "Negosiasi harga vendor sound, tratak, dan grup tarling",
-          "pic": "Perlengkapan",
-          "deadline": "10 Juli 2026"
-        },
-        {
-          "id": "ai_1",
-          "task": "Konfirmasi donasi konsumsi dan cetak kupon ke Pak RW",
-          "pic": "Ketua Panitia",
-          "deadline": "12 Juli 2026"
-        }
-      ],
-      "createdAt": "2026-07-02T15:00:00.000Z"
+      "id": "notulen-1",
+      "date": "2026-07-02",
+      "title": "Rapat Pleno I: Pembentukan Panitia & Pembahasan Usulan RAB",
+      "agenda": "Musyawarah pembentukan panitia HUT RI Ke-81, perumusan 4 Lean Divisions, usulan RAB awal Rp 17.550.000,00, dan permohonan dana talangan Pamsimas.",
+      "results": "1. Terbentuk kepanitiaan 22 anggota dalam 4 Divisi Lean Structure (BPH & Kesekretariatan, Divisi Acara Terpadu, Divisi Operasional Lapangan, Support & Humas). 2. Disepakati pencairan dana talangan Pamsimas Rp 8.000.000 untuk 4 RT @ Rp 2.000.000 dan sumbangan sukarela Pamsimas Rp 2.000.000. 3. Target penggalangan dana sponsor/donatur Rp 4.000.000.",
+      "leader": "Muh Zaenun",
+      "notetaker": "Mawardi",
+      "attendees": 22
     },
     {
-      "id": "notulensi_seed_2",
-      "title": "Rapat Pleno II Evaluasi & Pengesahan RAB Revisi Final",
-      "date": "Minggu, 19 Juli 2026",
-      "time": "19:30 - 21:45 WIB",
-      "location": "Balai RW 04 Ngabean",
-      "leader": "Ketua RW 04 & Ketua Panitia",
-      "attendeesCount": 20,
-      "attendeesList": "Ketua RW 04, Pengurus RT 01-04, Panitia Inti, dan Koordinator Seksi",
-      "agenda": "1. Pengesahan Perubahan Anggaran (RAB Revisi II Final Rp 10.908.000)\n2. Pengalihan/Penggratisan Pos Konsumsi Jalan Sehat, Sound Jalan Sehat, Kupon, dan Trashbag/ID Card\n3. Penetapan Realisasi Anggaran Bersih",
-      "notesRaw": "- Konsumsi dan Sound Jalan Sehat ditanggung penuh oleh Pak RW.\n- Cetak kupon jalan sehat dan ID Card ditanggung donatur/swadaya panitia.\n- Nego vendor berhasil memangkas biaya tratak, sound resepsi, tarling, dan lomba sehingga total anggaran final menjadi Rp 10.908.000.",
-      "decisions": "- Mengesahkan perubahan anggaran resmi menjadi Rp 10.908.000.\n- Menggratiskan pos kupon, konsumsi jalan sehat, sound jalan sehat, dan ID card dari kas panitia.",
-      "contentMarkdown": "# NOTULENSI RAPAT KOORDINASI KEPANITIAAN\n## RAPAT PLENO II PENGESAHAN RAB REVISI FINAL\n\n### KEPUTUSAN UTAMA:\n1. Anggaran Final ditetapkan sebesar Rp 10.908.000,00.\n2. Biaya MMT disesuaikan menjadi Rp 400.000,00.\n3. Biaya Proposal disesuaikan sesuai realisasi cetak menjadi Rp 258.000,00.\n4. Biaya Konsumsi Jalan Sehat, Sound Jalan Sehat, Kupon, dan Trashbag/ID Card resmi digratiskan dari kas panitia karena ditanggung Pak RW dan donatur.",
-      "actionItems": [
-        {
-          "id": "ai_2",
-          "task": "Realisasi belanja sesuai pagu final Rp 10.908.000",
-          "pic": "Bendahara",
-          "deadline": "23 Agustus 2026"
-        }
-      ],
-      "createdAt": "2026-07-19T15:00:00.000Z"
+      "id": "notulen-2",
+      "date": "2026-07-19",
+      "title": "Rapat Pleno II: Finalisasi Anggaran & Matrikulasi Teknis Lomba",
+      "agenda": "Rasionalisasi pos anggaran belanja, efisiensi konsumsi dan kostum, serta penerimaan dana talangan Pamsimas Rp 10.000.000.",
+      "results": "1. Anggaran belanja dirasionalisasi dari pagu awal Rp 17.550.000 menjadi target revisi Rp 10.800.000. 2. Pengadaan kostum pentas dialihkan menjadi swadaya warga. 3. Konsumsi jalan sehat diefisiensikan menggunakan air mineral 17 dus.",
+      "leader": "Muh Zaenun",
+      "notetaker": "Mawardi",
+      "attendees": 21
     },
     {
-      "id": "notulensi_seed_3",
-      "title": "Rapat Pleno III Evaluasi Pelaksanaan, Rekonsiliasi Kas & Penerimaan Donasi Voucher",
-      "date": "Senin, 24 Agustus 2026",
-      "time": "19:30 - 22:30 WIB",
-      "location": "Balai RW 04 Ngabean",
-      "leader": "Ketua RW 04, Ketua Panitia & Bendahara",
-      "attendeesCount": 22,
-      "attendeesList": "Ketua RW 04, Pengurus RT 01-04, Panitia Inti (Ketua, Sekretaris, Bendahara), Seluruh Koordinator Seksi, Tokoh Masyarakat",
-      "agenda": "1. Laporan Realisasi Buku Utama (Masuk Rp 10.000.000, Keluar Rp 9.999.500, Sisa Rp 500)\n2. Laporan Realisasi Buku Donasi (Masuk Rp 3.200.000, Keluar Rp 1.206.000, Sisa Rp 1.994.000)\n3. Evaluasi Anggaran RAB vs Realisasi Riil\n4. Rekapitulasi Donasi Non-Kas (68 Voucher UMKM & 1 Mesin Cuci Prettywear)",
-      "notesRaw": "- Buku Utama: Total Masuk Rp 10.000.000 dari talangan Pamsimas, belanja riil 27 transaksi sebesar Rp 9.999.500, sisa saldo netto kas utama Rp 500.\n- Buku Donasi: Total Masuk Rp 3.200.000 (Mas Agung, Jihan, Prettywear, Selo Agung, Mas Adi), belanja Rp 1.206.000, sisa saldo donasi Rp 1.994.000.\n- Donasi Non-Kas: 68 Voucher kuliner UMKM (Martabak 5758, Bakso Bang Somat, Kacang Ijo Mas Puput, NasGor Mas Tatak, Kebab Ireng Manis, NasGor Mas Eko, Kedai Terang Bulan Ngrembel Asri Malam) + 1 Unit Mesin Cuci dari Prettywear sukses dibagikan sebagai doorprize jalan sehat.\n- Evaluasi: Lomba Anak over budget Rp 708.500 karena penambahan antusiasme peserta, namun tercover surplus efisiensi pada pos Sound Tirakat, Doorprize Jalan Sehat, dan MMT.",
-      "decisions": "- Menerima dan mengesahkan seluruh pembukuan Buku Utama dan Buku Donasi tanpa catatan keberatan.\n- Sisa saldo kas gabungan Rp 1.994.500 (Buku Utama Rp 500 + Buku Donasi Rp 1.994.000) diserahkan ke Kas RW 04.\n- Mengapresiasi 7 merchant donatur voucher UMKM dan sponsor Prettywear atas dukungan donasi natura.",
-      "contentMarkdown": "# NOTULENSI RAPAT PLENO III EVALUASI & REKONSILIASI KEUANGAN\n## PERINGATAN HUT KEMERDEKAAN RI KE-81 - RW 04 NGABEAN\n\n---\n\n### I. LAPORAN BUKU UTAMA\n- **Pemasukan:** Rp 10.000.000,00 (Dana Talangan Pamsimas)\n- **Pengeluaran:** Rp 9.999.500,00 (27 transaksi kuitansi)\n- **Sisa Saldo Kas Utama:** **Rp 500,00**\n\n### II. LAPORAN BUKU DONASI\n- **Pemasukan Donasi:** Rp 3.200.000,00\n- **Pengeluaran Donasi:** Rp 1.206.000,00 (4 transaksi)\n- **Sisa Saldo Buku Donasi:** **Rp 1.994.000,00**\n\n### III. REKAPITULASI DONASI NON-KAS (VOUCHER & BARANG)\n1. Martabak 5758 : 5 Voucher\n2. Bakso Bang Somat (Mb Sri) : 15 Voucher\n3. Kacang Ijo Mas Puput : 5 Voucher\n4. NasGor Mas Tatak : 5 Voucher\n5. Kebab Ireng Manis : 8 Voucher\n6. NasGor Mas Eko : 5 Voucher\n7. Kedai Terang Bulan – Ngrembel Asri Malam : 25 Voucher\n- **Total Voucher:** **68 Voucher UMKM**\n- **Donasi Barang:** 1 Unit Mesin Cuci (Prettywear) & 1 Buah MMT Donatur.",
-      "actionItems": [
-        {
-          "id": "ai_3",
-          "task": "Cetak dan jilid Buku LPJ Master lengkap dengan lampiran nota & voucher",
-          "pic": "Sekretaris & Bendahara",
-          "deadline": "28 Agustus 2026"
-        },
-        {
-          "id": "ai_4",
-          "task": "Serah terima sisa saldo kas ke Kas RW 04",
-          "pic": "Ketua Panitia & Bendahara",
-          "deadline": "30 Agustus 2026"
-        }
-      ],
-      "createdAt": "2026-08-24T15:00:00.000Z"
+      "id": "notulen-3",
+      "date": "2026-08-24",
+      "title": "Rapat Pleno III: Evaluasi Pelaksanaan, Rekonsiliasi Kas, dan Penetapan Sisa Kas",
+      "agenda": "Laporan realisasi belanja per divisi, rekonsiliasi pengembalian dana talangan Pamsimas, rekapitulasi 68 voucher UMKM & 1 mesin cuci, serta penetapan alokasi sisa saldo kas.",
+      "results": "1. Total penerimaan kas tunai Rp 14.000.000,00 (Talangan RT Rp 8 Jt, Donasi Pamsimas Rp 2 Jt, Sponsor/Donatur Rp 4 Jt). 2. Total realisasi belanja Rp 12.618.000,00. 3. Sisa saldo kas akhir Rp 1.382.000,00 dialokasikan untuk kegiatan Konsolidasi Internal dan Pembubaran Panitia (ekskursi luar lingkungan). 4. Penyerahan berkas nota fisik Rp 2.000.000 ke RT 01-04 dinyatakan tuntas 100%.",
+      "leader": "Muh Zaenun",
+      "notetaker": "Mawardi",
+      "attendees": 22
     }
-  ],
-  "documents": [],
-  "undangan": [],
-  "budgetChanges": [],
-  "budgetReallocations": [],
-  "auditTrails": [],
-  "lpj": {
-    "id": "lpj_hut81_rw04_main",
-    "docNumber": "LPJ-HUT81/RW04/2026",
-    "title": "Laporan Pertanggungjawaban Peringatan HUT RI Ke-81 RW 04 Ngabean",
-    "eventDate": "17 Agustus 2026",
-    "status": "SIAP_DISAMPAIKAN",
-    "isReconciled": true,
-    "reconciliationNotes": "Rekonsiliasi Buku Utama (Keluar Rp 9.999.500, Sisa Rp 500) dan Buku Donasi (Keluar Rp 1.206.000, Sisa Rp 1.994.000) serta 68 Voucher UMKM & 1 Mesin Cuci tuntas 100%.",
-    "ketuaNameSnapshot": "Ketua Panitia",
-    "sekretarisNameSnapshot": "Sekretaris Panitia",
-    "bendaharaNameSnapshot": "Bendahara Panitia",
-    "rwNameSnapshot": "Ketua RW 04",
-    "sections": [
-      {
-        "id": "lpj_sec_a",
-        "sectionType": "A",
-        "sectionCode": "A",
-        "sectionTitle": "Laporan Pendahuluan",
-        "responsibleRole": "KETUA_PANITIA",
-        "presenterRole": "KETUA_PANITIA",
-        "presenterNameSnapshot": "Ketua Panitia",
-        "sequence": 1,
-        "status": "SIAP",
-        "notes": "Memuat latar belakang, dasar hukum kemasyarakatan, tujuan, serta sambutan umum panitia pelaksana.",
-        "createdAt": "2026-07-02T15:00:00.000Z",
-        "updatedAt": "2026-07-02T15:00:00.000Z"
-      },
-      {
-        "id": "lpj_sec_b",
-        "sectionType": "B",
-        "sectionCode": "B",
-        "sectionTitle": "Laporan Pelaksanaan Kegiatan",
-        "responsibleRole": "SEKRETARIS",
-        "presenterRole": "SEKRETARIS",
-        "presenterNameSnapshot": "Sekretaris Panitia",
-        "sequence": 2,
-        "status": "SIAP",
-        "notes": "Memuat daftar seluruh agenda per seksi, status terlaksana, perubahan jadwal, dan ringkasan capaian lapangan.",
-        "createdAt": "2026-07-02T15:00:00.000Z",
-        "updatedAt": "2026-07-02T15:00:00.000Z"
-      },
-      {
-        "id": "lpj_sec_c",
-        "sectionType": "C",
-        "sectionCode": "C",
-        "sectionTitle": "Laporan Administrasi",
-        "responsibleRole": "SEKRETARIS",
-        "presenterRole": "SEKRETARIS",
-        "presenterNameSnapshot": "Sekretaris Panitia",
-        "sequence": 3,
-        "status": "SIAP",
-        "notes": "Memuat arsip surat menyurat, izin keramaian, daftar hadir rapat pleno, risalah notulensi, dan dokumentasi kepanitiaan.",
-        "createdAt": "2026-07-02T15:00:00.000Z",
-        "updatedAt": "2026-07-02T15:00:00.000Z"
-      },
-      {
-        "id": "lpj_sec_d",
-        "sectionType": "D",
-        "sectionCode": "D",
-        "sectionTitle": "Laporan Keuangan (Buku Utama & Buku Donasi)",
-        "responsibleRole": "BENDAHARA",
-        "presenterRole": "BENDAHARA",
-        "presenterNameSnapshot": "Bendahara Panitia",
-        "sequence": 4,
-        "status": "SIAP",
-        "notes": "Memuat rekapitulasi Buku Utama (Pamsimas Rp 10.000.000, Belanja Rp 9.999.500, Sisa Rp 500), Buku Donasi (Masuk Rp 3.200.000, Belanja Rp 1.206.000, Sisa Rp 1.994.000), serta 68 Voucher Donasi Non-Kas UMKM.",
-        "createdAt": "2026-07-02T15:00:00.000Z",
-        "updatedAt": "2026-07-02T15:00:00.000Z"
-      },
-      {
-        "id": "lpj_sec_e",
-        "sectionType": "E",
-        "sectionCode": "E",
-        "sectionTitle": "Perubahan Anggaran & Evaluasi RAB vs Realisasi",
-        "responsibleRole": "BENDAHARA",
-        "presenterRole": "BENDAHARA",
-        "presenterNameSnapshot": "Bendahara Panitia",
-        "sequence": 5,
-        "status": "SIAP",
-        "notes": "Memuat evaluasi komparasi RAB vs Realisasi Riil: Lomba Anak Over Budget Rp 708.500, Sound Tirakat Lebih Hemat Rp 100.000, Hadiah Jalan Sehat Lebih Hemat Rp 1.126.000, MMT Lebih Hemat Rp 155.000.",
-        "createdAt": "2026-07-02T15:00:00.000Z",
-        "updatedAt": "2026-07-02T15:00:00.000Z"
-      },
-      {
-        "id": "lpj_sec_f",
-        "sectionType": "F",
-        "sectionCode": "F",
-        "sectionTitle": "Rekonsiliasi Keuangan & Serah Terima Saldo",
-        "responsibleRole": "BENDAHARA",
-        "presenterRole": "BENDAHARA",
-        "presenterNameSnapshot": "Bendahara Panitia",
-        "sequence": 6,
-        "status": "SIAP",
-        "notes": "Memuat pencocokan buku kas, validitas seluruh kuitansi bukti nota, sisa saldo kas netto Rp 1.994.500, dan serah terima saldo ke kas RW.",
-        "createdAt": "2026-07-02T15:00:00.000Z",
-        "updatedAt": "2026-07-02T15:00:00.000Z"
-      },
-      {
-        "id": "lpj_sec_g",
-        "sectionType": "G",
-        "sectionCode": "G",
-        "sectionTitle": "Kesimpulan dan Pertanggungjawaban",
-        "responsibleRole": "KETUA_PANITIA",
-        "presenterRole": "KETUA_PANITIA",
-        "presenterNameSnapshot": "Ketua Panitia",
-        "sequence": 7,
-        "status": "SIAP",
-        "notes": "Pernyataan penutupan masa bakti kepanitiaan, evaluasi umum, saran perbaikan ke depan, dan penegasan pertanggungjawaban akhir.",
-        "createdAt": "2026-07-02T15:00:00.000Z",
-        "updatedAt": "2026-07-02T15:00:00.000Z"
-      },
-      {
-        "id": "lpj_sec_h",
-        "sectionType": "H",
-        "sectionCode": "H",
-        "sectionTitle": "Pengesahan LPJ",
-        "responsibleRole": "RW",
-        "presenterRole": "KETUA_PANITIA",
-        "presenterNameSnapshot": "Ketua RW 04",
-        "sequence": 8,
-        "status": "SIAP",
-        "notes": "Lembar tanda tangan resmi Ketua Panitia, Sekretaris, Bendahara, dan Mengetahui Ketua RW 04 Ngabean.",
-        "createdAt": "2026-07-02T15:00:00.000Z",
-        "updatedAt": "2026-07-02T15:00:00.000Z"
-      }
-    ],
-    "createdAt": "2026-07-02T15:00:00.000Z",
-    "updatedAt": "2026-07-02T15:00:00.000Z"
-  }
+  ]
 }
 ```

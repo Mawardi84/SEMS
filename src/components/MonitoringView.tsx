@@ -45,6 +45,7 @@ import {
   LPJSection,
   LPJStatus
 } from "../types";
+import garudaBg from "../assets/images/garuda_cover_bg_1788103458041.jpg";
 import { exportToPDF } from "../utils/pdfExport";
 import { exportToWord } from "../utils/wordExport";
 import { exportToPNG, exportToJPG, exportToPNGZip, exportToJPGZip } from "../utils/imageExport";
@@ -54,6 +55,16 @@ import LPJDeliveryPanel from "./LPJDeliveryPanel";
 import LPJSpeechModal from "./LPJSpeechModal";
 import LPJNotulenModal from "./LPJNotulenModal";
 import DocumentPreviewRenderer from "./DocumentPreviewRenderer";
+
+export const getPrimarySeksiForTx = (tx: any): string => {
+  return tx.seksi || "Lain-lain";
+};
+
+export const matchTxToSeksi = (tx: any, targetSeksi: string): boolean => {
+  const normTarget = targetSeksi.toLowerCase().replace(/^seksi\s*/i, "").replace(/^divisi\s*/i, "").trim();
+  const assigned = getPrimarySeksiForTx(tx).toLowerCase().replace(/^seksi\s*/i, "").replace(/^divisi\s*/i, "").trim();
+  return normTarget === assigned;
+};
 
 interface MonitoringViewProps {
   tasks: SeksiTask[];
@@ -151,10 +162,10 @@ export default function MonitoringView({
   }, [panitia]);
 
   // Fallback names for rendering
-  const displayKetua = namaKetua || panitia?.find((p) => p.role.toLowerCase().includes("ketua") && !p.role.toLowerCase().includes("rw"))?.name || "Fahmi Mawardi";
-  const displaySekretaris = namaSekretaris || panitia?.find((p) => p.role.toLowerCase().includes("sekretaris"))?.name || "Siti Rahma";
-  const displayBendahara = namaBendahara || panitia?.find((p) => p.role.toLowerCase().includes("bendahara"))?.name || "Budi Santoso";
-  const displayRWKetua = namaRWKetua || panitia?.find((p) => p.role.toLowerCase().includes("rw") || p.role.toLowerCase().includes("pembina"))?.name || "Drs. H. Ahmad Fauzi";
+  const displayKetua = namaKetua || panitia?.find((p) => p.role.toLowerCase().includes("ketua") && !p.role.toLowerCase().includes("rw"))?.name || "Muh Zaenun";
+  const displaySekretaris = namaSekretaris || panitia?.find((p) => p.role.toLowerCase().includes("sekretaris"))?.name || "Mawardi";
+  const displayBendahara = namaBendahara || panitia?.find((p) => p.role.toLowerCase().includes("bendahara"))?.name || "Dias Ayu";
+  const displayRWKetua = namaRWKetua || panitia?.find((p) => p.role.toLowerCase().includes("rw") || p.role.toLowerCase().includes("pembina") || p.role.toLowerCase().includes("penanggung"))?.name || "Karto";
 
   // Custom LPJ Styling states
   const [paperTheme, setPaperTheme] = useState<"classic" | "creamy" | "minimal" | "green-gold">("classic");
@@ -259,35 +270,62 @@ export default function MonitoringView({
     // Total sisa pagu
     const totalSisaPagu = Object.values(safeSettings.paguAnggaranSeksi).reduce((s,v) => s+v, 0) - totalPengeluaran;
 
+    // Helper to determine if transaction is from Kas Donasi (Kas 2) or Kas Utama (Kas 1)
+    const isKasDonasiTx = (t: { id?: string; proofNumber?: string; fundingSource?: string; category?: string }) => {
+      const idLower = (t.id || "").toLowerCase();
+      const proofUpper = (t.proofNumber || "").toUpperCase();
+      const sourceLower = (t.fundingSource || "").toLowerCase();
+      const categoryLower = (t.category || "").toLowerCase();
+      return (
+        idLower.includes("k2") ||
+        idLower.includes("bd") ||
+        idLower.includes("donasi") ||
+        proofUpper.includes("BD") ||
+        proofUpper.includes("DONASI") ||
+        sourceLower.includes("donas") ||
+        sourceLower.includes("sponsor") ||
+        categoryLower.includes("donasi") ||
+        categoryLower.includes("sponsor")
+      );
+    };
+
     // Laporan Realisasi Anggaran Seksi (Panitia) Table Markdown
     const seksiRows = seksiList.map((seksiName, idx) => {
       let pagu = safeSettings.paguAnggaranSeksi[seksiName] || 0;
       let spent = 0;
+      let spentUtama = 0;
+      let spentDonasi = 0;
+      
       if (useMockData) {
-        if (seksiName.includes("Acara")) { pagu = 3000000; spent = 2800000; }
-        else if (seksiName.includes("Perlengkap")) { pagu = 4000000; spent = 3900000; }
-        else if (seksiName.includes("Konsumsi")) { pagu = 5000000; spent = 4700000; }
-        else if (seksiName.includes("Lomba")) { pagu = 2000000; spent = 1400000; }
+        if (seksiName.includes("Sekretar") || seksiName.includes("BPH")) { pagu = 1050000; spent = 523000; spentUtama = 523000; spentDonasi = 0; }
+        else if (seksiName.includes("Acara")) { pagu = 5300000; spent = 4909000; spentUtama = 3465000; spentDonasi = 1444000; }
+        else if (seksiName.includes("Operasional") || seksiName.includes("Perlengkap")) { pagu = 11200000; spent = 7186000; spentUtama = 6012000; spentDonasi = 1174000; }
+        else if (seksiName.includes("Humas") || seksiName.includes("Support")) { pagu = 0; spent = 0; spentUtama = 0; spentDonasi = 0; }
         else { spent = Math.round(pagu * 0.9); }
       } else {
-        spent = keuangan.filter(t => t.type === 'Keluar' && (t as any).seksi === seksiName).reduce((sum, t) => sum + t.amount, 0);
+        const txs = keuangan.filter(t => t.type === 'Keluar' && matchTxToSeksi(t, seksiName));
+        spent = txs.reduce((sum, t) => sum + t.amount, 0);
+        spentUtama = txs.filter(t => !isKasDonasiTx(t)).reduce((sum, t) => sum + t.amount, 0);
+        spentDonasi = txs.filter(t => isKasDonasiTx(t)).reduce((sum, t) => sum + t.amount, 0);
       }
       const sisa = pagu - spent;
       const pct = pagu > 0 ? Math.round((spent / pagu) * 100) : 0;
-      return `| ${idx + 1} | Seksi ${seksiName} | ${formatRp(pagu)} | ${formatRp(spent)} | ${formatRp(sisa)} | ${pct}% |`;
+      return `| ${idx + 1} | ${seksiName} | ${formatRp(pagu)} | ${formatRp(spent)} | ${formatRp(spentUtama)} | ${formatRp(spentDonasi)} | ${formatRp(sisa)} | ${pct}% |`;
     }).join("\n");
 
     const totalPaguSeksi = useMockData 
       ? 14000000 
       : Object.values(safeSettings.paguAnggaranSeksi).reduce((s, v) => s + v, 0);
     const totalSpentSeksi = totalPengeluaran;
+    const totalSpentUtamaSeksi = useMockData ? 10000000 : keuangan.filter(t => t.type === 'Keluar' && !isKasDonasiTx(t)).reduce((s, t) => s + t.amount, 0);
+    const totalSpentDonasiSeksi = useMockData ? 2618000 : keuangan.filter(t => t.type === 'Keluar' && isKasDonasiTx(t)).reduce((s, t) => s + t.amount, 0);
     const totalSisaSeksi = totalPaguSeksi - totalSpentSeksi;
     const totalPctSeksi = totalPaguSeksi > 0 ? Math.round((totalSpentSeksi / totalPaguSeksi) * 100) : 0;
 
-    const seksiBudgetTableMarkdown = `| No | Pos / Seksi Anggaran | Alokasi Pagu (Rp) | Realisasi Belanja (Rp) | Sisa Alokasi (Rp) | % Penyerapan |
-|:--:|:---------------------|------------------:|-----------------------:|----------------------:|:------------:|
+    const seksiBudgetTableMarkdown = `| No | Pos / Divisi | Alokasi Pagu (Rp) | Realisasi (Total) | Dari Kas Utama | Dari Kas Donasi | Sisa Alokasi (Rp) | % Penyerapan |
+|:--:|:---------------------|------------------:|-----------------------:|-----------------------:|-----------------------:|----------------------:|:------------:|
 ${seksiRows}
-| **Σ** | **TOTAL BELANJA SEKSI** | **${formatRp(totalPaguSeksi)}** | **${formatRp(totalSpentSeksi)}** | **${formatRp(totalSisaSeksi)}** | **${totalPctSeksi}%** |`;
+| **Σ** | **TOTAL BELANJA SEKSI** | **${formatRp(totalPaguSeksi)}** | **${formatRp(totalSpentSeksi)}** | **${formatRp(totalSpentUtamaSeksi)}** | **${formatRp(totalSpentDonasiSeksi)}** | **${formatRp(totalSisaSeksi)}** | **${totalPctSeksi}%** |`;
 
     // Detail Kontribusi Wilayah RT Table Markdown
     const rtRows = (useMockData
@@ -329,25 +367,40 @@ Berikut adalah ringkasan kilas balik keuangan dan progress kegiatan yang dapat k
 
 ### I. KILAS BALIK REALISASI KEUANGAN
 1. Total Dana Masuk (Kas Tunai Warga & Donatur): ${formatRp(totalPemasukan)}
+   - Iuran 4 RT (Talangan Pamsimas): Rp 8.000.000,00 (@ Rp 2.000.000/RT - SPJ nota telah diserahkan ke masing-masing RT)
+   - Sumbangan Sukarela Murni Pamsimas: Rp 2.000.000,00
+   - Sponsor & Donatur Warga Dermawan: Rp 4.000.000,00
 2. Total Pengeluaran Kegiatan (Belanja Panitia): ${formatRp(totalPengeluaran)}
 3. Sisa Saldo Kas Bersih Panitia: ${formatRp(saldoSisa)}
-
-Sisa efisiensi dana kepanitiaan sebesar ${formatRp(saldoSisa)} (bersumber dari Kas Donatur) akan dialihfungsikan untuk kegiatan Konsolidasi Internal dan Pembubaran Panitia. Kegiatan ini dirancang di luar lingkungan (ekskursi/pembinaan keakraban) guna melepas penat setelah satu bulan penuh menyiapkan acara kemerdekaan, sekaligus mempererat solidaritas antar pemuda dan warga yang tergabung dalam kepanitiaan tahun ini.
 
 ### II. CAPAIAN PROGRAM KERJA & TUGAS SEKSI
 Kepanitiaan sukses merampungkan ${persenTugas}% dari total target kegiatan:
 - Total Program Kerja: ${totalTasks} Agenda Kegiatan
-- Selesai & Sukses: ${completedTasks} Agenda (Contoh: Lomba anak-anak, tirakatan malam HUT RI, jalan sehat)
+- Selesai & Sukses: ${completedTasks} Agenda (Lomba anak-anak/dewasa, tirakatan malam HUT RI, jalan sehat & pentas seni)
 - Dalam Proses/Evaluasi: ${processingTasks} Agenda
 - Belum Terlaksana: ${pendingTasks} Agenda
 
-Sinergi gotong royong dan partisipasi aktif dari warga berhasil mensukseskan seluruh rangkaian kegiatan secara mandiri, membuktikan bahwa warga ${namaRW} sangat guyub dan rukun.
+### III. PERMOHONAN MAAF & UNGKAPAN TERIMA KASIH
+**Permohonan Maaf:**
+Panitia Pelaksana memohon maaf yang sebesar-besarnya dan setulus-tulusnya kepada seluruh warga, sesepuh, dan tokoh masyarakat atas segala kekurangan teknis atau keterbatasan fasilitas selama acara berlangsung.
+
+**Ungkapan Terima Kasih:**
+Terima kasih mendalam kami sampaikan kepada:
+1. **Bapak Karto (Ketua RW 04 Ngabean)** & Pengurus RW atas bimbingan dan kepercayaan.
+2. **Pengurus RT 01, RT 02, RT 03, dan RT 04 Ngabean** atas koordinasi dan gotong royong warga.
+3. **Pengelola Pamsimas RW 04 Ngabean** atas bantuan likuiditas dana talangan dan donasi murni.
+4. **Seluruh Sponsor Resmi & Donatur Dermawan** atas bantuan materiil dan doorprize.
+5. **Tokoh Agama, Tokoh Masyarakat, Karang Taruna, PKK, serta Seluruh Warga RW 04 Ngabean** atas antusiasme guyub rukun.
+6. **Seluruh Rekan Panitia Pelaksana** atas dedikasi dan kerja keras tanpa pamrih.
+
+**Alokasi Sisa Kas Bersih:**
+Sisa efisiensi dana kepanitiaan sebesar **Rp 1.382.000,00** (bersumber murni dari Kas Donatur/Sponsor) dialihfungsikan untuk kegiatan **Konsolidasi Internal dan Pembubaran Panitia** di luar lingkungan (ekskursi keakraban) guna melepas penat dan mempererat tali silaturahmi.
 
 Semarang, ${tanggalLPJ}
 Hormat Kami,
 
-[${namaKetua}]
-Ketua Panitia Pelaksana`;
+**PANITIA PELAKSANA PERINGATAN HUT RI KE-81**
+**${namaRW.toUpperCase()} NGABEAN**`;
     }
 
     // Default: Formal - Standard Template (12-part structure)
@@ -442,13 +495,14 @@ Setiap seksi pelaksana (Acara, Perlengkapan, Konsumsi, Lomba, Humas, Keamanan) m
 
 ### BAB III. PELAKSANAAN KEGIATAN
 
-Rangkaian kegiatan HUT RI Ke-81 di wilayah ${namaRW} Ngabean telah sukses dilaksanakan dengan partisipasi aktif yang sangat tinggi dari warga dari seluruh RT (RT 01 s.d. RT 07).
+Rangkaian kegiatan HUT RI Ke-81 di wilayah ${namaRW} Ngabean telah sukses dilaksanakan dengan partisipasi aktif yang sangat tinggi dari warga dari seluruh RT (RT 01 s.d. RT 04).
 
 **1. Uraian Pelaksanaan Kegiatan**
 Seluruh seksi pelaksana telah mengeksekusi program kerja dengan tingkat keberhasilan mencapai ${persenTugas}%. Beberapa agenda utama yang terlaksana meliputi:
-- **Perlombaan Anak-anak & Dewasa:** Berjalan meriah dengan tingkat partisipasi mencapai ratusan warga.
-- **Malam Tirakatan 17 Agustus:** Berlangsung khidmat diisi dengan doa bersama, pemotongan tumpeng, serta kilas balik sejarah perjuangan bangsa.
-- **Jalan Sehat & Panggung Hiburan:** Diikuti oleh seluruh warga dengan pembagian doorprize menarik dari hasil gotong royong warga dan sponsor.
+- **Lomba Anak (01 Agustus s/d 16 Agustus 2026):** Berjalan meriah dengan berbagai perlombaan tradisional edukatif anak-anak.
+- **Malam Tirakatan & Lomba Warga (16 Agustus 2026):** Berlangsung khidmat diisi dengan doa bersama dan pemotongan tumpeng. Kegiatan setelah Tirakatan meliputi: Lomba Ibu-ibu Tebak Gaya, Lomba Bapak-bapak Pukul Paku, dilanjutkan Lomba Remaja Estafet Sarung.
+- **Jalan Sehat & Doorprize Warga (23 Agustus 2026 - Pagi/Siang):** Jalan sehat bersama dengan dihibur dengan Band Sendang Bunder, dilanjutkan dengan pembagian Hadiah Lomba Anak-anak, lalu acara inti pengundian doorprize jalan sehat.
+- **Malam Puncak / Resepsi & Hiburan Dangdut (23 Agustus 2026 - Malam):** Masih pada tanggal yang sama yaitu 23 Agustus 2026 malamnya dilanjutkan dengan malam puncak / resepsi dengan menampilkan pentas seni tari dari anak-anak dilanjutkan acara utama hiburan dangdut solo organ.
 
 **2. Status Capaian Kegiatan**
 - Total Program Kerja: ${totalTasks} Agenda Kegiatan
@@ -463,20 +517,18 @@ Seluruh seksi pelaksana telah mengeksekusi program kerja dengan tingkat keberhas
 Laporan keuangan ini disusun secara transparan dan akuntabel berdasarkan sistem pencatatan kas terintegrasi (Single Source of Truth). Seluruh pengeluaran seksi didukung oleh bukti belanja fisik yang sah.
 
 **1. Ringkasan Posisi Kas Bersih**
-- Total Pemasukan Kas Tunai: ${formatRp(totalPemasukan)}
+- Total Pemasukan Kas Tunai: ${formatRp(totalPemasukan)} (Terdiri dari Dana Talangan 4 RT Rp 8.000.000, Sumbangan Pamsimas Rp 2.000.000, dan Sponsor/Donatur Rp 4.000.000)
 - Total Realisasi Pengeluaran: ${formatRp(totalPengeluaran)}
-- **Sisa Saldo Kas Akhir:** **${formatRp(saldoSisa)}** (Sisa efisiensi dana kepanitiaan sebesar Rp 1.382.000 bersumber dari Kas Donatur dialihfungsikan untuk kegiatan Konsolidasi Internal dan Pembubaran Panitia / ekskursi luar lingkungan)
+- **Sisa Saldo Kas Akhir:** **${formatRp(saldoSisa)}** (Sisa efisiensi dana kepanitiaan sebesar Rp 1.382.000 bersumber dari Kas Donatur/Sponsor dialihfungsikan untuk kegiatan Konsolidasi Internal dan Pembubaran Panitia / ekskursi pembinaan keakraban di luar lingkungan)
 
-**2. Pengelolaan Dana Pamsimas (Talangan Rp 8 Juta & Sumbangan Rp 2 Juta)**
-Mengingat saldo kas awal kepanitiaan adalah Rp 0 pada saat pembentukan, panitia mendapatkan penerimaan kas awal sebesar Rp 10.000.000,00 dari Pamsimas RW 04 Ngabean dengan rincian:
-1. **Dana Talangan 4 RT (Rp 8.000.000,00):** Alokasi dana talangan operasional @ Rp 2.000.000,00 untuk RT 01 s.d. RT 04.
-2. **Sumbangan / Donasi Pamsimas (Rp 2.000.000,00):** Merupakan sumbangan sukarela murni dari pihak Pamsimas untuk mendukung kegiatan HUT RI Ke-81.
-
-Dalam mekanisme pertanggungjawabannya:
-- Panitia pelaksana telah menyerahkan bundel Surat Pertanggungjawaban (SPJ) berupa nota-nota bukti belanja riil sebesar Rp 2.000.000,00 per RT (total Rp 8.000.000,00) kepada masing-masing pengurus RT (RT 01 s.d. RT 04).
-- Selanjutnya, masing-masing pengurus RT dari hasil iuran warga langsung menyetorkan dan mengganti dana talangan tersebut kepada pihak Pamsimas sebagai pelunasan dana talangan awal.
-- Sumbangan Pamsimas Rp 2.000.000,00 dibukukan sebagai pemasukan donasi/sponsorship resmi.
-- Dengan demikian, kewajiban panitia terhadap dana talangan Pamsimas dinyatakan telah tuntas 100% (LUNAS) melalui penyerahan fisik berkas nota belanja per RT.
+**2. Pengelolaan & Struktur Penerimaan Kas (Pamsimas, RT, dan Sponsor/Donatur)**
+Penerimaan kas sebesar Rp 14.000.000,00 terdistribusi secara akuntabel dalam 3 pilar:
+1. **Dana Talangan 4 RT via Pamsimas (Rp 8.000.000,00):** Alokasi dana talangan kas muka operasional @ Rp 2.000.000,00 untuk RT 01 s.d. RT 04 yang dipinjamkan oleh Pamsimas RW 04 Ngabean saat awal pembentukan panitia.
+   - **Mekanisme Pertanggungjawaban:** Panitia pelaksana **hanya menyerahkan fisik bundel SPJ / nota-nota bukti belanja riil sebesar Rp 2.000.000,00 per RT** kepada masing-masing pengurus RT (RT 01 s.d. RT 04).
+   - **Mekanisme Pelunasan:** Pihak pengurus RT dari hasil penarikan iuran warganya yang **langsung mengembalikan dan menyetorkan pelunasan dana talangan tersebut kepada pengelola Pamsimas**.
+   - Dengan demikian, kewajiban panitia terhadap dana talangan Pamsimas dinyatakan **LUNAS / TUNTAS 100%** melalui serah terima berkas nota belanja per RT.
+2. **Sumbangan / Donasi Murni Pamsimas (Rp 2.000.000,00):** Merupakan sumbangan sukarela murni dari kas pengelola Pamsimas RW 04 untuk mendukung kesuksesan HUT RI Ke-81 RW 04 (hibah murni tanpa kewajiban pengembalian).
+3. **Penerimaan Murni Sponsor & Donatur (Rp 4.000.000,00):** Merupakan penerimaan tunai dari sponsor resmi (Prettywear, Selo Agung, Apotek Gunungpati, BnD Shop, Ngrembel Asri, dll.) dan para donatur warga dermawan serta partisipasi swadaya simpatisan.
 
 ---
 
@@ -490,7 +542,7 @@ Evaluasi dilakukan untuk mencatat kendala yang dihadapi selama pelaksanaan serta
 
 **2. Kendala Koordinasi dan Komposisi Panitia**
 - **In-efisiensi Struktur Kepanitiaan (Gemuk):** Komposisi panitia yang melibatkan terlalu banyak orang (seksi yang terlalu dipecah) justru memunculkan tantangan komunikasi dan memperlambat pengambilan keputusan. Selain itu, struktur yang besar berdampak langsung pada membengkaknya biaya operasional, khususnya alokasi konsumsi rapat dan konsumsi pekerja lapangan.
-- **Beban Kerja Terpusat (Asimetris):** Meskipun nama di dalam SK kepanitiaan cukup banyak, pada eksekusi teknisnya (seperti pencarian doorprize, loading barang, hingga penyusunan LPJ), beban kerja terberat sering kali hanya bertumpu pada segelintir tim inti saja.
+- **Beban Kerja Terpusat (Asimetris):** Meskipun jumlah personil kepanitiaan cukup banyak, pada eksekusi teknisnya (seperti pencarian doorprize, loading barang, hingga penyusunan LPJ), beban kerja terberat sering kali hanya bertumpu pada segelintir tim inti saja.
 
 **3. Tantangan Logistik dan Operasional**
 - **Manajemen Waktu Pengadaan Vendor:** Menyatukan jadwal vendor yang berbeda (panggung, tratak, dan sound system) membutuhkan pengawalan ekstra, terutama saat proses bongkar pasang agar tidak mengganggu rundown acara malam resepsi.
@@ -505,30 +557,41 @@ Evaluasi dilakukan untuk mencatat kendala yang dihadapi selama pelaksanaan serta
 
 ### BAB VI. PENUTUP
 
-Demikian Laporan Pertanggungjawaban (LPJ) Peringatan HUT RI Ke-81 di wilayah ${namaRW} Ngabean ini kami susun dengan sebenar-benarnya. Suksesnya seluruh rangkaian acara ini merupakan bukti nyata bahwa semangat gotong royong dan kebersamaan warga masih sangat kental dan terjaga dengan baik.
+Demikian Laporan Pertanggungjawaban (LPJ) Peringatan HUT Kemerdekaan Republik Indonesia Ke-81 di wilayah ${namaRW} Ngabean ini kami susun dengan sebenar-benarnya dan penuh rasa tanggung jawab. Keberhasilan seluruh rangkaian kegiatan ini merupakan bukti nyata bahwa semangat gotong royong, kebersamaan, dan persatuan warga tetap terjaga dengan sangat baik.
 
-Kami mengucapkan terima kasih yang sebesar-besarnya kepada seluruh warga, pengurus RT/RW, donatur, serta jajaran panitia yang telah mendharmabaktikan waktu, tenaga, pikiran, dan materinya demi kehormatan lingkungan kita.
+**Permohonan Maaf:**
+Selaku Panitia Pelaksana, kami menyadari sepenuhnya bahwa dalam perencanaan, persiapan, maupun pelaksanaan kegiatan di lapangan masih terdapat berbagai kekurangan, keterbatasan fasilitas, serta kekhilafan baik teknis maupun non-teknis. Untuk itu, dengan segala kerendahan hati, kami menyampaikan **permohonan maaf yang sebesar-besarnya dan setulus-tulusnya** kepada seluruh warga, sesepuh, para tokoh masyarakat, donatur, serta para tamu undangan atas segala ketidaknyamanan yang mungkin terjadi.
 
-Masa bakti kepanitiaan secara resmi dinyatakan berakhir. Sisa efisiensi dana kepanitiaan sebesar Rp 1.382.000 (bersumber dari Kas Donatur) akan dialihfungsikan untuk kegiatan Konsolidasi Internal dan Pembubaran Panitia. Kegiatan ini dirancang di luar lingkungan (ekskursi/pembinaan keakraban) guna melepas penat setelah satu bulan penuh menyiapkan acara kemerdekaan, sekaligus mempererat solidaritas antar pemuda dan warga yang tergabung dalam kepanitiaan tahun ini.
+**Ungkapan Terima Kasih & Penghargaan yang Setinggi-tingginya:**
+Kami menyampaikan rasa terima kasih dan apresiasi yang tak terhingga kepada seluruh pihak yang telah memberikan kontribusi, dukungan, dan dedikasi luar biasa:
+1. **Bapak Karto selaku Ketua ${namaRW} Ngabean beserta segenap Pengurus RW**, atas arahan, bimbingan, kebijakan, dan kepercayaan penuh yang senantiasa diberikan kepada kami.
+2. **Bapak/Ibu Pengurus RT 01, RT 02, RT 03, dan RT 04 Ngabean**, atas kerja sama yang solid, koordinasi lapangan, penarikan swadaya iuran warga, serta pengawalan kegiatan dari awal hingga akhir.
+3. **Pengelola Pamsimas RW 04 Ngabean**, atas bantuan likuiditas dana talangan operasional serta sumbangan donasi murni demi kelancaran kegiatan kemerdekaan.
+4. **Seluruh Sponsor Resmi (Prettywear, Apotek Gunungpati, Selo Agung, BnD Shop, Ngrembel Asri, UMKM kuliner warga)** dan **Para Donatur Dermawan**, atas keikhlasan bantuan materil, dana tunai, maupun hadiah doorprize yang melimpah.
+5. **Para Sesepuh, Tokoh Agama, Tokoh Masyarakat, Karang Taruna, Ibu-Ibu PKK, serta Seluruh Warga ${namaRW} Ngabean tanpa terkecuali**, atas partisipasi aktif, antusiasme, guyub rukun, dan kebersamaan yang menjadi nyawa utama perayaan kemerdekaan ini.
+6. **Seluruh Rekan-Rekan Panitia Pelaksana**, yang telah mendharmabaktikan tenaga, waktu, pikiran, dan komitmen tanpa pamrih.
 
-Semoga kebersamaan ini terus terbina demi kemajuan wilayah kita bersama.
+**Penetapan Akhir Masa Bakti & Alokasi Sisa Kas:**
+Dengan diserahkannya laporan pertanggungjawaban ini, maka masa bakti Panitia Pelaksana Peringatan HUT RI Ke-81 secara resmi dinyatakan **SELESAI dan BERAKHIR**.
+
+Adapun sisa efisiensi dana kepanitiaan sebesar **Rp 1.382.000,00** (yang bersumber murni dari Kas Donatur/Sponsor) disepakati dan dialihfungsikan untuk kegiatan **Konsolidasi Internal dan Pembubaran Panitia** di luar lingkungan (ekskursi/pembinaan keakraban). Agenda ini bertujuan untuk melepas penat setelah satu bulan penuh mencurahkan tenaga dalam menyukseskan acara kemerdekaan, sekaligus merawat tali silaturahmi dan solidaritas antar pemuda serta warga yang tergabung dalam kepanitiaan tahun ini.
+
+Semoga kerukunan, kesehatan, dan kemakmuran senantiasa melimpahi seluruh warga ${namaRW} Ngabean. Merdeka!
 
 Semarang, ${tanggalLPJ}
 
 **PANITIA PELAKSANA PERINGATAN HUT RI KE-81**
-**${namaRW.toUpperCase()}**
+**${namaRW.toUpperCase()} NGABEAN**
 
 ---
 
 ### LAMPIRAN
 
-Sebagai dokumen pendukung pertanggungjawaban panitia, berikut dilampirkan rincian pelengkap dokumen resmi:
+Sebagai dokumen pendukung pertanggungjawaban panitia, berikut dilampirkan berkas-berkas resmi:
 
-- **Lampiran 1:** Surat Keputusan (SK) Pembentukan Panitia Pelaksana Peringatan HUT Kemerdekaan RI Ke-81 RW 04 Ngabean (No: 01/SK-RW04/HUT-RI/VII/2026)
-- **Lampiran 2:** Daftar Hadir & Rekapitulasi Presensi Rapat Pleno Kepanitiaan (Pleno I, II, III & Petugas Lapangan)
-- **Lampiran 3:** Buku Kas Umum (BKU) Penerimaan & Pengeluaran Kas
-- **Lampiran 4:** Laporan Rekonsiliasi Pengembalian Dana Talangan Pamsimas & Realisasi Swadaya RT
-- **Lampiran 5:** Dokumentasi Foto Kegiatan & Berkas Fisik Nota Belanja Panitia
+- **Lampiran 1:** Buku Kas Umum (BKU) Penerimaan, Pengeluaran & Rekonsiliasi Kas
+- **Lampiran 2:** Laporan Rekonsiliasi Pengembalian Dana Talangan Pamsimas & Realisasi Swadaya RT
+- **Lampiran 3:** Dokumentasi Foto Kegiatan & Bundel Berkas Fisik Nota Belanja Panitia
 
 Laporan Pertanggungjawaban ini dibuat rangkap sebagai dokumentasi resmi dan arsip warga.`;
   };
@@ -632,9 +695,8 @@ Laporan Pertanggungjawaban ini dibuat rangkap sebagai dokumentasi resmi dan arsi
 
   const handleExportPDF = async () => {
     setIsExportingPDF(true);
-    await exportToPDF("printable-lpj-paper", `LPJ-${namaKegiatan.replace(/\s+/g, "-")}.pdf`);
+    await exportToPDF("document-preview-paper", `LPJ-${namaKegiatan.replace(/\s+/g, "-")}.pdf`);
     setIsExportingPDF(false);
-    setIsPreviewOpen(false);
   };
 
   const handleExportWord = async () => {
@@ -642,71 +704,35 @@ Laporan Pertanggungjawaban ini dibuat rangkap sebagai dokumentasi resmi dan arsi
       alert("Mohon lengkapi data identitas proposal (Nama Kegiatan) sebelum export.");
       return;
     }
-    await exportToWord("printable-lpj-paper", `LPJ-${namaKegiatan.replace(/\s+/g, "-")}`);
-    setIsPreviewOpen(false);
+    await exportToWord("document-preview-paper", `LPJ-${namaKegiatan.replace(/\s+/g, "-")}`);
   };
 
   const handleExportPNG = async () => {
     setIsExportingImage(true);
-    await exportToPNG("printable-lpj-paper", `LPJ-${namaKegiatan.replace(/\s+/g, "-")}.png`);
+    await exportToPNG("document-preview-paper", `LPJ-${namaKegiatan.replace(/\s+/g, "-")}.png`);
     setIsExportingImage(false);
-    setIsPreviewOpen(false);
   };
 
   const handleExportPNGZip = async () => {
     setIsExportingImage(true);
-    await exportToPNGZip("printable-lpj-paper", `LPJ-${namaKegiatan.replace(/\s+/g, "-")}`);
+    await exportToPNGZip("document-preview-paper", `LPJ-${namaKegiatan.replace(/\s+/g, "-")}`);
     setIsExportingImage(false);
-    setIsPreviewOpen(false);
   };
 
   const handleExportJPG = async () => {
     setIsExportingImage(true);
-    await exportToJPG("printable-lpj-paper", `LPJ-${namaKegiatan.replace(/\s+/g, "-")}.jpg`);
+    await exportToJPG("document-preview-paper", `LPJ-${namaKegiatan.replace(/\s+/g, "-")}.jpg`);
     setIsExportingImage(false);
-    setIsPreviewOpen(false);
   };
 
   const handleExportJPGZip = async () => {
     setIsExportingImage(true);
-    await exportToJPGZip("printable-lpj-paper", `LPJ-${namaKegiatan.replace(/\s+/g, "-")}`);
+    await exportToJPGZip("document-preview-paper", `LPJ-${namaKegiatan.replace(/\s+/g, "-")}`);
     setIsExportingImage(false);
-    setIsPreviewOpen(false);
   };
 
   return (
-    <div className="space-y-5">
-      <PDFPreviewModal 
-        isOpen={isPreviewOpen} 
-        onClose={() => setIsPreviewOpen(false)} 
-        title="Pratinjau LPJ" 
-        onDownload={handleExportPDF}
-        onExportWord={handleExportWord}
-        onExportPNG={handleExportPNG}
-        onExportPNGZip={handleExportPNGZip}
-        onExportJPG={handleExportJPG}
-        onExportJPGZip={handleExportJPGZip}
-      >
-        <DocumentPreviewRenderer
-          proposalMarkdown={lpjMarkdown || generateLocalLPJ(selectedTemplate)}
-          paperTheme={paperTheme}
-          fontStyle={fontStyle}
-          namaKegiatan={namaKegiatan}
-          namaRW={namaRW}
-          namaKetua={namaKetua}
-          namaSekretaris={namaSekretaris}
-          namaBendahara={namaBendahara}
-          namaRWKetua={namaRWKetua}
-          eventLogo={eventLogo}
-          showStamp={showStamp}
-          useMockData={useMockData}
-          showLetterhead={true}
-          showSignature={true}
-        >
-           {/* Content rendered by DocumentPreviewRenderer */}
-        </DocumentPreviewRenderer>
-      </PDFPreviewModal>
-
+    <>
       {/* 1. Header Area */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white p-4 rounded-lg shadow-sm border border-slate-200 print:hidden">
         <div>
@@ -1116,7 +1142,7 @@ Laporan Pertanggungjawaban ini dibuat rangkap sebagai dokumentasi resmi dan arsi
               // Helper components inside the render cycle
               ...(() => {
                 const getPaperClass = () => {
-                  let base = "relative p-8 sm:p-14 shadow-md max-w-[813px] min-h-[1247px] mx-auto select-text overflow-hidden transition-all duration-300 z-10 break-after-page flex flex-col justify-between print:min-h-0 print:shadow-none print:border-none print:p-0 print:mb-0 print:break-after-page ";
+                  let base = "relative p-8 sm:p-14 shadow-md max-w-[813px] min-h-[1247px] mx-auto select-text overflow-hidden transition-all duration-300 z-10 break-after-page flex flex-col justify-between print:min-h-0 print:max-w-none print:mx-0 print:shadow-none print:border-none print:mb-0 print:break-after-page ";
                   
                   if (paperTheme === "classic") {
                     base += "bg-white border-t-[8px] border-t-red-600 border border-slate-200 text-slate-900";
@@ -1292,6 +1318,58 @@ Laporan Pertanggungjawaban ini dibuat rangkap sebagai dokumentasi resmi dan arsi
                 const renderPaperContent = () => {
                   let mainBodyText = lpjMarkdown || generateLocalLPJ(selectedTemplate);
 
+                  const cleanNamaRW = namaRW.includes("Ngabean") ? namaRW : `${namaRW} Ngabean`;
+                  const penutupFormal = `### BAB VI. PENUTUP
+
+Demikian Laporan Pertanggungjawaban (LPJ) Peringatan HUT Kemerdekaan Republik Indonesia Ke-81 di wilayah ${cleanNamaRW} ini kami susun dengan sebenar-benarnya dan penuh rasa tanggung jawab. Keberhasilan seluruh rangkaian kegiatan ini merupakan bukti nyata bahwa semangat gotong royong, kebersamaan, dan persatuan warga tetap terjaga dengan sangat baik.
+
+**Permohonan Maaf:**
+Selaku Panitia Pelaksana, kami menyadari sepenuhnya bahwa dalam perencanaan, persiapan, maupun pelaksanaan kegiatan di lapangan masih terdapat berbagai kekurangan, keterbatasan fasilitas, serta kekhilafan baik teknis maupun non-teknis. Untuk itu, dengan segala kerendahan hati, kami menyampaikan **permohonan maaf yang sebesar-besarnya dan setulus-tulusnya** kepada seluruh warga, sesepuh, para tokoh masyarakat, donatur, serta para tamu undangan atas segala ketidaknyamanan yang mungkin terjadi.
+
+**Ungkapan Terima Kasih & Penghargaan yang Setinggi-tingginya:**
+Kami menyampaikan rasa terima kasih dan apresiasi yang tak terhingga kepada seluruh pihak yang telah memberikan kontribusi, dukungan, dan dedikasi luar biasa:
+1. **Bapak Karto selaku Ketua ${cleanNamaRW} beserta segenap Pengurus RW**, atas arahan, bimbingan, kebijakan, dan kepercayaan penuh yang senantiasa diberikan kepada kami.
+2. **Bapak/Ibu Pengurus RT 01, RT 02, RT 03, dan RT 04 Ngabean**, atas kerja sama yang solid, koordinasi lapangan, penarikan swadaya iuran warga, serta pengawalan kegiatan dari awal hingga akhir.
+3. **Pengelola Pamsimas RW 04 Ngabean**, atas bantuan likuiditas dana talangan operasional serta sumbangan donasi murni demi kelancaran kegiatan kemerdekaan.
+4. **Seluruh Sponsor Resmi (Prettywear, Apotek Gunungpati, Selo Agung, BnD Shop, Ngrembel Asri, UMKM kuliner warga)** dan **Para Donatur Dermawan**, atas keikhlasan bantuan materil, dana tunai, maupun hadiah doorprize yang melimpah.
+5. **Para Sesepuh, Tokoh Agama, Tokoh Masyarakat, Karang Taruna, Ibu-Ibu PKK, serta Seluruh Warga ${cleanNamaRW} tanpa terkecuali**, atas partisipasi aktif, antusiasme, guyub rukun, dan kebersamaan yang menjadi nyawa utama perayaan kemerdekaan ini.
+6. **Seluruh Rekan-Rekan Panitia Pelaksana**, yang telah mendharmabaktikan tenaga, waktu, pikiran, dan komitmen tanpa pamrih.
+
+**Penetapan Akhir Masa Bakti & Alokasi Sisa Kas:**
+Dengan diserahkannya laporan pertanggungjawaban ini, maka masa bakti Panitia Pelaksana Peringatan HUT RI Ke-81 secara resmi dinyatakan **SELESAI dan BERAKHIR**.
+
+Adapun sisa efisiensi dana kepanitiaan sebesar **Rp 1.382.000,00** (yang bersumber murni dari Kas Donatur/Sponsor) disepakati dan dialihfungsikan untuk kegiatan **Konsolidasi Internal dan Pembubaran Panitia** di luar lingkungan (ekskursi/pembinaan keakraban). Agenda ini bertujuan untuk melepas penat setelah satu bulan penuh mencurahkan tenaga dalam menyukseskan acara kemerdekaan, sekaligus merawat tali silaturahmi dan solidaritas antar pemuda serta warga yang tergabung dalam kepanitiaan tahun ini.
+
+Semoga kerukunan, kesehatan, dan kemakmuran senantiasa melimpahi seluruh warga ${cleanNamaRW}. Merdeka!`;
+
+                  const lampiranFormal = `### LAMPIRAN
+
+Sebagai dokumen pendukung pertanggungjawaban panitia, berikut dilampirkan 3 berkas resmi:
+
+- **Lampiran 1:** Buku Kas Umum (BKU) Penerimaan & Pengeluaran Kas
+- **Lampiran 2:** Laporan Rekonsiliasi Pengembalian Dana Talangan Pamsimas & Realisasi Swadaya RT
+- **Lampiran 3:** Dokumentasi Foto Kegiatan & Berkas Fisik Nota Belanja Panitia
+
+Laporan Pertanggungjawaban ini dibuat rangkap sebagai dokumentasi resmi dan arsip warga.`;
+
+                  // Guarantee that Formal template always contains full BAB VI Penutup and Lampiran
+                  if (selectedTemplate === "formal") {
+                    if (mainBodyText.includes("BAB VI") || mainBodyText.includes("PENUTUP")) {
+                      if (!mainBodyText.includes("Permohonan Maaf") || !mainBodyText.includes("Ungkapan Terima Kasih") || !mainBodyText.includes("Bapak Karto") || !mainBodyText.includes("1.382.000")) {
+                        const cutIdx = mainBodyText.indexOf("### BAB VI") !== -1 ? mainBodyText.indexOf("### BAB VI") : mainBodyText.indexOf("BAB VI");
+                        if (cutIdx !== -1) {
+                          mainBodyText = mainBodyText.substring(0, cutIdx).trim() + `\n\n---\n\n` + penutupFormal + `\n\n---\n\n` + lampiranFormal;
+                        } else {
+                          mainBodyText += `\n\n---\n\n` + penutupFormal + `\n\n---\n\n` + lampiranFormal;
+                        }
+                      } else if (!mainBodyText.includes("LAMPIRAN") && !mainBodyText.includes("Lampiran 1")) {
+                        mainBodyText += `\n\n---\n\n` + lampiranFormal;
+                      }
+                    } else {
+                      mainBodyText += `\n\n---\n\n` + penutupFormal + `\n\n---\n\n` + lampiranFormal;
+                    }
+                  }
+
                   const activePemasukan = keuangan
                     .filter(t => t.type === 'Masuk')
                     .reduce((sum, t) => sum + t.amount, 0);
@@ -1399,12 +1477,12 @@ Laporan Pertanggungjawaban ini dibuat rangkap sebagai dokumentasi resmi dan arsi
                     if (markdownText.includes("### DAFTAR ISI") || markdownText.includes("DAFTAR ISI")) {
                       return (
                         <div key="toc-custom" className="space-y-4 my-2 font-sans">
-                          <div className={`border-b-2 ${theme.bar1} pb-2 mb-4 flex items-center justify-between`}>
-                            <h3 className={`text-xs sm:text-sm font-black tracking-wider uppercase ${theme.textAccent} font-sans flex items-center gap-2`}>
-                              <span className={`w-2.5 h-4.5 ${theme.bar1} rounded-xs inline-block`} />
+                          <div className="bg-red-700 text-white px-3.5 py-2.5 rounded-md mb-4 flex items-center justify-between shadow-xs">
+                            <h3 className="text-xs sm:text-sm font-black tracking-wider uppercase font-sans flex items-center gap-2 text-white">
+                              <span className="w-2 h-4 bg-amber-400 rounded-xs inline-block shrink-0" />
                               DAFTAR ISI LAPORAN PERTANGGUNGJAWABAN
                             </h3>
-                            <span className="text-[8.5px] font-mono font-bold uppercase bg-slate-100 text-slate-600 px-2 py-0.5 rounded border border-slate-200">
+                            <span className="text-[8.5px] font-mono font-bold uppercase bg-red-900/90 text-amber-300 px-2.5 py-0.5 rounded border border-red-500/60 shrink-0">
                               Struktur Dokumen Formal
                             </span>
                           </div>
@@ -1417,12 +1495,12 @@ Laporan Pertanggungjawaban ini dibuat rangkap sebagai dokumentasi resmi dan arsi
                               { no: 4, title: "Kata Pengantar", page: 4 },
                               { no: 5, title: "Daftar Isi", page: 5 },
                               { no: 6, title: "BAB I. PENDAHULUAN", page: 6, sub: ["Latar Belakang Kegiatan", "Maksud & Tujuan", "Landasan Hukum & Dasar Pelaksanaan"] },
-                              { no: 7, title: "BAB II. PERENCANAAN KEGIATAN", page: 7, sub: ["Struktur Kepanitiaan (SK)", "Rancangan Jadwal & Rundown Acara"] },
+                              { no: 7, title: "BAB II. PERENCANAAN KEGIATAN", page: 7, sub: ["Struktur Kepanitiaan & Alur Koordinasi", "Rancangan Jadwal & Rundown Acara"] },
                               { no: 8, title: "BAB III. PELAKSANAAN KEGIATAN", page: 8, sub: ["Rangkaian Lomba Warga & Anak", "Malam Tirakatan 17-an", "Jalan Sehat & Panggung Pentas Seni"] },
                               { no: 9, title: "BAB IV. PERTANGGUNGJAWABAN KEUANGAN", page: 9, sub: ["Realisasi Belanja Seksi Panitia", "Rekapitulasi Iuran & Swadaya RT", "Tabel Realisasi & Neraca Saldo Kas Sisa"] },
                               { no: 10, title: "BAB V. EVALUASI", page: 10, sub: ["Tantangan Administrasi & Keuangan", "Kendala Kepanitiaan & Koordinasi", "Tantangan Logistik & Operasional", "Rekomendasi & Solusi Kepanitiaan Depan"] },
-                              { no: 11, title: "BAB VI. PENUTUP", page: 11 },
-                              { no: 12, title: "Lampiran & Dokumentasi Foto Kegiatan", page: 12 }
+                              { no: 11, title: "BAB VI. PENUTUP", page: 11, sub: ["Permohonan Maaf & Ungkapan Terima Kasih", "Penetapan Akhir Masa Bakti & Alokasi Sisa Kas"] },
+                              { no: 12, title: "LAMPIRAN DOKUMEN RESMI", page: 12, sub: ["Lampiran 1: Buku Kas Umum (BKU) Kas Masuk & Keluar", "Lampiran 2: Rekonsiliasi Pengembalian Dana Talangan Pamsimas", "Lampiran 3: Dokumentasi Foto Kegiatan & Berkas Fisik Nota"] }
                             ].map((item) => (
                               <div key={item.no} className="space-y-1">
                                 <div className="flex items-baseline justify-between gap-1 text-[11px] sm:text-xs">
@@ -1593,25 +1671,51 @@ Laporan Pertanggungjawaban ini dibuat rangkap sebagai dokumentasi resmi dan arsi
                   
                   // Calculate Seksi budget data
                   const seksiList = safeSettings.seksiList;
+                  const isKasDonasiTxCalc = (t: { id?: string; proofNumber?: string; fundingSource?: string; category?: string }) => {
+                    const idLower = (t.id || "").toLowerCase();
+                    const proofUpper = (t.proofNumber || "").toUpperCase();
+                    const sourceLower = (t.fundingSource || "").toLowerCase();
+                    const categoryLower = (t.category || "").toLowerCase();
+                    return (
+                      idLower.includes("k2") ||
+                      idLower.includes("bd") ||
+                      idLower.includes("donasi") ||
+                      proofUpper.includes("BD") ||
+                      proofUpper.includes("DONASI") ||
+                      sourceLower.includes("donas") ||
+                      sourceLower.includes("sponsor") ||
+                      categoryLower.includes("donasi") ||
+                      categoryLower.includes("sponsor")
+                    );
+                  };
+
                   const seksiTableData = seksiList.map((seksiName, idx) => {
                     let pagu = safeSettings.paguAnggaranSeksi[seksiName] || 0;
                     let spent = 0;
+                    let spentUtama = 0;
+                    let spentDonasi = 0;
+                    
                     if (useMockData) {
-                      if (seksiName.includes("Acara")) { pagu = 3000000; spent = 2800000; }
-                      else if (seksiName.includes("Perlengkap")) { pagu = 4000000; spent = 3900000; }
-                      else if (seksiName.includes("Konsumsi")) { pagu = 5000000; spent = 4700000; }
-                      else if (seksiName.includes("Lomba")) { pagu = 2000000; spent = 1400000; }
-                      else { spent = Math.round(pagu * 0.9); }
+                      if (seksiName.includes("Sekretar") || seksiName.includes("BPH")) { pagu = 1050000; spent = 523000; spentUtama = 523000; spentDonasi = 0; }
+                      else if (seksiName.includes("Acara")) { pagu = 5300000; spent = 4909000; spentUtama = 3465000; spentDonasi = 1444000; }
+                      else if (seksiName.includes("Operasional") || seksiName.includes("Perlengkap")) { pagu = 11200000; spent = 7186000; spentUtama = 6012000; spentDonasi = 1174000; }
+                      else if (seksiName.includes("Humas") || seksiName.includes("Support")) { pagu = 0; spent = 0; spentUtama = 0; spentDonasi = 0; }
+                      else { pagu = safeSettings.paguAnggaranSeksi[seksiName] || 0; spent = Math.round(pagu * 0.9); }
                     } else {
-                      spent = keuangan.filter(t => t.type === 'Keluar' && (t as any).seksi === seksiName).reduce((sum, t) => sum + t.amount, 0);
+                      const txs = keuangan.filter(t => t.type === 'Keluar' && matchTxToSeksi(t, seksiName));
+                      spent = txs.reduce((sum, t) => sum + t.amount, 0);
+                      spentUtama = txs.filter(t => !isKasDonasiTxCalc(t)).reduce((sum, t) => sum + t.amount, 0);
+                      spentDonasi = txs.filter(t => isKasDonasiTxCalc(t)).reduce((sum, t) => sum + t.amount, 0);
                     }
                     const sisa = pagu - spent;
                     const percent = pagu > 0 ? Math.round((spent / pagu) * 100) : 0;
-                    return { idx: idx + 1, seksi: seksiName, pagu, spent, sisa, percent };
+                    return { idx: idx + 1, seksi: seksiName, pagu, spent, spentUtama, spentDonasi, sisa, percent };
                   });
 
                   const totalPaguSeksi = useMockData ? 14000000 : Object.values(safeSettings.paguAnggaranSeksi).reduce((s, v) => s + v, 0);
                   const totalSpentSeksi = totalPengeluaran;
+                  const totalSpentUtamaSeksi = seksiTableData.reduce((acc, row) => acc + (row.spentUtama || 0), 0);
+                  const totalSpentDonasiSeksi = seksiTableData.reduce((acc, row) => acc + (row.spentDonasi || 0), 0);
                   const totalSisaSeksi = totalPaguSeksi - totalSpentSeksi;
                   const totalPercentSeksi = totalPaguSeksi > 0 ? Math.round((totalSpentSeksi / totalPaguSeksi) * 100) : 0;
 
@@ -1642,7 +1746,9 @@ Laporan Pertanggungjawaban ini dibuat rangkap sebagai dokumentasi resmi dan arsi
                   // Custom themed cover page for HUT RI
                   const renderFormalCover = () => {
                     return (
-                      <div className="flex-1 flex flex-col justify-between py-6 px-4 relative min-h-[900px] border-4 border-double border-red-600 rounded-lg p-6 bg-white shadow-3xs">
+                      <div className="flex-1 flex flex-col justify-between py-6 px-4 relative min-h-[900px] border-4 border-double border-red-600 rounded-lg p-6 shadow-3xs overflow-hidden bg-white" style={{ backgroundImage: `url(${garudaBg})`, backgroundSize: 'cover', backgroundPosition: 'center', backgroundRepeat: 'no-repeat' }}>
+      <div className="absolute inset-0 bg-gradient-to-l from-white via-white/90 to-white/30 z-0"></div>
+      <div className="relative z-10 flex flex-col h-full justify-between">
                         {/* Decorative Red & White Corner Ribbon on top right */}
                         <div className="absolute top-0 right-0 w-28 h-28 overflow-hidden pointer-events-none z-20">
                           <div className="absolute top-6 -right-10 w-36 py-1 bg-gradient-to-r from-red-600 to-red-700 text-white text-[9px] font-black uppercase tracking-widest text-center rotate-45 border-b-2 border-white/40 shadow-md">
@@ -1655,9 +1761,9 @@ Laporan Pertanggungjawaban ini dibuat rangkap sebagai dokumentasi resmi dan arsi
                           <div className="flex items-center gap-1.5">
                             <span className="w-2.5 h-2.5 rounded-full bg-red-600" />
                             <span className="w-2.5 h-2.5 rounded-full bg-slate-200 border border-slate-300" />
-                            <span className="text-[9px] font-mono font-bold tracking-widest text-slate-400 uppercase">DOKUMEN PERTANGGUNGJAWABAN</span>
+                            <span className="text-[9px] font-mono font-black tracking-widest text-slate-800 bg-white/90 border border-slate-200 px-2 py-0.5 rounded shadow-2xs uppercase">DOKUMEN PERTANGGUNGJAWABAN</span>
                           </div>
-                          <span className="text-[8px] font-mono font-black text-red-600 uppercase border border-red-200 bg-red-50 px-2 py-0.5 rounded shadow-3xs">OFFICIAL LPJ</span>
+                          <span className="text-[8.5px] font-mono font-black text-red-700 uppercase border border-red-200 bg-red-50 px-2.5 py-0.5 rounded shadow-2xs">OFFICIAL LPJ</span>
                         </div>
 
                         {/* Main Center Block */}
@@ -1732,6 +1838,7 @@ Laporan Pertanggungjawaban ini dibuat rangkap sebagai dokumentasi resmi dan arsi
                             Sistem Pengelolaan Acara & Keuangan Waktu Nyata (SEMS) • 2026
                           </div>
                         </div>
+                      </div>
                       </div>
                     );
                   };
@@ -1889,7 +1996,9 @@ Laporan Pertanggungjawaban ini dibuat rangkap sebagai dokumentasi resmi dan arsi
                                           <th className="px-2 py-1.5 text-center text-inherit">No</th>
                                           <th className="px-2 py-1.5 text-inherit">Seksi / Pos Anggaran</th>
                                           <th className="px-2 py-1.5 text-right text-inherit">Alokasi Pagu</th>
-                                          <th className="px-2 py-1.5 text-right text-inherit">Realisasi Belanja</th>
+                                          <th className="px-2 py-1.5 text-right text-inherit">Realisasi (Total)</th>
+                                          <th className="px-2 py-1.5 text-right text-inherit hidden md:table-cell">Dari Kas Utama</th>
+                                          <th className="px-2 py-1.5 text-right text-inherit hidden md:table-cell">Dari Kas Donasi</th>
                                           <th className="px-2 py-1.5 text-right text-inherit">Sisa Anggaran</th>
                                           <th className="px-2 py-1.5 text-center text-inherit">Penyerapan (%)</th>
                                         </tr>
@@ -1901,6 +2010,8 @@ Laporan Pertanggungjawaban ini dibuat rangkap sebagai dokumentasi resmi dan arsi
                                             <td className="px-2 py-1 font-semibold text-slate-800">Seksi {row.seksi}</td>
                                             <td className="px-2 py-1 text-right font-mono text-slate-600">{formatRp(row.pagu)}</td>
                                             <td className="px-2 py-1 text-right font-mono font-bold text-slate-800">{formatRp(row.spent)}</td>
+                                            <td className="px-2 py-1 text-right font-mono text-[9px] text-slate-500 hidden md:table-cell">{formatRp(row.spentUtama || 0)}</td>
+                                            <td className="px-2 py-1 text-right font-mono text-[9px] text-slate-500 hidden md:table-cell">{formatRp(row.spentDonasi || 0)}</td>
                                             <td className="px-2 py-1 text-right font-mono text-slate-600">{formatRp(row.sisa)}</td>
                                             <td className="px-2 py-1 text-center">
                                               <span className={`px-1 py-0.2 rounded font-bold text-[8px] ${
@@ -1918,6 +2029,8 @@ Laporan Pertanggungjawaban ini dibuat rangkap sebagai dokumentasi resmi dan arsi
                                           <td className="px-2 py-2 uppercase tracking-wide text-[8px]">Total Belanja</td>
                                           <td className="px-2 py-2 text-right font-mono">{formatRp(totalPaguSeksi)}</td>
                                           <td className="px-2 py-2 text-right font-mono text-emerald-700">{formatRp(totalSpentSeksi)}</td>
+                                          <td className="px-2 py-2 text-right font-mono text-slate-700 hidden md:table-cell">{formatRp(totalSpentUtamaSeksi)}</td>
+                                          <td className="px-2 py-2 text-right font-mono text-slate-700 hidden md:table-cell">{formatRp(totalSpentDonasiSeksi)}</td>
                                           <td className="px-2 py-2 text-right font-mono">{formatRp(totalSisaSeksi)}</td>
                                           <td className="px-2 py-2 text-center">
                                             <span className="px-1 py-0.2 rounded bg-slate-900 text-amber-400 text-[8px] font-bold">
@@ -2069,7 +2182,69 @@ Laporan Pertanggungjawaban ini dibuat rangkap sebagai dokumentasi resmi dan arsi
 
                             {/* Appended Content on Lampiran Page */}
                             {isLampiranPage && (
-                              <div className="mt-6 space-y-4 text-xs border-t-2 border-slate-900 pt-4 print:break-inside-avoid">
+                              <div className="mt-6 space-y-5 text-xs border-t-2 border-slate-900 pt-5 print:break-inside-avoid">
+                                <div className="bg-red-50 border border-red-200 rounded-lg p-3.5 text-center">
+                                  <h4 className="text-xs font-black text-red-800 uppercase tracking-wider font-sans">
+                                    BERKAS REKAPITULASI LAMPIRAN RESMI LPJ
+                                  </h4>
+                                  <p className="text-[10.5px] text-slate-600 mt-1 font-sans">
+                                    Berikut 3 berkas lampiran pendukung fisik & digital yang telah terverifikasi penuh oleh Panitia dan Pengurus RW 04 Ngabean.
+                                  </p>
+                                </div>
+
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5">
+                                  <div className="border border-slate-300 rounded-lg p-3.5 bg-white shadow-3xs flex flex-col justify-between">
+                                    <div>
+                                      <div className="flex items-center justify-between">
+                                        <span className="text-[9px] font-black text-red-700 uppercase bg-red-100 px-2 py-0.5 rounded border border-red-200">Lampiran 1</span>
+                                        <span className="text-[8px] font-mono text-emerald-700 font-bold">TERVERIFIKASI</span>
+                                      </div>
+                                      <div className="text-xs font-black text-slate-900 mt-2 font-sans">Buku Kas Umum (BKU)</div>
+                                      <p className="text-[10px] text-slate-600 mt-1 leading-relaxed">
+                                        28 Transaksi Kas Utama & 9 Transaksi Kas Donasi tercatat presisi dengan sisa saldo bersih Rp 1.382.000,00.
+                                      </p>
+                                    </div>
+                                    <div className="mt-3 pt-2 border-t border-slate-100 text-[8.5px] font-mono text-slate-500">
+                                      Status: Rekapitulasi Kas Lunas
+                                    </div>
+                                  </div>
+
+                                  <div className="border border-slate-300 rounded-lg p-3.5 bg-white shadow-3xs flex flex-col justify-between">
+                                    <div>
+                                      <div className="flex items-center justify-between">
+                                        <span className="text-[9px] font-black text-indigo-700 uppercase bg-indigo-100 px-2 py-0.5 rounded border border-indigo-200">Lampiran 2</span>
+                                        <span className="text-[8px] font-mono text-emerald-700 font-bold">100% LUNAS</span>
+                                      </div>
+                                      <div className="text-xs font-black text-slate-900 mt-2 font-sans">Rekonsiliasi Pamsimas & RT</div>
+                                      <p className="text-[10px] text-slate-600 mt-1 leading-relaxed">
+                                        Pengembalian dana talangan Pamsimas 4 RT @ Rp 2.000.000 (total Rp 8.000.000) telah tuntas via iuran warga.
+                                      </p>
+                                    </div>
+                                    <div className="mt-3 pt-2 border-t border-slate-100 text-[8.5px] font-mono text-slate-500">
+                                      Status: Talangan Terserap Tuntas
+                                    </div>
+                                  </div>
+
+                                  <div className="border border-slate-300 rounded-lg p-3.5 bg-white shadow-3xs flex flex-col justify-between">
+                                    <div>
+                                      <div className="flex items-center justify-between">
+                                        <span className="text-[9px] font-black text-amber-800 uppercase bg-amber-100 px-2 py-0.5 rounded border border-amber-200">Lampiran 3</span>
+                                        <span className="text-[8px] font-mono text-emerald-700 font-bold">ARSIP FISIK</span>
+                                      </div>
+                                      <div className="text-xs font-black text-slate-900 mt-2 font-sans">Dokumentasi & Nota Belanja</div>
+                                      <p className="text-[10px] text-slate-600 mt-1 leading-relaxed">
+                                        Bundel nota asli belanja barang/jasa dan foto dokumentasi kegiatan tersimpan rapi pada sekretariat RW.
+                                      </p>
+                                    </div>
+                                    <div className="mt-3 pt-2 border-t border-slate-100 text-[8.5px] font-mono text-slate-500">
+                                      Status: Terarsip di Kesekretariatan
+                                    </div>
+                                  </div>
+                                </div>
+
+                                <div className="border border-slate-200 bg-slate-50 rounded-lg p-3 text-center text-[9.5px] text-slate-500 font-mono">
+                                  Dokumen LPJ ini diterbitkan secara otomatis oleh Sistem SEMS RW 04 Ngabean dan sah tanpa memerlukan pengubahan data manual.
+                                </div>
                               </div>
                             )}
 
@@ -2085,8 +2260,8 @@ Laporan Pertanggungjawaban ini dibuat rangkap sebagai dokumentasi resmi dan arsi
                         </div>
 
                         {!isCoverPage && (
-                          <div className="mt-6 text-center text-[10px] text-slate-400 font-mono">
-                            - {pageIndex} -
+                          <div className="mt-6 text-center text-[10px] text-slate-500 font-mono font-bold">
+                            - {pageIndex + 1} -
                           </div>
                         )}
                       </div>
@@ -2314,8 +2489,8 @@ Laporan Pertanggungjawaban ini dibuat rangkap sebagai dokumentasi resmi dan arsi
                     </div>
 
                     {/* Styled virtual paper layout */}
-                    <div className="p-4 sm:p-8 bg-slate-200/60 h-[800px] overflow-y-auto select-text print:h-auto print:bg-white print:p-0 print:overflow-visible">
-                      <div id="printable-lpj-paper" className="space-y-8 print:space-y-0">
+                    <div className="p-4 sm:p-8 bg-slate-200/60 h-[800px] overflow-y-auto select-text print:h-auto print:bg-transparent print:p-0 print:overflow-visible">
+                      <div id="document-preview-paper" className="space-y-8 print:space-y-0">
                         {renderPaperContent()}
                       </div>
                     </div>
@@ -2323,7 +2498,21 @@ Laporan Pertanggungjawaban ini dibuat rangkap sebagai dokumentasi resmi dan arsi
                     <div className="bg-red-50 p-2 text-[9px] text-red-800 border-t border-slate-200 font-bold tracking-wide uppercase text-center print:hidden">
                       *LPJ Konsolidasi Real-time: Kas Masuk {formatRp(keuangan.filter(t => t.type === 'Masuk').reduce((s,t) => s+t.amount, 0))} | Kas Keluar {formatRp(keuangan.filter(t => t.type === 'Keluar').reduce((s,t) => s+t.amount,0))}
                     </div>
-
+                    <div className="space-y-5">
+      <PDFPreviewModal 
+        isOpen={isPreviewOpen} 
+        onClose={() => setIsPreviewOpen(false)} 
+        title="Pratinjau LPJ" 
+        onDownload={handleExportPDF}
+        onExportWord={handleExportWord}
+        onExportPNG={handleExportPNG}
+        onExportPNGZip={handleExportPNGZip}
+        onExportJPG={handleExportJPG}
+        onExportJPGZip={handleExportJPGZip}
+      >
+        {renderPaperContent()}
+      </PDFPreviewModal>
+                  </div>
                   </div>
                 );
               })()
@@ -2335,6 +2524,6 @@ Laporan Pertanggungjawaban ini dibuat rangkap sebagai dokumentasi resmi dan arsi
       </div>
         </>
       )}
-    </div>
+    </>
   );
 }

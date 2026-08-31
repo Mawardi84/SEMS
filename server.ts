@@ -965,8 +965,10 @@ Terima kasih atas kesempatan yang diberikan oleh Ketua Panitia. Izinkan saya, me
 
 #### 1. Laporan Pelaksanaan Kegiatan Lapangan
 Rangkaian perayaan HUT RI Ke-81 di lingkungan RW 04 telah berjalan sejak awal Agustus 2026. Dari total **${totalKegiatan > 0 ? totalKegiatan : 'seluruh'} agenda program kerja** yang dirancang bersama:
-- Perlombaan anak-anak, remaja, dan ibu-ibu antar RT telah sukses diselenggarakan dengan tingkat partisipasi mencapai lebih dari 90%.
-- Malam Tirakatan 16 Agustus berlangsung dengan khidmat, dilanjutkan dengan Panggung Gembira dan Jalan Sehat Warga yang berlangsung sangat semarak.
+- Lomba Anak (01 Agustus s/d 16 Agustus 2026) berjalan meriah dengan berbagai lomba tradisional edukatif.
+- Malam Tirakatan & Lomba Warga (16 Agustus 2026): Berlangsung khidmat diisi doa bersama dan pemotongan tumpeng, dilanjutkan Lomba Ibu-ibu Tebak Gaya, Lomba Bapak-bapak Pukul Paku, serta Lomba Remaja Estafet Sarung.
+- Jalan Sehat & Doorprize Warga (23 Agustus 2026): Jalan sehat bersama dengan dihibur Band Sendang Bunder, pembagian Hadiah Lomba Anak-anak, serta pengundian doorprize utama.
+- Malam Puncak / Resepsi & Hiburan Dangdut (23 Agustus 2026 malam): Ditampilkan pentas seni tari anak-anak dilanjutkan hiburan dangdut solo organ.
 - Seluruh kendala teknis lapangan di seksi Perlengkapan, Acara, dan Konsumsi dapat dimitigasi dengan sigap berkat kerjasama gotong royong warga.
 
 #### 2. Laporan Administrasi & Surat-Menyurat
@@ -1314,13 +1316,13 @@ PANDUAN KHUSUS UNTUK TEMPLATE "${templateType}":
   ---
   Halaman 8: ### BAB III. PELAKSANAAN KEGIATAN (Uraian detail perlombaan, tirakatan, jalan sehat, dan persentase capaian)
   ---
-  Halaman 9: ### BAB IV. PERTANGGUNGJAWABAN KEUANGAN (Uraian posisi kas, penjelasan penerimaan Pamsimas total Rp 10.000.000, serta penegasan bahwa sisa efisiensi dana kepanitiaan sebesar Rp 1.382.000 yang bersumber dari Kas Donatur dialihfungsikan untuk kegiatan Konsolidasi Internal dan Pembubaran Panitia di luar lingkungan untuk melepas penat dan mempererat solidaritas, bukan dikembalikan ke kas RW)
+  Halaman 9: ### BAB IV. PERTANGGUNGJAWABAN KEUANGAN (Uraian posisi kas, rincian penerimaan total Rp 14.000.000 mencakup: 1. Rp 8.000.000 dari iuran 4 RT melalui dana talangan Pamsimas @ Rp 2.000.000 di mana panitia telah menyerahkan fisik nota belanja Rp 2.000.000 ke masing-masing RT dan pihak RT yang mengembalikan ke Pamsimas dari iuran warganya, 2. Rp 2.000.000 murni sumbangan/donasi sukarela dari Pamsimas, 3. Rp 4.000.000 murni dari sponsor dan donatur warga dermawan. Serta penegasan bahwa sisa efisiensi dana kepanitiaan sebesar Rp 1.382.000 yang bersumber dari Kas Donatur/Sponsor dialihfungsikan untuk kegiatan Konsolidasi Internal dan Pembubaran Panitia / ekskursi di luar lingkungan untuk melepas penat dan mempererat solidaritas, bukan dikembalikan ke kas RW)
   ---
-  Halaman 10: ### BAB V. EVALUASI (DILARANG MENYEBUT KENDALA CUACA ATAU HUJAN karena Juli-Agustus musim kemarau. Evaluasi WAJIB berfokus pada 4 poin: 1. Tantangan Administrasi & Pengelolaan Keuangan (keterlambatan nota & relokasi anggaran dadakan), 2. Kendala Koordinasi & Komposisi Panitia (struktur gemuk & beban kerja asimetris), 3. Tantangan Logistik & Operasional, 4. Rekomendasi & Solusi Kepanitiaan Ramping 9-11 orang)
+  Halaman 10: ### BAB V. EVALUASI (DILARANG MENYEBUT KENDALA CUACA ATAU HUJAN karena Juli-Agustus musim kemarau. Evaluasi WAJIB berfokus pada 4 poin: 1. Tantangan Administrasi & Pengelolaan Keuangan (keterlambatan nota & relokasi anggaran dadakan), 2. Kendala Koordinasi & Komposisi Panitia (struktur gemuk & beban kerja asimetris), 3. Tantangan Logistik & Operasional, 4. Rekomendasi & Solusi Kepanitiaan Ramping 9-11 orang. JANGAN menyebut SK kepanitiaan)
   ---
-  Halaman 11: ### BAB VI. PENUTUP (Uraian akhir, ungkapan terima kasih mendalam, permohonan maaf, serta penegasan pengalihan sisa efisiensi dana Rp 1.382.000 untuk ekskursi pembubaran panitia)
+  Halaman 11: ### BAB VI. PENUTUP (Uraian akhir resmi, permohonan maaf setulus-tulusnya atas segala kekurangan teknis atau fasilitas di lapangan, ungkapan terima kasih mendalam secara khusus dan eksplisit kepada: Ketua RW 04, Pengurus RT 01-04, Pengelola Pamsimas, seluruh Sponsor Resmi dan Donatur Dermawan, Tokoh Masyarakat, Tokoh Agama, Karang Taruna, PKK, serta seluruh warga RW 04, serta penegasan pengalihan sisa efisiensi dana Rp 1.382.000 untuk ekskursi pembubaran panitia)
   ---
-  Halaman 12: ### LAMPIRAN (Wajib menyertakan 5 Lampiran Lengkap: Lampiran 1: Surat Keputusan (SK) Pembentukan Panitia Pelaksana, Lampiran 2: Daftar Hadir & Rekapitulasi Presensi Rapat Pleno I, II, III & Petugas Lapangan, Lampiran 3: Buku Kas Umum (BKU) & Rekonsiliasi Kas, Lampiran 4: Laporan Rekonsiliasi Pamsimas & Swadaya, Lampiran 5: Dokumentasi Foto & Berkas Fisik Nota Belanja)
+  Halaman 12: ### LAMPIRAN (Wajib menyertakan 3 Lampiran Resmi: Lampiran 1: Buku Kas Umum (BKU) & Rekonsiliasi Kas, Lampiran 2: Laporan Rekonsiliasi Pengembalian Dana Talangan Pamsimas & Realisasi Swadaya RT, Lampiran 3: Dokumentasi Foto & Berkas Fisik Nota Belanja. DILARANG membuat atau menyebut SK Pembentukan Panitia RW dan DILARANG membuat presensi/daftar hadir karena tidak terdapat SK dan presensi).
   Pastikan Anda menyelesaikan dan menulis KESELURUHAN 12 halaman tersebut secara lengkap dengan penjelasan komprehensif tanpa terputus. Jarak antar halaman dipisahkan tepat dengan "---".
 - Jika template "ringkas": Tulis naskah laporan ringkas/eksekutif yang ditujukan langsung untuk warga. Nada penulisan sangat guyub, hangat, santun, dan fokus pada kebersamaan. Sebutkan angka-angka utama (Kas Masuk, Kas Keluar, Sisa Kas, Swadaya Tunai), apresiasi kerukunan warga, rincian singkat kemeriahan program kerja, dan penutup yang menyentuh hati. Gunakan "---" untuk memisahkan halaman jika perlu.`;
 
@@ -1362,12 +1364,75 @@ Silakan susun draf laporan pertanggungjawaban sesuai dengan instruksi sistem. Pa
         contents: [{ role: 'user', parts: [{ text: prompt }] }],
         config: {
           systemInstruction,
-          temperature: 0.8,
+          temperature: 0.7,
           maxOutputTokens: 8192,
         }
       });
 
-      const lpjText = response.text || "";
+      let lpjText = response.text || "";
+
+      const penutupFormal = `### BAB VI. PENUTUP
+
+Demikian Laporan Pertanggungjawaban (LPJ) Peringatan HUT Kemerdekaan Republik Indonesia Ke-81 di wilayah ${namaRW} Ngabean ini kami susun dengan sebenar-benarnya dan penuh rasa tanggung jawab. Keberhasilan seluruh rangkaian kegiatan ini merupakan bukti nyata bahwa semangat gotong royong, kebersamaan, dan persatuan warga tetap terjaga dengan sangat baik.
+
+**Permohonan Maaf:**
+Selaku Panitia Pelaksana, kami menyadari sepenuhnya bahwa dalam perencanaan, persiapan, maupun pelaksanaan kegiatan di lapangan masih terdapat berbagai kekurangan, keterbatasan fasilitas, serta kekhilafan baik teknis maupun non-teknis. Untuk itu, dengan segala kerendahan hati, kami menyampaikan **permohonan maaf yang sebesar-besarnya dan setulus-tulusnya** kepada seluruh warga, sesepuh, para tokoh masyarakat, donatur, serta para tamu undangan atas segala ketidaknyamanan yang mungkin terjadi.
+
+**Ungkapan Terima Kasih & Penghargaan yang Setinggi-tingginya:**
+Kami menyampaikan rasa terima kasih dan apresiasi yang tak terhingga kepada seluruh pihak yang telah memberikan kontribusi, dukungan, dan dedikasi luar biasa:
+1. **Bapak Karto selaku Ketua ${namaRW} Ngabean beserta segenap Pengurus RW**, atas arahan, bimbingan, kebijakan, dan kepercayaan penuh yang senantiasa diberikan kepada kami.
+2. **Bapak/Ibu Pengurus RT 01, RT 02, RT 03, dan RT 04 Ngabean**, atas kerja sama yang solid, koordinasi lapangan, penarikan swadaya iuran warga, serta pengawalan kegiatan dari awal hingga akhir.
+3. **Pengelola Pamsimas RW 04 Ngabean**, atas bantuan likuiditas dana talangan operasional serta sumbangan donasi murni demi kelancaran kegiatan kemerdekaan.
+4. **Seluruh Sponsor Resmi (Prettywear, Apotek Gunungpati, Selo Agung, BnD Shop, Ngrembel Asri, UMKM kuliner warga)** dan **Para Donatur Dermawan**, atas keikhlasan bantuan materil, dana tunai, maupun hadiah doorprize yang melimpah.
+5. **Para Sesepuh, Tokoh Agama, Tokoh Masyarakat, Karang Taruna, Ibu-Ibu PKK, serta Seluruh Warga ${namaRW} Ngabean tanpa terkecuali**, atas partisipasi aktif, antusiasme, guyub rukun, dan kebersamaan yang menjadi nyawa utama perayaan kemerdekaan ini.
+6. **Seluruh Rekan-Rekan Panitia Pelaksana**, yang telah mendharmabaktikan tenaga, waktu, pikiran, dan komitmen tanpa pamrih.
+
+**Penetapan Akhir Masa Bakti & Alokasi Sisa Kas:**
+Dengan diserahkannya laporan pertanggungjawaban ini, maka masa bakti Panitia Pelaksana Peringatan HUT RI Ke-81 secara resmi dinyatakan **SELESAI dan BERAKHIR**.
+
+Adapun sisa efisiensi dana kepanitiaan sebesar **Rp 1.382.000,00** (yang bersumber murni dari Kas Donatur/Sponsor) disepakati dan dialihfungsikan untuk kegiatan **Konsolidasi Internal dan Pembubaran Panitia** di luar lingkungan (ekskursi/pembinaan keakraban). Agenda ini bertujuan untuk melepas penat setelah satu bulan penuh mencurahkan tenaga dalam menyukseskan acara kemerdekaan, sekaligus merawat tali silaturahmi dan solidaritas antar pemuda serta warga yang tergabung dalam kepanitiaan tahun ini.
+
+Semoga kerukunan, kesehatan, dan kemakmuran senantiasa melimpahi seluruh warga ${namaRW} Ngabean. Merdeka!
+
+Semarang, ${tanggalLPJ}
+
+**PANITIA PELAKSANA PERINGATAN HUT RI KE-81**
+**${namaRW.toUpperCase()} NGABEAN**`;
+
+      const lampiranFormal = `### LAMPIRAN
+
+Sebagai dokumen pendukung pertanggungjawaban panitia, berikut dilampirkan berkas-berkas resmi:
+
+- **Lampiran 1:** Buku Kas Umum (BKU) Penerimaan, Pengeluaran & Rekonsiliasi Kas
+- **Lampiran 2:** Laporan Rekonsiliasi Pengembalian Dana Talangan Pamsimas & Realisasi Swadaya RT
+- **Lampiran 3:** Dokumentasi Foto Kegiatan & Bundel Berkas Fisik Nota Belanja Panitia
+
+Laporan Pertanggungjawaban ini dibuat rangkap sebagai dokumentasi resmi dan arsip warga.`;
+
+      // Guarantee complete BAB VI Penutup and Lampiran in formal mode
+      if (templateType === "formal") {
+        if (lpjText.includes("BAB VI") || lpjText.includes("PENUTUP")) {
+          // If BAB VI exists but is truncated or missing key parts, replace from BAB VI onwards
+          if (!lpjText.includes("Permohonan Maaf") || !lpjText.includes("Ungkapan Terima Kasih") || !lpjText.includes("Bapak Karto") || !lpjText.includes("1.382.000")) {
+            const cutIdx = lpjText.indexOf("### BAB VI") !== -1 ? lpjText.indexOf("### BAB VI") : lpjText.indexOf("BAB VI");
+            if (cutIdx !== -1) {
+              lpjText = lpjText.substring(0, cutIdx).trim() + `\n\n---\n\n` + penutupFormal + `\n\n---\n\n` + lampiranFormal;
+            } else {
+              lpjText += `\n\n---\n\n` + penutupFormal + `\n\n---\n\n` + lampiranFormal;
+            }
+          } else if (!lpjText.includes("LAMPIRAN") && !lpjText.includes("Lampiran 1")) {
+            lpjText += `\n\n---\n\n` + lampiranFormal;
+          }
+        } else {
+          lpjText += `\n\n---\n\n` + penutupFormal + `\n\n---\n\n` + lampiranFormal;
+        }
+      } else {
+        // Ringkas mode guarantee
+        if (!lpjText.includes("Permohonan Maaf") || !lpjText.includes("Terima Kasih") || !lpjText.includes("1.382.000")) {
+          lpjText += `\n\n**Permohonan Maaf & Terima Kasih:**\nPanitia menyampaikan permohonan maaf sebesar-besarnya atas segala kekurangan, serta ucapan terima kasih mendalam kepada Bapak Karto (Ketua RW 04), Pengurus RT 01-04, Pengelola Pamsimas RW 04, seluruh sponsor & donatur dermawan, serta seluruh warga RW 04 Ngabean atas kebersamaan dan gotong royong luar biasa.\n\nSisa saldo kas Rp 1.382.000,00 dialokasikan untuk kegiatan konsolidasi internal dan pembubaran panitia di luar lingkungan.`;
+        }
+      }
+
       res.json({ success: true, lpj: lpjText });
     } catch (error: any) {
       console.error("AI LPJ Generation Error:", error);

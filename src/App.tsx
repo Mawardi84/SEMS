@@ -155,42 +155,56 @@ export default function App() {
   const [showRestoreBanner, setShowRestoreBanner] = useState<boolean>(false);
   const [localBackup, setLocalBackup] = useState<SEMSData | null>(null);
 
-  // Fetch initial SEMS data with offline/Vercel fallback
+  // Fetch initial SEMS data with latest master data synchronization
   const fetchSemsData = async () => {
     try {
-      // 1. Try checking local storage first
-      let localSaved: SEMSData | null = null;
-      try {
-        const backupStr = localStorage.getItem("sems_data_backup");
-        if (backupStr) {
-          localSaved = JSON.parse(backupStr) as SEMSData;
-        }
-      } catch (e) {
-        console.error("Gagal membaca backup browser:", e);
-      }
-
-      // 2. Try fetching from backend API (if server is running)
+      // 1. Try fetching from backend API first (Single Source of Truth)
       try {
         const response = await fetch("/api/sems/data");
         if (response.ok) {
           const contentType = response.headers.get("content-type");
           if (contentType && contentType.includes("application/json")) {
             const json = await response.json();
-            if (json && json.settings) {
+            if (json && json.settings && json.kegiatan && json.kegiatan.length >= 4) {
               setSemsData(json);
+              try {
+                localStorage.setItem("sems_data_backup", JSON.stringify(json));
+              } catch (e) {}
               setErrorMessage("");
               return;
             }
           }
         }
       } catch (apiErr) {
-        console.warn("Backend API tidak terjangkau (misal static Vercel), menggunakan database bawaan/lokal:", apiErr);
+        console.warn("Backend API not reachable, falling back to local storage or bundled master data:", apiErr);
       }
 
-      // 3. Fallback to localStorage or bundled initial master data
+      // 2. Check local storage cache, but ensure it is not stale (must have 4 events, 30+ transactions, and the updated Lean Structure & activity descriptions)
+      let localSaved: SEMSData | null = null;
+      try {
+        const backupStr = localStorage.getItem("sems_data_backup");
+        if (backupStr) {
+          const parsed = JSON.parse(backupStr) as SEMSData;
+          const isLeanStructure = parsed?.settings?.seksiList?.includes("Divisi Acara Terpadu") && parsed?.settings?.seksiList?.includes("Divisi Operasional Lapangan");
+          const act2Desc = parsed?.kegiatan?.find(k => k.id === 'act-02')?.description || "";
+          const hasFreshDescription = act2Desc.includes("Lomba Ibu-ibu Tebak Gaya");
+          if (parsed && parsed.settings && isLeanStructure && hasFreshDescription && parsed.kegiatan && parsed.kegiatan.length >= 4 && parsed.keuangan && parsed.keuangan.length >= 30) {
+            localSaved = parsed;
+          } else {
+            // Clear out stale outdated structure/cache from browser storage
+            try {
+              localStorage.removeItem("sems_data_backup");
+            } catch (err) {}
+          }
+        }
+      } catch (e) {
+        console.error("Gagal membaca backup browser:", e);
+      }
+
       if (localSaved && localSaved.settings) {
         setSemsData(localSaved);
       } else {
+        // 3. Fallback directly to bundled latest initial master data
         setSemsData(initialData);
         try {
           localStorage.setItem("sems_data_backup", JSON.stringify(initialData));

@@ -37,7 +37,7 @@ export default function DocumentPreviewRenderer({
   children,
 }: DocumentPreviewRendererProps) {
   const getPaperClass = () => {
-    let base = "relative p-8 sm:p-14 shadow-md max-w-[813px] min-h-[1247px] mx-auto select-text overflow-hidden transition-all duration-300 z-10 break-after-page flex flex-col justify-between print:min-h-0 print:shadow-none print:border-none print:p-0 print:mb-0 print:break-after-page ";
+    let base = "relative p-8 sm:p-14 shadow-md max-w-[813px] min-h-[1247px] mx-auto select-text overflow-hidden transition-all duration-300 z-10 break-after-page flex flex-col justify-between print:min-h-[330mm] print:shadow-none   print:mb-0 print:break-after-page print:w-[215mm] print:mx-auto ";
     
     if (paperTheme === "classic") {
       base += "bg-white border-t-[8px] border-t-red-600 border border-slate-200 text-slate-900";
@@ -167,7 +167,7 @@ export default function DocumentPreviewRenderer({
 
   return (
     <>
-        <div id="printable-lpj-paper" className={getPaperClass()}>
+        <div id="document-preview-paper" className={getPaperClass()}>
           <div>
             {renderLetterhead()}
             <div className="prose prose-sm max-w-none text-slate-900">

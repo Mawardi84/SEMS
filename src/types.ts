@@ -145,7 +145,7 @@ export interface RKBAItem {
   unit: string;
   price: number;
   total: number;
-  fundingSource: 'Kas Utama' | 'Donasi Warga' | 'Iuran RT' | 'Sponsorship';
+  fundingSource: 'Kas Utama' | 'Donasi Warga' | 'Iuran RT' | 'Sponsorship' | 'Kas Donatur' | string;
   status: 'Draft' | 'Disetujui' | 'Ditolak' | 'Belanja' | 'DITAMBAHKAN' | 'DITIADAKAN' | 'DIALIHKAN' | 'DIGABUNGKAN';
   activityStatus?: ActivityStatus;
   isLockedBaseline?: boolean;
@@ -216,7 +216,7 @@ export interface Notulensi {
 export interface DigitalDocument {
   id: string;
   title: string;
-  category: 'Surat' | 'Proposal' | 'Kuitansi' | 'SK Panitia' | 'Dokumentasi' | 'Lainnya';
+  category: 'Surat' | 'Proposal' | 'Kuitansi' | 'SK Panitia' | 'Struktur Organisasi' | 'Dokumentasi' | 'Lainnya';
   description: string;
   fileUrl?: string;
   fileName: string;

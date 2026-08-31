@@ -25,18 +25,16 @@ export default function OrgChart({ panitia, settings, printMode = false }: OrgCh
 
   // Modern default mock panitia to display if empty, or to complete missing roles
   const defaultPanitia: Panitia[] = [
-    { id: "def_1", name: "", role: "Ketua RW", phone: "-", rt: "RT 01", seksi: "-" }, // Penanggung Jawab
-    { id: "def_3", name: "", role: "Ketua Panitia", phone: "-", rt: "RT 01", seksi: "Acara" },
-    { id: "def_3b", name: "", role: "Wakil Ketua", phone: "-", rt: "RT 02", seksi: "Acara" },
-    { id: "def_4a", name: "", role: "Sekretaris I", phone: "-", rt: "RT 01", seksi: "Sekretaris" },
-    { id: "def_4b", name: "", role: "Sekretaris II", phone: "-", rt: "RT 02", seksi: "Sekretaris" },
-    { id: "def_5a", name: "", role: "Bendahara I", phone: "-", rt: "RT 01", seksi: "Bendahara" },
-    { id: "def_5b", name: "", role: "Bendahara II", phone: "-", rt: "RT 02", seksi: "Bendahara" },
-    { id: "def_6", name: "", role: "Koordinator Lomba", phone: "-", rt: "RT 01", seksi: "Seksi Lomba" },
-    { id: "def_7", name: "", role: "Anggota Lomba", phone: "-", rt: "RT 01", seksi: "Seksi Lomba" },
-    { id: "def_8", name: "", role: "Koordinator Pentas Seni", phone: "-", rt: "RT 02", seksi: "Seksi Pentas Seni" },
-    { id: "def_9", name: "", role: "Koordinator Perlengkapan", phone: "-", rt: "RT 03", seksi: "Perlengkapan" },
-    { id: "def_10", name: "", role: "Koordinator Konsumsi", phone: "-", rt: "RT 04", seksi: "Konsumsi" }
+    { id: "def_1", name: "Karto", role: "Ketua RW", phone: "-", rt: "RT 01", seksi: "-" },
+    { id: "def_3", name: "Muh Zaenun", role: "Ketua Panitia", phone: "-", rt: "RT 01", seksi: "-" },
+    { id: "def_3b", name: "Faldan", role: "Wakil Ketua", phone: "-", rt: "RT 02", seksi: "-" },
+    { id: "def_4a", name: "Mawardi", role: "Sekretaris", phone: "-", rt: "RT 01", seksi: "-" },
+    { id: "def_5a", name: "Dias Ayu", role: "Bendahara", phone: "-", rt: "RT 04", seksi: "-" },
+    { id: "def_6", name: "Ade Rahmat", role: "Koordinator", phone: "-", rt: "RT 01", seksi: "Divisi Acara Terpadu" },
+    { id: "def_7", name: "Gunarso", role: "Sub-Koordinator Lomba", phone: "-", rt: "RT 03", seksi: "Divisi Acara Terpadu" },
+    { id: "def_8", name: "Eva", role: "Sub-Koordinator Pentas Seni", phone: "-", rt: "RT 02", seksi: "Divisi Acara Terpadu" },
+    { id: "def_9", name: "Sandy", role: "Koordinator Logistik", phone: "-", rt: "RT 03", seksi: "Divisi Operasional Lapangan" },
+    { id: "def_10", name: "Dita", role: "Koordinator Humas", phone: "-", rt: "RT 04", seksi: "Support & Humas" }
   ];
 
   const activePanitia = isDbEmpty ? defaultPanitia : panitia;
@@ -50,13 +48,28 @@ export default function OrgChart({ panitia, settings, printMode = false }: OrgCh
   const sekretarisList = activePanitia.filter(p => p.role.toLowerCase().includes("sekretaris"));
   const bendaharaList = activePanitia.filter(p => p.role.toLowerCase().includes("bendahara"));
 
-  // Functional divisions
-  const semsSeksiList = (settings?.seksiList || []).filter(s => s !== "Sekretaris" && s !== "Bendahara");
+  // Functional divisions (exclude BPH, Kesekretariatan, Sekretaris, Bendahara, and executive leadership)
+  const semsSeksiList = (settings?.seksiList || []).filter(s => {
+    const lower = (s || "").toLowerCase();
+    return (
+      !lower.includes("bph") &&
+      !lower.includes("kesekretariatan") &&
+      !lower.includes("sekretar") &&
+      !lower.includes("bendahar") &&
+      !lower.includes("penanggung") &&
+      !lower.includes("ketua")
+    );
+  });
 
   // Group members into section groupings
   const seksiGroups = semsSeksiList.map(seksiName => {
     const members = activePanitia.filter(p => p.seksi === seksiName);
-    const koordinator = members.find(p => p.role.toLowerCase().includes("koordinator") || p.role.toLowerCase().includes("ketua seksi") || p.role.toLowerCase().includes("kabid"));
+    const koordinator = members.find(p => 
+      p.role.toLowerCase().includes("koordinator") || 
+      p.role.toLowerCase().includes("ketua seksi") || 
+      p.role.toLowerCase().includes("kabid") ||
+      p.role.toLowerCase().includes("sub-koordinator")
+    );
     const anggota = members.filter(p => p !== koordinator);
 
     return {
@@ -65,7 +78,16 @@ export default function OrgChart({ panitia, settings, printMode = false }: OrgCh
       anggota: anggota,
       totalCount: members.length
     };
-  }).filter(group => group.totalCount > 0 || !isDbEmpty); // in mock mode, only show if we have members, otherwise show all active ones
+  }).filter(group => {
+    const lower = group.name.toLowerCase();
+    return (
+      !lower.includes("bph") &&
+      !lower.includes("kesekretariatan") &&
+      !lower.includes("sekretar") &&
+      !lower.includes("bendahar") &&
+      (group.totalCount > 0 || !isDbEmpty)
+    );
+  });
 
   // Helper to format phone
   const formatPhone = (num: string) => num || "-";
@@ -124,7 +146,7 @@ export default function OrgChart({ panitia, settings, printMode = false }: OrgCh
                 {penanggungJawabList.length > 0 ? (penanggungJawabList.map(p => p.name || "[Nama]").join(", ")) : "Ketua RW 04"}
               </p>
               <p className="text-[9px] font-mono text-slate-500 font-bold mt-0.5">
-                {penanggungJawabList.length > 0 ? `RT: ${penanggungJawabList[0].rt}` : "Ex-Officio"}
+                Pimpinan Wilayah
               </p>
             </div>
           </div>
@@ -153,7 +175,7 @@ export default function OrgChart({ panitia, settings, printMode = false }: OrgCh
                 {ketuaList.length > 0 ? (ketuaList[0].name || "[Nama]") : "Belum Ditunjuk"}
               </p>
               <p className="text-[9px] font-mono text-slate-500 font-bold mt-0.5">
-                RT: {ketuaList.length > 0 ? ketuaList[0].rt : "-"} | {ketuaList.length > 0 ? formatPhone(ketuaList[0].phone) : "-"}
+                {ketuaList.length > 0 && ketuaList[0].phone && ketuaList[0].phone !== "-" ? formatPhone(ketuaList[0].phone) : "Ketua Pelaksana"}
               </p>
             </div>
           </div>
@@ -176,7 +198,7 @@ export default function OrgChart({ panitia, settings, printMode = false }: OrgCh
                 {wakilKetuaList.length > 0 ? (wakilKetuaList[0].name || "[Nama]") : "Belum Ditunjuk"}
               </p>
               <p className="text-[9px] font-mono text-slate-500 font-bold mt-0.5">
-                RT: {wakilKetuaList.length > 0 ? wakilKetuaList[0].rt : "-"} | {wakilKetuaList.length > 0 ? formatPhone(wakilKetuaList[0].phone) : "-"}
+                {wakilKetuaList.length > 0 && wakilKetuaList[0].phone && wakilKetuaList[0].phone !== "-" ? formatPhone(wakilKetuaList[0].phone) : "Wakil Pelaksana"}
               </p>
             </div>
           </div>
@@ -239,10 +261,10 @@ export default function OrgChart({ panitia, settings, printMode = false }: OrgCh
               >
                 {/* Section Header */}
                 <div className="border-b border-slate-100 pb-1.5 mb-2 flex items-center justify-between">
-                  <h4 className="text-[10px] font-black text-slate-800 uppercase tracking-wider truncate">
+                  <h4 className="text-[10px] font-black text-slate-800 uppercase tracking-wider whitespace-normal break-words leading-tight">
                     Seksi {group.name}
                   </h4>
-                  <span className="text-[8px] font-mono bg-slate-100 px-1 py-0.2 rounded text-slate-500 font-bold">
+                  <span className="text-[8px] font-mono bg-slate-100 px-1 py-0.2 rounded text-slate-500 font-bold shrink-0 ml-1">
                     {group.totalCount} orang
                   </span>
                 </div>
@@ -254,11 +276,11 @@ export default function OrgChart({ panitia, settings, printMode = false }: OrgCh
                   </span>
                   {group.koordinator ? (
                     <div>
-                      <p className="text-[10px] font-extrabold text-slate-800 truncate">
-                        {group.koordinator.name}
+                      <p className="text-[10px] font-extrabold text-slate-800 break-words leading-tight">
+                        {group.koordinator.name ? group.koordinator.name.replace(/\s*\(RT\s*\d+\)/gi, "").replace(/\s*RT\s*0?\d+/gi, "").trim() : ""}
                       </p>
                       <p className="text-[7.5px] font-mono text-slate-400 leading-none mt-0.5">
-                        RT {group.koordinator.rt} | {group.koordinator.phone || "No telp"}
+                        {group.koordinator.phone && group.koordinator.phone !== "-" ? group.koordinator.phone : (group.koordinator.role || "Koordinator")}
                       </p>
                     </div>
                   ) : (
@@ -272,11 +294,11 @@ export default function OrgChart({ panitia, settings, printMode = false }: OrgCh
                     Anggota Seksi
                   </span>
                   {group.anggota.length > 0 ? (
-                    <div className="space-y-1 max-h-[80px] overflow-y-auto pr-1">
+                    <div className={`space-y-1 ${printMode ? "" : "max-h-[80px] overflow-y-auto pr-1"}`}>
                       {group.anggota.map((ang) => (
-                        <div key={ang.id} className="flex justify-between items-center text-[9px] text-slate-600">
-                          <span className="font-bold truncate max-w-[90px]">{ang.name}</span>
-                          <span className="text-[7.5px] font-mono text-slate-400 shrink-0">RT {ang.rt}</span>
+                        <div key={ang.id} className="flex items-center text-[9px] text-slate-700 py-0.5">
+                          <span className="w-1.5 h-1.5 rounded-full bg-slate-300 mr-1.5 shrink-0"></span>
+                          <span className="font-semibold text-slate-700 break-words leading-tight">{ang.name ? ang.name.replace(/\s*\(RT\s*\d+\)/gi, "").replace(/\s*RT\s*0?\d+/gi, "").trim() : ""}</span>
                         </div>
                       ))}
                     </div>

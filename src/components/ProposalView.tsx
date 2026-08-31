@@ -441,9 +441,8 @@ Semarang, ${tanggalProposal}
       return;
     }
     setIsExportingPDF(true);
-    await exportToPDF("printable-lpj-paper", `Proposal-${namaKegiatan.replace(/\s+/g, "-")}.pdf`);
+    await exportToPDF("document-preview-paper", `Proposal-${namaKegiatan.replace(/\s+/g, "-")}.pdf`);
     setIsExportingPDF(false);
-    setIsPreviewOpen(false);
   };
 
   const handleExportWord = async () => {
@@ -451,71 +450,35 @@ Semarang, ${tanggalProposal}
       alert("Mohon lengkapi data identitas proposal (Nama Kegiatan) sebelum export.");
       return;
     }
-    await exportToWord("printable-lpj-paper", `Proposal-${namaKegiatan.replace(/\s+/g, "-")}`);
-    setIsPreviewOpen(false);
+    await exportToWord("document-preview-paper", `Proposal-${namaKegiatan.replace(/\s+/g, "-")}`);
   };
 
   const handleExportPNG = async () => {
     setIsExportingImage(true);
-    await exportToPNG("printable-lpj-paper", `Proposal-${namaKegiatan.replace(/\s+/g, "-")}.png`);
+    await exportToPNG("document-preview-paper", `Proposal-${namaKegiatan.replace(/\s+/g, "-")}.png`);
     setIsExportingImage(false);
-    setIsPreviewOpen(false);
   };
 
   const handleExportPNGZip = async () => {
     setIsExportingImage(true);
-    await exportToPNGZip("printable-lpj-paper", `Proposal-${namaKegiatan.replace(/\s+/g, "-")}`);
+    await exportToPNGZip("document-preview-paper", `Proposal-${namaKegiatan.replace(/\s+/g, "-")}`);
     setIsExportingImage(false);
-    setIsPreviewOpen(false);
   };
 
   const handleExportJPG = async () => {
     setIsExportingImage(true);
-    await exportToJPG("printable-lpj-paper", `Proposal-${namaKegiatan.replace(/\s+/g, "-")}.jpg`);
+    await exportToJPG("document-preview-paper", `Proposal-${namaKegiatan.replace(/\s+/g, "-")}.jpg`);
     setIsExportingImage(false);
-    setIsPreviewOpen(false);
   };
 
   const handleExportJPGZip = async () => {
     setIsExportingImage(true);
-    await exportToJPGZip("printable-lpj-paper", `Proposal-${namaKegiatan.replace(/\s+/g, "-")}`);
+    await exportToJPGZip("document-preview-paper", `Proposal-${namaKegiatan.replace(/\s+/g, "-")}`);
     setIsExportingImage(false);
-    setIsPreviewOpen(false);
   };
 
   return (
-    <div className="space-y-5">
-      <PDFPreviewModal 
-        isOpen={isPreviewOpen} 
-        onClose={() => setIsPreviewOpen(false)} 
-        title="Pratinjau Proposal" 
-        onDownload={handleExportPDF}
-        onExportWord={handleExportWord}
-        onExportPNG={handleExportPNG}
-        onExportPNGZip={handleExportPNGZip}
-        onExportJPG={handleExportJPG}
-        onExportJPGZip={handleExportJPGZip}
-      >
-        <DocumentPreviewRenderer
-          proposalMarkdown={proposalMarkdown}
-          paperTheme={paperTheme}
-          fontStyle={fontStyle}
-          namaKegiatan={namaKegiatan}
-          namaRW={namaRW}
-          namaKetua={namaKetua}
-          namaSekretaris={namaSekretaris}
-          namaBendahara={namaBendahara}
-          namaRWKetua={namaRWKetua}
-          eventLogo={eventLogo}
-          showStamp={showStamp}
-          useMockData={useMockData}
-          showLetterhead={true}
-          showSignature={true}
-        >
-           {/* Content rendered by DocumentPreviewRenderer */}
-        </DocumentPreviewRenderer>
-      </PDFPreviewModal>
-      
+    <>
       {/* 1. Header Area */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white p-4 rounded-lg shadow-sm border border-slate-200 print:hidden">
         <div>
@@ -928,7 +891,7 @@ Semarang, ${tanggalProposal}
             {proposalMarkdown && !isGenerating && (
               (() => {
                 const getPaperClass = () => {
-                  let base = "relative p-8 sm:p-14 shadow-md max-w-[813px] min-h-[1247px] mx-auto select-text overflow-hidden transition-all duration-300 z-10 break-after-page flex flex-col justify-between print:min-h-0 print:shadow-none print:border-none print:p-0 print:mb-0 print:break-after-page ";
+                  let base = "relative p-8 sm:p-14 shadow-md max-w-[813px] min-h-[1247px] mx-auto select-text overflow-hidden transition-all duration-300 z-10 break-after-page flex flex-col justify-between print:min-h-0 print:shadow-none print:border-none  print:mb-0 print:break-after-page ";
                   
                   if (paperTheme === "classic") {
                     base += "bg-white border-t-[8px] border-t-red-600 border border-slate-200 text-slate-900";
@@ -2025,8 +1988,8 @@ Semarang, ${tanggalProposal}
                     </div>
 
                     {/* Styled virtual paper layout */}
-                    <div className="p-4 sm:p-8 bg-slate-200/60 h-[800px] overflow-y-auto select-text print:h-auto print:bg-white print:p-0 print:overflow-visible">
-                      <div id="printable-lpj-paper" className="space-y-8 print:space-y-0">
+                    <div className="p-4 sm:p-8 bg-slate-200/60 h-[800px] overflow-y-auto select-text print:h-auto print:bg-white  print:overflow-visible">
+                      <div id="document-preview-paper" className="space-y-8 print:space-y-0">
                         {renderPaperContent()}
                       </div>
                     </div>
@@ -2034,7 +1997,21 @@ Semarang, ${tanggalProposal}
                     <div className="bg-red-50 p-2 text-[9px] text-red-800 border-t border-slate-200 font-bold tracking-wide uppercase text-center print:hidden">
                       *Proposal Konsolidasi Real-time: Estimasi Total RAB {formatRp((rkba || []).reduce((sum, r) => sum + r.total, 0))} | Proyeksi Swadaya RT ({(settings?.rtList || []).length} RT) {formatRp((settings?.targetIuranPerRT || 0) * (settings?.rtList || []).length)} | Target Sponsorship {formatRp(Math.max(0, (rkba || []).reduce((sum, r) => sum + r.total, 0) - ((settings?.targetIuranPerRT || 0) * (settings?.rtList || []).length)))}
                     </div>
-
+                    <div className="space-y-5">
+      <PDFPreviewModal 
+        isOpen={isPreviewOpen} 
+        onClose={() => setIsPreviewOpen(false)} 
+        title="Pratinjau Proposal" 
+        onDownload={handleExportPDF}
+        onExportWord={handleExportWord}
+        onExportPNG={handleExportPNG}
+        onExportPNGZip={handleExportPNGZip}
+        onExportJPG={handleExportJPG}
+        onExportJPGZip={handleExportJPGZip}
+      >
+        {renderPaperContent()}
+      </PDFPreviewModal>
+                  </div>
                   </div>
                 );
               })()
@@ -2045,6 +2022,6 @@ Semarang, ${tanggalProposal}
 
       </div>
 
-    </div>
+    </>
   );
 }

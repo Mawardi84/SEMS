@@ -105,7 +105,7 @@ export const PDFPreviewModal: React.FC<PDFPreviewModalProps> = ({
             </button>
           </div>
         </div>
-        <div className="flex-1 overflow-y-auto p-6 bg-slate-100 print:bg-white print:overflow-visible print:p-0 print:block">
+        <div className="flex-1 overflow-y-auto p-6 bg-slate-100 print:bg-transparent print:overflow-visible print:p-0 print:block">
           <div className="bg-white shadow-sm min-h-[800px] p-8 print:p-0 print:shadow-none print:min-h-0 print:block">
             {children}
           </div>

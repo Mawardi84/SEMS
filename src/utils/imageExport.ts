@@ -16,10 +16,15 @@ const commonOptions = {
 };
 
 export async function exportToImage(elementId: string, filename: string, format: "png" | "jpeg" = "png") {
-  const element = document.getElementById(elementId);
+  let element = document.getElementById(elementId);
+  if (!element) {
+    element = document.querySelector('#document-preview-paper') || 
+              document.querySelector('.print\\:block') || 
+              document.querySelector('[id*="preview"]') as HTMLElement;
+  }
   if (!element) {
     console.error(`Element with id ${elementId} not found`);
-    alert(`Gagal mengekspor: Konten ${elementId} tidak ditemukan.`);
+    alert(`Gagal mengekspor: Konten dokumen tidak ditemukan.`);
     return;
   }
 
@@ -59,10 +64,15 @@ export async function exportToImageZip(
   filename: string,
   format: "png" | "jpeg" = "png"
 ) {
-  const container = document.getElementById(elementId);
+  let container = document.getElementById(elementId);
+  if (!container) {
+    container = document.querySelector('#document-preview-paper') || 
+                document.querySelector('.print\\:block') || 
+                document.querySelector('[id*="preview"]') as HTMLElement;
+  }
   if (!container) {
     console.error(`Element with id ${elementId} not found`);
-    alert(`Gagal mengekspor: Konten ${elementId} tidak ditemukan.`);
+    alert(`Gagal mengekspor ZIP: Konten dokumen tidak ditemukan.`);
     return;
   }
 

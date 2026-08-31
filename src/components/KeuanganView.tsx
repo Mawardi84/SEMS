@@ -39,6 +39,7 @@ export default function KeuanganView({
   isReadOnly = false
 }: KeuanganViewProps) {
   const [filterType, setFilterType] = useState<string>("Semua");
+  const [filterBukuKas, setFilterBukuKas] = useState<string>("Semua");
   const [filterCategory, setFilterCategory] = useState<string>("Semua");
   const [isExportingPDF, setIsExportingPDF] = useState(false);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
@@ -74,7 +75,7 @@ export default function KeuanganView({
               Tanggal Cetak: {new Date().toLocaleDateString("id-ID")}
             </span>
             <span className="text-[8px] text-slate-400 block mt-1">
-              Filter: Tipe ({filterType}) • Kategori ({filterCategory})
+              Filter: Buku ({filterBukuKas}) • Tipe ({filterType}) • Kategori ({filterCategory})
             </span>
           </div>
         </div>
@@ -325,7 +326,10 @@ export default function KeuanganView({
   const filteredTransactions = keuangan.filter(t => {
     const matchType = filterType === "Semua" || t.type === filterType;
     const matchCategory = filterCategory === "Semua" || t.category === filterCategory;
-    return matchType && matchCategory;
+    const isBukuUtama = !t.id || t.id.includes("-bu-");
+    const isBukuDonasi = t.id && t.id.includes("-bd-");
+    const matchBuku = filterBukuKas === "Semua" || (filterBukuKas === "Buku Utama" ? isBukuUtama : (filterBukuKas === "Buku Donasi" ? isBukuDonasi : true));
+    return matchType && matchCategory && matchBuku;
   });
 
   // Chart data: Cashflow over time
