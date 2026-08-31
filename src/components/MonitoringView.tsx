@@ -557,18 +557,18 @@ Evaluasi dilakukan untuk mencatat kendala yang dihadapi selama pelaksanaan serta
 
 ### BAB VI. PENUTUP
 
-Demikian Laporan Pertanggungjawaban (LPJ) Peringatan HUT Kemerdekaan Republik Indonesia Ke-81 di wilayah ${namaRW} Ngabean ini kami susun dengan sebenar-benarnya dan penuh rasa tanggung jawab. Keberhasilan seluruh rangkaian kegiatan ini merupakan bukti nyata bahwa semangat gotong royong, kebersamaan, dan persatuan warga tetap terjaga dengan sangat baik.
+Demikian Laporan Pertanggungjawaban (LPJ) Peringatan HUT Kemerdekaan Republik Indonesia Ke-81 di wilayah ${namaRW.includes("Ngabean") ? namaRW : `${namaRW} Ngabean`} ini kami susun dengan sebenar-benarnya dan penuh rasa tanggung jawab. Keberhasilan seluruh rangkaian kegiatan ini merupakan bukti nyata bahwa semangat gotong royong, kebersamaan, dan persatuan warga tetap terjaga dengan sangat baik.
 
 **Permohonan Maaf:**
 Selaku Panitia Pelaksana, kami menyadari sepenuhnya bahwa dalam perencanaan, persiapan, maupun pelaksanaan kegiatan di lapangan masih terdapat berbagai kekurangan, keterbatasan fasilitas, serta kekhilafan baik teknis maupun non-teknis. Untuk itu, dengan segala kerendahan hati, kami menyampaikan **permohonan maaf yang sebesar-besarnya dan setulus-tulusnya** kepada seluruh warga, sesepuh, para tokoh masyarakat, donatur, serta para tamu undangan atas segala ketidaknyamanan yang mungkin terjadi.
 
 **Ungkapan Terima Kasih & Penghargaan yang Setinggi-tingginya:**
 Kami menyampaikan rasa terima kasih dan apresiasi yang tak terhingga kepada seluruh pihak yang telah memberikan kontribusi, dukungan, dan dedikasi luar biasa:
-1. **Bapak Karto selaku Ketua ${namaRW} Ngabean beserta segenap Pengurus RW**, atas arahan, bimbingan, kebijakan, dan kepercayaan penuh yang senantiasa diberikan kepada kami.
+1. **Bapak Karto selaku Ketua ${namaRW.includes("Ngabean") ? namaRW : `${namaRW} Ngabean`} beserta segenap Pengurus RW**, atas arahan, bimbingan, kebijakan, dan kepercayaan penuh yang senantiasa diberikan kepada kami.
 2. **Bapak/Ibu Pengurus RT 01, RT 02, RT 03, dan RT 04 Ngabean**, atas kerja sama yang solid, koordinasi lapangan, penarikan swadaya iuran warga, serta pengawalan kegiatan dari awal hingga akhir.
 3. **Pengelola Pamsimas RW 04 Ngabean**, atas bantuan likuiditas dana talangan operasional serta sumbangan donasi murni demi kelancaran kegiatan kemerdekaan.
 4. **Seluruh Sponsor Resmi (Prettywear, Apotek Gunungpati, Selo Agung, BnD Shop, Ngrembel Asri, UMKM kuliner warga)** dan **Para Donatur Dermawan**, atas keikhlasan bantuan materil, dana tunai, maupun hadiah doorprize yang melimpah.
-5. **Para Sesepuh, Tokoh Agama, Tokoh Masyarakat, Karang Taruna, Ibu-Ibu PKK, serta Seluruh Warga ${namaRW} Ngabean tanpa terkecuali**, atas partisipasi aktif, antusiasme, guyub rukun, dan kebersamaan yang menjadi nyawa utama perayaan kemerdekaan ini.
+5. **Para Sesepuh, Tokoh Agama, Tokoh Masyarakat, Karang Taruna, Ibu-Ibu PKK, serta Seluruh Warga ${namaRW.includes("Ngabean") ? namaRW : `${namaRW} Ngabean`} tanpa terkecuali**, atas partisipasi aktif, antusiasme, guyub rukun, dan kebersamaan yang menjadi nyawa utama perayaan kemerdekaan ini.
 6. **Seluruh Rekan-Rekan Panitia Pelaksana**, yang telah mendharmabaktikan tenaga, waktu, pikiran, dan komitmen tanpa pamrih.
 
 **Penetapan Akhir Masa Bakti & Alokasi Sisa Kas:**
@@ -576,12 +576,7 @@ Dengan diserahkannya laporan pertanggungjawaban ini, maka masa bakti Panitia Pel
 
 Adapun sisa efisiensi dana kepanitiaan sebesar **Rp 1.382.000,00** (yang bersumber murni dari Kas Donatur/Sponsor) disepakati dan dialihfungsikan untuk kegiatan **Konsolidasi Internal dan Pembubaran Panitia** di luar lingkungan (ekskursi/pembinaan keakraban). Agenda ini bertujuan untuk melepas penat setelah satu bulan penuh mencurahkan tenaga dalam menyukseskan acara kemerdekaan, sekaligus merawat tali silaturahmi dan solidaritas antar pemuda serta warga yang tergabung dalam kepanitiaan tahun ini.
 
-Semoga kerukunan, kesehatan, dan kemakmuran senantiasa melimpahi seluruh warga ${namaRW} Ngabean. Merdeka!
-
-Semarang, ${tanggalLPJ}
-
-**PANITIA PELAKSANA PERINGATAN HUT RI KE-81**
-**${namaRW.toUpperCase()} NGABEAN**
+Semoga kerukunan, kesehatan, dan kemakmuran senantiasa melimpahi seluruh warga ${namaRW.includes("Ngabean") ? namaRW : `${namaRW} Ngabean`}. Merdeka!
 
 ---
 
@@ -1242,11 +1237,11 @@ Laporan Pertanggungjawaban ini dibuat rangkap sebagai dokumentasi resmi dan arsi
 
                 const renderSignatureGrid = () => {
                   return (
-                    <div className="mt-10 pt-8 border-t border-slate-200/50 space-y-6">
-                      <div className="text-right text-[10.5px] font-medium text-slate-700 pr-10">
+                    <div className="mt-4 pt-4 border-t border-slate-200/60 space-y-4">
+                      <div className="text-right text-[10.5px] font-medium text-slate-700 pr-4 sm:pr-10">
                         Semarang, {tanggalLPJ}
                       </div>
-                      <div className="grid grid-cols-2 gap-y-10 text-center text-slate-900">
+                      <div className="grid grid-cols-2 gap-y-8 text-center text-slate-900">
                         {/* Row 1 */}
                         <div className="space-y-1">
                           <p className="text-[9px] font-bold uppercase text-slate-500 tracking-wider">Ketua Panitia Pelaksana</p>
@@ -1982,7 +1977,7 @@ Laporan Pertanggungjawaban ini dibuat rangkap sebagai dokumentasi resmi dan arsi
 
                             {/* Appended Content on BAB IV Keuangan */}
                             {isBabIVKeuangan && (
-                              <div className="mt-4 space-y-5">
+                              <div className="mt-3 space-y-3.5">
                                 {/* Section A Table */}
                                 <div className="space-y-1">
                                   <h4 className="text-[10px] font-bold text-slate-800 font-sans uppercase tracking-wider">
@@ -1990,31 +1985,31 @@ Laporan Pertanggungjawaban ini dibuat rangkap sebagai dokumentasi resmi dan arsi
                                   </h4>
                                   
                                   <div className={`overflow-x-auto rounded border ${theme.tableBorder} bg-white shadow-3xs`}>
-                                    <table className="w-full text-left border-collapse text-[10px] sm:text-[10.5px]">
+                                    <table className="w-full text-left border-collapse text-[9.5px] sm:text-[10px]">
                                       <thead>
-                                        <tr className={`${theme.thBg} border-b ${theme.thBorder} font-bold uppercase tracking-wider text-[8px]`}>
-                                          <th className="px-2 py-1.5 text-center text-inherit">No</th>
-                                          <th className="px-2 py-1.5 text-inherit">Seksi / Pos Anggaran</th>
-                                          <th className="px-2 py-1.5 text-right text-inherit">Alokasi Pagu</th>
-                                          <th className="px-2 py-1.5 text-right text-inherit">Realisasi (Total)</th>
-                                          <th className="px-2 py-1.5 text-right text-inherit hidden md:table-cell">Dari Kas Utama</th>
-                                          <th className="px-2 py-1.5 text-right text-inherit hidden md:table-cell">Dari Kas Donasi</th>
-                                          <th className="px-2 py-1.5 text-right text-inherit">Sisa Anggaran</th>
-                                          <th className="px-2 py-1.5 text-center text-inherit">Penyerapan (%)</th>
+                                        <tr className={`${theme.thBg} border-b ${theme.thBorder} font-bold uppercase tracking-wider text-[7.5px] sm:text-[8px]`}>
+                                          <th className="px-1.5 py-1 text-center text-inherit">No</th>
+                                          <th className="px-1.5 py-1 text-inherit">Seksi / Pos Anggaran</th>
+                                          <th className="px-1.5 py-1 text-right text-inherit">Alokasi Pagu</th>
+                                          <th className="px-1.5 py-1 text-right text-inherit">Realisasi (Total)</th>
+                                          <th className="px-1.5 py-1 text-right text-inherit">Dari Kas Utama</th>
+                                          <th className="px-1.5 py-1 text-right text-inherit">Dari Kas Donasi</th>
+                                          <th className="px-1.5 py-1 text-right text-inherit">Sisa Anggaran</th>
+                                          <th className="px-1.5 py-1 text-center text-inherit">Penyerapan (%)</th>
                                         </tr>
                                       </thead>
                                       <tbody className="divide-y divide-slate-100 font-sans">
                                         {seksiTableData.map((row) => (
                                           <tr key={row.idx} className={`hover:bg-slate-50/50 transition-colors ${theme.stripeBg}`}>
-                                            <td className="px-2 py-1 text-center text-slate-400 font-medium">{row.idx}</td>
-                                            <td className="px-2 py-1 font-semibold text-slate-800">Seksi {row.seksi}</td>
-                                            <td className="px-2 py-1 text-right font-mono text-slate-600">{formatRp(row.pagu)}</td>
-                                            <td className="px-2 py-1 text-right font-mono font-bold text-slate-800">{formatRp(row.spent)}</td>
-                                            <td className="px-2 py-1 text-right font-mono text-[9px] text-slate-500 hidden md:table-cell">{formatRp(row.spentUtama || 0)}</td>
-                                            <td className="px-2 py-1 text-right font-mono text-[9px] text-slate-500 hidden md:table-cell">{formatRp(row.spentDonasi || 0)}</td>
-                                            <td className="px-2 py-1 text-right font-mono text-slate-600">{formatRp(row.sisa)}</td>
-                                            <td className="px-2 py-1 text-center">
-                                              <span className={`px-1 py-0.2 rounded font-bold text-[8px] ${
+                                            <td className="px-1.5 py-1 text-center text-slate-400 font-medium">{row.idx}</td>
+                                            <td className="px-1.5 py-1 font-semibold text-slate-800">Seksi {row.seksi}</td>
+                                            <td className="px-1.5 py-1 text-right font-mono text-slate-600">{formatRp(row.pagu)}</td>
+                                            <td className="px-1.5 py-1 text-right font-mono font-bold text-slate-800">{formatRp(row.spent)}</td>
+                                            <td className="px-1.5 py-1 text-right font-mono text-[8.5px] text-slate-500">{formatRp(row.spentUtama || 0)}</td>
+                                            <td className="px-1.5 py-1 text-right font-mono text-[8.5px] text-slate-500">{formatRp(row.spentDonasi || 0)}</td>
+                                            <td className="px-1.5 py-1 text-right font-mono text-slate-600">{formatRp(row.sisa)}</td>
+                                            <td className="px-1.5 py-1 text-center">
+                                              <span className={`px-1 py-0.2 rounded font-bold text-[7.5px] ${
                                                 row.percent >= 90 ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' :
                                                 row.percent >= 50 ? 'bg-amber-50 text-amber-700 border border-amber-100' :
                                                 'bg-slate-50 text-slate-600 border border-slate-100'
@@ -2024,16 +2019,16 @@ Laporan Pertanggungjawaban ini dibuat rangkap sebagai dokumentasi resmi dan arsi
                                             </td>
                                           </tr>
                                         ))}
-                                        <tr className={`${theme.sumBg} font-extrabold ${theme.sumBorder} text-[10px]`}>
-                                          <td className="px-2 py-2 text-center">Σ</td>
-                                          <td className="px-2 py-2 uppercase tracking-wide text-[8px]">Total Belanja</td>
-                                          <td className="px-2 py-2 text-right font-mono">{formatRp(totalPaguSeksi)}</td>
-                                          <td className="px-2 py-2 text-right font-mono text-emerald-700">{formatRp(totalSpentSeksi)}</td>
-                                          <td className="px-2 py-2 text-right font-mono text-slate-700 hidden md:table-cell">{formatRp(totalSpentUtamaSeksi)}</td>
-                                          <td className="px-2 py-2 text-right font-mono text-slate-700 hidden md:table-cell">{formatRp(totalSpentDonasiSeksi)}</td>
-                                          <td className="px-2 py-2 text-right font-mono">{formatRp(totalSisaSeksi)}</td>
-                                          <td className="px-2 py-2 text-center">
-                                            <span className="px-1 py-0.2 rounded bg-slate-900 text-amber-400 text-[8px] font-bold">
+                                        <tr className={`${theme.sumBg} font-extrabold ${theme.sumBorder} text-[9.5px]`}>
+                                          <td className="px-1.5 py-1.5 text-center">Σ</td>
+                                          <td className="px-1.5 py-1.5 uppercase tracking-wide text-[7.5px]">Total Belanja</td>
+                                          <td className="px-1.5 py-1.5 text-right font-mono">{formatRp(totalPaguSeksi)}</td>
+                                          <td className="px-1.5 py-1.5 text-right font-mono text-emerald-700">{formatRp(totalSpentSeksi)}</td>
+                                          <td className="px-1.5 py-1.5 text-right font-mono text-slate-700">{formatRp(totalSpentUtamaSeksi)}</td>
+                                          <td className="px-1.5 py-1.5 text-right font-mono text-slate-700">{formatRp(totalSpentDonasiSeksi)}</td>
+                                          <td className="px-1.5 py-1.5 text-right font-mono">{formatRp(totalSisaSeksi)}</td>
+                                          <td className="px-1.5 py-1.5 text-center">
+                                            <span className="px-1 py-0.2 rounded bg-slate-900 text-amber-400 text-[7.5px] font-bold">
                                               {totalPercentSeksi}%
                                             </span>
                                           </td>
