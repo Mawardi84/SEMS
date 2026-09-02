@@ -245,7 +245,7 @@
   - Halaman 9: TABEL KOMPARASI REALISASI & REKONSILIASI KAS (Tabel Komparasi Realisasi Belanja & Neraca Kas)
   - Halaman 10: BAB V. EVALUASI (Tantangan Administrasi, Koordinasi, Logistik, dan Rekomendasi Tim Ramping)
   - Halaman 11: BAB VI. PENUTUP (Permohonan Maaf, Ucapan Terima Kasih Spesifik, dan Penetapan Alokasi Sisa Kas Rp 1.382.000 untuk Ekskursi Pembubaran Panitia)
-  - Halaman 12: LAMPIRAN DOKUMEN RESMI (Lampiran 1: BKU, Lampiran 2: Rekonsiliasi Pamsimas & RT, Lampiran 3: Dokumentasi Foto & Nota Belanja)
+  - Halaman 12: LAMPIRAN DOKUMEN RESMI (Lampiran 1: BKU, Lampiran 2: Rekonsiliasi Pamsimas & RT, Lampiran 3: Kuitansi Penerimaan Sumbangan RT & Donatur serta Dokumentasi Foto)
 
 ---
 

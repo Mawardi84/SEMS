@@ -35,7 +35,7 @@ Sponsor resmi perayaan HUT RI Ke-81 RW 04 Ngabean mencakup:
 - **Daftar Lampiran Resmi Hanya 3 Poin:**
   1. Lampiran 1: Buku Kas Umum (BKU) Penerimaan & Pengeluaran Kas
   2. Lampiran 2: Laporan Rekonsiliasi Pengembalian Dana Talangan Pamsimas & Realisasi Swadaya RT
-  3. Lampiran 3: Dokumentasi Foto Kegiatan & Berkas Fisik Nota Belanja Panitia
+  3. Lampiran 3: Kuitansi Penerimaan Sumbangan RT & Para Donatur serta Dokumentasi Foto Kegiatan (berkas fisik nota belanja telah diserahkan ke masing-masing RT)
 
 ## 5. Format Wajib Penutup (BAB VI)
 - Wajib memuat permohonan maaf setulus-tulusnya kepada warga dan tokoh masyarakat atas segala kekurangan teknis atau keterbatasan fasilitas.

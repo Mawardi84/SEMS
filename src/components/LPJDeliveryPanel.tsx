@@ -27,7 +27,8 @@ import {
   Award,
   History,
   FileCheck,
-  Scale
+  Scale,
+  FileSpreadsheet
 } from "lucide-react";
 
 interface LPJDeliveryPanelProps {
@@ -41,6 +42,7 @@ interface LPJDeliveryPanelProps {
   onUpdateStatus: (status: LPJStatus, actor?: string, notes?: string, isReconciled?: boolean, reconciliationNotes?: string) => Promise<any>;
   onOpenSpeechModal: () => void;
   onOpenNotulenModal: () => void;
+  onOpenReconciliationModal?: () => void;
   onNavigateView?: (view: string) => void;
 }
 
@@ -97,6 +99,7 @@ export default function LPJDeliveryPanel({
   onUpdateStatus,
   onOpenSpeechModal,
   onOpenNotulenModal,
+  onOpenReconciliationModal,
   onNavigateView
 }: LPJDeliveryPanelProps) {
   // Active editing modal state
@@ -240,17 +243,26 @@ export default function LPJDeliveryPanel({
             </p>
           </div>
 
-          <div className="flex items-center gap-2 shrink-0">
+          <div className="flex flex-wrap items-center gap-2 shrink-0">
+            {onOpenReconciliationModal && (
+              <button
+                onClick={onOpenReconciliationModal}
+                className="bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold px-3 py-2 rounded-lg flex items-center gap-1.5 shadow-sm transition cursor-pointer"
+              >
+                <FileSpreadsheet className="w-4 h-4 text-indigo-200" />
+                Laporan Rekonsiliasi (Lampiran 2)
+              </button>
+            )}
             <button
               onClick={onOpenSpeechModal}
-              className="bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-bold px-3.5 py-2 rounded-lg flex items-center gap-1.5 shadow-sm transition cursor-pointer"
+              className="bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-bold px-3 py-2 rounded-lg flex items-center gap-1.5 shadow-sm transition cursor-pointer"
             >
               <Sparkles className="w-4 h-4" />
               Naskah Pidato 3 Peran
             </button>
             <button
               onClick={onOpenNotulenModal}
-              className="bg-slate-700 hover:bg-slate-600 text-white text-xs font-bold px-3.5 py-2 rounded-lg flex items-center gap-1.5 border border-slate-600 shadow-sm transition cursor-pointer"
+              className="bg-slate-700 hover:bg-slate-600 text-white text-xs font-bold px-3 py-2 rounded-lg flex items-center gap-1.5 border border-slate-600 shadow-sm transition cursor-pointer"
             >
               <FileCheck className="w-4 h-4 text-emerald-400" />
               Generate Notulen (11 Agenda)
@@ -527,11 +539,22 @@ export default function LPJDeliveryPanel({
           {checklistItems.map((item) => (
             <div 
               key={item.id}
-              className={`p-3 rounded-lg border flex items-start justify-between gap-3 ${
+              className={`p-3 rounded-lg border flex items-start justify-between gap-3 transition ${
+                item.id === "chk_fin" ? "cursor-pointer hover:shadow-xs hover:border-indigo-400" : ""
+              } ${
                 item.done 
                   ? "bg-emerald-50/40 border-emerald-200/80" 
                   : "bg-amber-50/40 border-amber-200/80"
               }`}
+              onClick={() => {
+                if (item.id === "chk_fin" && onOpenReconciliationModal) {
+                  onOpenReconciliationModal();
+                } else if (item.id === "chk_conclusion" && onOpenSpeechModal) {
+                  onOpenSpeechModal();
+                } else if (item.id === "chk_minutes" && onOpenNotulenModal) {
+                  onOpenNotulenModal();
+                }
+              }}
             >
               <div className="flex items-start gap-2.5">
                 <div className="mt-0.5">
@@ -542,7 +565,14 @@ export default function LPJDeliveryPanel({
                   )}
                 </div>
                 <div>
-                  <div className="text-xs font-bold text-slate-800">{item.label}</div>
+                  <div className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                    <span>{item.label}</span>
+                    {item.id === "chk_fin" && (
+                      <span className="text-[9px] font-mono text-indigo-700 bg-indigo-50 border border-indigo-200 px-1 py-0.2 rounded uppercase">
+                        Buka Laporan &rarr;
+                      </span>
+                    )}
+                  </div>
                   <p className="text-[10px] text-slate-500 mt-0.5 leading-tight">{item.desc}</p>
                 </div>
               </div>

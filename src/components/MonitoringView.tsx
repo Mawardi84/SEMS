@@ -28,7 +28,8 @@ import {
   Eye,
   FileCheck,
   UserCheck,
-  Archive
+  Archive,
+  Volume2
 } from "lucide-react";
 import { 
   SeksiTask, 
@@ -54,6 +55,7 @@ import OrgChart from "./OrgChart";
 import LPJDeliveryPanel from "./LPJDeliveryPanel";
 import LPJSpeechModal from "./LPJSpeechModal";
 import LPJNotulenModal from "./LPJNotulenModal";
+import LPJReconciliationModal from "./LPJReconciliationModal";
 import DocumentPreviewRenderer from "./DocumentPreviewRenderer";
 
 export const getPrimarySeksiForTx = (tx: any): string => {
@@ -128,6 +130,7 @@ export default function MonitoringView({
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [showSpeechModal, setShowSpeechModal] = useState(false);
   const [showNotulenModal, setShowNotulenModal] = useState(false);
+  const [showReconciliationModal, setShowReconciliationModal] = useState(false);
 
   // Custom LPJ Template settings & inputs
   const [selectedTemplate, setSelectedTemplate] = useState<"formal" | "ringkas">("formal");
@@ -586,7 +589,7 @@ Sebagai dokumen pendukung pertanggungjawaban panitia, berikut dilampirkan berkas
 
 - **Lampiran 1:** Buku Kas Umum (BKU) Penerimaan, Pengeluaran & Rekonsiliasi Kas
 - **Lampiran 2:** Laporan Rekonsiliasi Pengembalian Dana Talangan Pamsimas & Realisasi Swadaya RT
-- **Lampiran 3:** Dokumentasi Foto Kegiatan & Bundel Berkas Fisik Nota Belanja Panitia
+- **Lampiran 3:** Kuitansi Penerimaan Sumbangan RT & Para Donatur serta Dokumentasi Foto Kegiatan
 
 Laporan Pertanggungjawaban ini dibuat rangkap sebagai dokumentasi resmi dan arsip warga.`;
   };
@@ -739,6 +742,25 @@ Laporan Pertanggungjawaban ini dibuat rangkap sebagai dokumentasi resmi dan arsi
             Pantau rincian tugas seksi, tagihan iuran RT, serta formulasikan Laporan Pertanggungjawaban (LPJ).
           </p>
         </div>
+
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            onClick={() => setShowReconciliationModal(true)}
+            className="px-3.5 py-1.5 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 text-xs font-bold flex items-center gap-1.5 transition cursor-pointer shadow-2xs"
+            title="Buka Laporan Rekonsiliasi Pengembalian Dana Talangan Pamsimas & Swadaya RT (Lampiran 2)"
+          >
+            <ShieldCheck className="w-3.5 h-3.5 text-indigo-600" />
+            <span>Laporan Rekonsiliasi (Lampiran 2)</span>
+          </button>
+          <button
+            onClick={() => setShowSpeechModal(true)}
+            className="px-3.5 py-1.5 rounded-lg bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 text-xs font-bold flex items-center gap-1.5 transition cursor-pointer shadow-2xs"
+            title="Buka Naskah Pidato LPJ Resmi (Ketua, Sekretaris, Bendahara)"
+          >
+            <Volume2 className="w-3.5 h-3.5 text-red-600" />
+            <span>Naskah Pidato LPJ</span>
+          </button>
+        </div>
       </div>
 
       <div className="flex space-x-1 border-b border-slate-200 print:hidden">
@@ -766,6 +788,40 @@ Laporan Pertanggungjawaban ini dibuat rangkap sebagai dokumentasi resmi dan arsi
         </button>
       </div>
 
+      {showReconciliationModal && (
+        <LPJReconciliationModal
+          isOpen={showReconciliationModal}
+          onClose={() => setShowReconciliationModal(false)}
+          settings={settings}
+          panitia={panitia}
+        />
+      )}
+
+      {showSpeechModal && (
+        <LPJSpeechModal
+          isOpen={showSpeechModal}
+          lpj={lpj}
+          onClose={() => setShowSpeechModal(false)}
+          onGenerateSpeech={onGenerateLPJSpeech || (async () => {})}
+        />
+      )}
+
+      {showNotulenModal && lpj && (
+        <LPJNotulenModal
+          isOpen={showNotulenModal}
+          lpj={lpj}
+          onClose={() => setShowNotulenModal(false)}
+          onGenerateNotulen={onGenerateLPJNotulen || (async () => {})}
+        />
+      )}
+
+      <LPJReconciliationModal
+        isOpen={showReconciliationModal}
+        onClose={() => setShowReconciliationModal(false)}
+        settings={settings}
+        panitia={panitia}
+      />
+
       {activeTab === 'delivery' ? (
         <div className="relative">
           <LPJDeliveryPanel
@@ -779,26 +835,9 @@ Laporan Pertanggungjawaban ini dibuat rangkap sebagai dokumentasi resmi dan arsi
             onUpdateStatus={onUpdateLPJStatus || (async () => {})}
             onOpenSpeechModal={() => setShowSpeechModal(true)}
             onOpenNotulenModal={() => setShowNotulenModal(true)}
+            onOpenReconciliationModal={() => setShowReconciliationModal(true)}
             onNavigateView={onNavigateView}
           />
-
-          {showSpeechModal && lpj && (
-            <LPJSpeechModal
-              isOpen={showSpeechModal}
-              lpj={lpj}
-              onClose={() => setShowSpeechModal(false)}
-              onGenerateSpeech={onGenerateLPJSpeech || (async () => {})}
-            />
-          )}
-
-          {showNotulenModal && lpj && (
-            <LPJNotulenModal
-              isOpen={showNotulenModal}
-              lpj={lpj}
-              onClose={() => setShowNotulenModal(false)}
-              onGenerateNotulen={onGenerateLPJNotulen || (async () => {})}
-            />
-          )}
         </div>
       ) : (
         <>
@@ -1343,7 +1382,7 @@ Sebagai dokumen pendukung pertanggungjawaban panitia, berikut dilampirkan 3 berk
 
 - **Lampiran 1:** Buku Kas Umum (BKU) Penerimaan & Pengeluaran Kas
 - **Lampiran 2:** Laporan Rekonsiliasi Pengembalian Dana Talangan Pamsimas & Realisasi Swadaya RT
-- **Lampiran 3:** Dokumentasi Foto Kegiatan & Berkas Fisik Nota Belanja Panitia
+- **Lampiran 3:** Kuitansi Penerimaan Sumbangan RT & Para Donatur serta Dokumentasi Foto Kegiatan
 
 Laporan Pertanggungjawaban ini dibuat rangkap sebagai dokumentasi resmi dan arsip warga.`;
 
@@ -1495,7 +1534,7 @@ Laporan Pertanggungjawaban ini dibuat rangkap sebagai dokumentasi resmi dan arsi
                               { no: 9, title: "BAB IV. PERTANGGUNGJAWABAN KEUANGAN", page: 9, sub: ["Realisasi Belanja Seksi Panitia", "Rekapitulasi Iuran & Swadaya RT", "Tabel Realisasi & Neraca Saldo Kas Sisa"] },
                               { no: 10, title: "BAB V. EVALUASI", page: 10, sub: ["Tantangan Administrasi & Keuangan", "Kendala Kepanitiaan & Koordinasi", "Tantangan Logistik & Operasional", "Rekomendasi & Solusi Kepanitiaan Depan"] },
                               { no: 11, title: "BAB VI. PENUTUP", page: 11, sub: ["Permohonan Maaf & Ungkapan Terima Kasih", "Penetapan Akhir Masa Bakti & Alokasi Sisa Kas"] },
-                              { no: 12, title: "LAMPIRAN DOKUMEN RESMI", page: 12, sub: ["Lampiran 1: Buku Kas Umum (BKU) Kas Masuk & Keluar", "Lampiran 2: Rekonsiliasi Pengembalian Dana Talangan Pamsimas", "Lampiran 3: Dokumentasi Foto Kegiatan & Berkas Fisik Nota"] }
+                              { no: 12, title: "LAMPIRAN DOKUMEN RESMI", page: 12, sub: ["Lampiran 1: Buku Kas Umum (BKU) Kas Masuk & Keluar", "Lampiran 2: Rekonsiliasi Pengembalian Dana Talangan Pamsimas", "Lampiran 3: Kuitansi Penerimaan Sumbangan RT & Donatur serta Dokumentasi Foto"] }
                             ].map((item) => (
                               <div key={item.no} className="space-y-1">
                                 <div className="flex items-baseline justify-between gap-1 text-[11px] sm:text-xs">
@@ -2204,19 +2243,23 @@ Laporan Pertanggungjawaban ini dibuat rangkap sebagai dokumentasi resmi dan arsi
                                     </div>
                                   </div>
 
-                                  <div className="border border-slate-300 rounded-lg p-3.5 bg-white shadow-3xs flex flex-col justify-between">
+                                  <div 
+                                    onClick={() => setShowReconciliationModal(true)}
+                                    className="border border-slate-300 hover:border-indigo-500 rounded-lg p-3.5 bg-white shadow-3xs hover:shadow-md flex flex-col justify-between cursor-pointer transition-all group"
+                                  >
                                     <div>
                                       <div className="flex items-center justify-between">
                                         <span className="text-[9px] font-black text-indigo-700 uppercase bg-indigo-100 px-2 py-0.5 rounded border border-indigo-200">Lampiran 2</span>
-                                        <span className="text-[8px] font-mono text-emerald-700 font-bold">100% LUNAS</span>
+                                        <span className="text-[8px] font-mono text-emerald-700 font-bold group-hover:underline">100% LUNAS &rarr;</span>
                                       </div>
-                                      <div className="text-xs font-black text-slate-900 mt-2 font-sans">Rekonsiliasi Pamsimas & RT</div>
+                                      <div className="text-xs font-black text-slate-900 group-hover:text-indigo-600 mt-2 font-sans transition-colors">Rekonsiliasi Pamsimas & RT</div>
                                       <p className="text-[10px] text-slate-600 mt-1 leading-relaxed">
                                         Pengembalian dana talangan Pamsimas 4 RT @ Rp 2.000.000 (total Rp 8.000.000) telah tuntas via iuran warga.
                                       </p>
                                     </div>
-                                    <div className="mt-3 pt-2 border-t border-slate-100 text-[8.5px] font-mono text-slate-500">
-                                      Status: Talangan Terserap Tuntas
+                                    <div className="mt-3 pt-2 border-t border-slate-100 text-[8.5px] font-mono text-indigo-600 font-bold flex items-center justify-between">
+                                      <span>Status: Talangan Terserap Tuntas</span>
+                                      <span>Klik untuk Detail</span>
                                     </div>
                                   </div>
 
@@ -2226,9 +2269,9 @@ Laporan Pertanggungjawaban ini dibuat rangkap sebagai dokumentasi resmi dan arsi
                                         <span className="text-[9px] font-black text-amber-800 uppercase bg-amber-100 px-2 py-0.5 rounded border border-amber-200">Lampiran 3</span>
                                         <span className="text-[8px] font-mono text-emerald-700 font-bold">ARSIP FISIK</span>
                                       </div>
-                                      <div className="text-xs font-black text-slate-900 mt-2 font-sans">Dokumentasi & Nota Belanja</div>
+                                      <div className="text-xs font-black text-slate-900 mt-2 font-sans">Kuitansi Sumbangan & Dokumentasi</div>
                                       <p className="text-[10px] text-slate-600 mt-1 leading-relaxed">
-                                        Bundel nota asli belanja barang/jasa dan foto dokumentasi kegiatan tersimpan rapi pada sekretariat RW.
+                                        Kuitansi fisik tanda terima sumbangan swadaya RT & donatur/sponsor serta dokumentasi foto kegiatan (berkas fisik nota belanja telah diserahkan ke masing-masing RT).
                                       </p>
                                     </div>
                                     <div className="mt-3 pt-2 border-t border-slate-100 text-[8.5px] font-mono text-slate-500">
