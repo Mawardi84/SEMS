@@ -29,7 +29,8 @@ import {
   FileCheck,
   UserCheck,
   Archive,
-  Volume2
+  Volume2,
+  Receipt
 } from "lucide-react";
 import { 
   SeksiTask, 
@@ -56,6 +57,8 @@ import LPJDeliveryPanel from "./LPJDeliveryPanel";
 import LPJSpeechModal from "./LPJSpeechModal";
 import LPJNotulenModal from "./LPJNotulenModal";
 import LPJReconciliationModal from "./LPJReconciliationModal";
+import { LPJBKUModal } from "./LPJBKUModal";
+import { LPJSumbanganModal } from "./LPJSumbanganModal";
 import DocumentPreviewRenderer from "./DocumentPreviewRenderer";
 
 export const getPrimarySeksiForTx = (tx: any): string => {
@@ -131,6 +134,8 @@ export default function MonitoringView({
   const [showSpeechModal, setShowSpeechModal] = useState(false);
   const [showNotulenModal, setShowNotulenModal] = useState(false);
   const [showReconciliationModal, setShowReconciliationModal] = useState(false);
+  const [showBKUModal, setShowBKUModal] = useState(false);
+  const [showSumbanganModal, setShowSumbanganModal] = useState(false);
 
   // Custom LPJ Template settings & inputs
   const [selectedTemplate, setSelectedTemplate] = useState<"formal" | "ringkas">("formal");
@@ -745,16 +750,32 @@ Laporan Pertanggungjawaban ini dibuat rangkap sebagai dokumentasi resmi dan arsi
 
         <div className="flex flex-wrap items-center gap-2">
           <button
+            onClick={() => setShowBKUModal(true)}
+            className="px-3.5 py-1.5 rounded-lg bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 text-xs font-bold flex items-center gap-1.5 transition cursor-pointer shadow-2xs"
+            title="Buka Buku Kas Umum (BKU) Penerimaan & Pengeluaran Kas (Lampiran 1)"
+          >
+            <FileText className="w-3.5 h-3.5 text-red-600" />
+            <span>Buku Kas Umum (Lampiran 1)</span>
+          </button>
+          <button
             onClick={() => setShowReconciliationModal(true)}
             className="px-3.5 py-1.5 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 text-xs font-bold flex items-center gap-1.5 transition cursor-pointer shadow-2xs"
             title="Buka Laporan Rekonsiliasi Pengembalian Dana Talangan Pamsimas & Swadaya RT (Lampiran 2)"
           >
             <ShieldCheck className="w-3.5 h-3.5 text-indigo-600" />
-            <span>Laporan Rekonsiliasi (Lampiran 2)</span>
+            <span>Rekonsiliasi Pamsimas (Lampiran 2)</span>
+          </button>
+          <button
+            onClick={() => setShowSumbanganModal(true)}
+            className="px-3.5 py-1.5 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 text-xs font-bold flex items-center gap-1.5 transition cursor-pointer shadow-2xs"
+            title="Input & Kelola Penerimaan Sumbangan RT, Sponsor & Donatur Perorangan (Lampiran 3)"
+          >
+            <Receipt className="w-3.5 h-3.5 text-amber-700" />
+            <span>Kuitansi & Sumbangan (Lampiran 3)</span>
           </button>
           <button
             onClick={() => setShowSpeechModal(true)}
-            className="px-3.5 py-1.5 rounded-lg bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 text-xs font-bold flex items-center gap-1.5 transition cursor-pointer shadow-2xs"
+            className="px-3.5 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-300 text-xs font-bold flex items-center gap-1.5 transition cursor-pointer shadow-2xs"
             title="Buka Naskah Pidato LPJ Resmi (Ketua, Sekretaris, Bendahara)"
           >
             <Volume2 className="w-3.5 h-3.5 text-red-600" />
@@ -820,6 +841,21 @@ Laporan Pertanggungjawaban ini dibuat rangkap sebagai dokumentasi resmi dan arsi
         onClose={() => setShowReconciliationModal(false)}
         settings={settings}
         panitia={panitia}
+      />
+
+      <LPJBKUModal
+        isOpen={showBKUModal}
+        onClose={() => setShowBKUModal(false)}
+        keuangan={keuangan}
+        settings={settings}
+      />
+
+      <LPJSumbanganModal
+        isOpen={showSumbanganModal}
+        onClose={() => setShowSumbanganModal(false)}
+        settings={settings}
+        panitia={panitia}
+        keuangan={keuangan}
       />
 
       {activeTab === 'delivery' ? (
@@ -2227,19 +2263,23 @@ Laporan Pertanggungjawaban ini dibuat rangkap sebagai dokumentasi resmi dan arsi
                                 </div>
 
                                 <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5">
-                                  <div className="border border-slate-300 rounded-lg p-3.5 bg-white shadow-3xs flex flex-col justify-between">
+                                  <div 
+                                    onClick={() => setShowBKUModal(true)}
+                                    className="border border-slate-300 hover:border-red-500 rounded-lg p-3.5 bg-white shadow-3xs hover:shadow-md flex flex-col justify-between cursor-pointer transition-all group"
+                                  >
                                     <div>
                                       <div className="flex items-center justify-between">
                                         <span className="text-[9px] font-black text-red-700 uppercase bg-red-100 px-2 py-0.5 rounded border border-red-200">Lampiran 1</span>
-                                        <span className="text-[8px] font-mono text-emerald-700 font-bold">TERVERIFIKASI</span>
+                                        <span className="text-[8px] font-mono text-emerald-700 font-bold group-hover:underline">TERVERIFIKASI &rarr;</span>
                                       </div>
-                                      <div className="text-xs font-black text-slate-900 mt-2 font-sans">Buku Kas Umum (BKU)</div>
+                                      <div className="text-xs font-black text-slate-900 group-hover:text-red-700 mt-2 font-sans transition-colors">Buku Kas Umum (BKU)</div>
                                       <p className="text-[10px] text-slate-600 mt-1 leading-relaxed">
                                         28 Transaksi Kas Utama & 9 Transaksi Kas Donasi tercatat presisi dengan sisa saldo bersih Rp 1.382.000,00.
                                       </p>
                                     </div>
-                                    <div className="mt-3 pt-2 border-t border-slate-100 text-[8.5px] font-mono text-slate-500">
-                                      Status: Rekapitulasi Kas Lunas
+                                    <div className="mt-3 pt-2 border-t border-slate-100 text-[8.5px] font-mono text-red-700 font-bold flex items-center justify-between">
+                                      <span>Status: Rekapitulasi Kas Lunas</span>
+                                      <span>Klik untuk Detail</span>
                                     </div>
                                   </div>
 
@@ -2263,19 +2303,23 @@ Laporan Pertanggungjawaban ini dibuat rangkap sebagai dokumentasi resmi dan arsi
                                     </div>
                                   </div>
 
-                                  <div className="border border-slate-300 rounded-lg p-3.5 bg-white shadow-3xs flex flex-col justify-between">
+                                  <div 
+                                    onClick={() => setShowSumbanganModal(true)}
+                                    className="border border-slate-300 hover:border-amber-500 rounded-lg p-3.5 bg-white shadow-3xs hover:shadow-md flex flex-col justify-between cursor-pointer transition-all group"
+                                  >
                                     <div>
                                       <div className="flex items-center justify-between">
                                         <span className="text-[9px] font-black text-amber-800 uppercase bg-amber-100 px-2 py-0.5 rounded border border-amber-200">Lampiran 3</span>
-                                        <span className="text-[8px] font-mono text-emerald-700 font-bold">ARSIP FISIK</span>
+                                        <span className="text-[8px] font-mono text-emerald-700 font-bold group-hover:underline">REKONSILIASI KAS &rarr;</span>
                                       </div>
-                                      <div className="text-xs font-black text-slate-900 mt-2 font-sans">Kuitansi Sumbangan & Dokumentasi</div>
+                                      <div className="text-xs font-black text-slate-900 group-hover:text-amber-800 mt-2 font-sans transition-colors">Kuitansi Sumbangan RT & Donatur</div>
                                       <p className="text-[10px] text-slate-600 mt-1 leading-relaxed">
-                                        Kuitansi fisik tanda terima sumbangan swadaya RT & donatur/sponsor serta dokumentasi foto kegiatan (berkas fisik nota belanja telah diserahkan ke masing-masing RT).
+                                        Kuitansi tanda terima penerimaan sumbangan swadaya RT (RT 01-04), hibah Pamsimas & sponsor/donatur (berkas nota belanja fisik telah diserahkan ke masing-masing RT).
                                       </p>
                                     </div>
-                                    <div className="mt-3 pt-2 border-t border-slate-100 text-[8.5px] font-mono text-slate-500">
-                                      Status: Terarsip di Kesekretariatan
+                                    <div className="mt-3 pt-2 border-t border-slate-100 text-[8.5px] font-mono text-amber-800 font-bold flex items-center justify-between">
+                                      <span>Status: Kuitansi Terverifikasi</span>
+                                      <span>Input / Detail &rarr;</span>
                                     </div>
                                   </div>
                                 </div>

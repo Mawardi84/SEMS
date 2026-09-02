@@ -213,6 +213,21 @@ export interface Notulensi {
   createdAt: string;
 }
 
+export interface SumbanganRecord {
+  id: string;
+  donorType: 'RT' | 'Sponsor Resmi' | 'Donatur Warga' | 'UMKM' | 'Pamsimas' | 'Pengembalian Efisiensi' | 'Lainnya';
+  donorName: string;
+  category: 'Dana Tunai' | 'Transfer Bank' | 'Barang / Doorprize' | 'Logistik / Konsumsi' | 'Jasa / Hibah' | 'Pengembalian Dana';
+  amount: number;
+  itemDescription?: string;
+  date: string;
+  receiptNumber: string;
+  receivedBy: string;
+  contactPerson?: string;
+  notes?: string;
+  status: 'Diterima' | 'Terverifikasi' | 'Tersalurkan';
+}
+
 export interface DigitalDocument {
   id: string;
   title: string;

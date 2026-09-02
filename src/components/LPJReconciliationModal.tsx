@@ -259,15 +259,15 @@ Mengetahui, Ketua RW 04 Ngabean: ${ketuaRW}
         </div>
 
         {/* Document Body */}
-        <div className="flex-1 overflow-y-auto p-6 sm:p-10 font-sans text-slate-800 bg-white leading-relaxed print:p-0 print:overflow-visible">
-          <div id="lampiran-2-printable-area" className="max-w-3xl mx-auto space-y-6 bg-white p-2">
+        <div className="flex-1 overflow-y-auto p-4 sm:p-8 font-sans text-slate-800 bg-slate-100/70 leading-relaxed print:p-0 print:bg-white print:overflow-visible">
+          <div id="lampiran-2-printable-area" className="max-w-[780px] w-full mx-auto space-y-5 bg-white p-6 sm:p-8 rounded-xl border border-slate-200/90 shadow-sm print:border-none print:shadow-none print:p-0 print:max-w-none">
             
             {/* Kop Laporan Rekonsiliasi */}
-            <div className="text-center border-b-2 border-slate-800 pb-4">
+            <div className="text-center border-b-2 border-slate-800 pb-3">
               <span className="text-[11px] font-mono font-bold uppercase text-indigo-700 tracking-wider">
                 LAMPIRAN 2 DOKUMEN LAPORAN PERTANGGUNGJAWABAN (LPJ)
               </span>
-              <h2 className="text-base sm:text-lg font-black text-slate-950 uppercase tracking-tight mt-1">
+              <h2 className="text-base sm:text-lg font-black text-slate-950 uppercase tracking-tight mt-1 leading-snug">
                 LAPORAN REKONSILIASI PENGEMBALIAN DANA TALANGAN PAMSIMAS & REALISASI SWADAYA RT
               </h2>
               <p className="text-xs text-slate-600 font-medium mt-0.5">
@@ -433,26 +433,54 @@ Mengetahui, Ketua RW 04 Ngabean: ${ketuaRW}
               </div>
 
               <div className="grid grid-cols-3 gap-4 text-center text-xs">
-                <div className="space-y-1">
+                <div className="space-y-1 relative">
                   <span className="text-[10px] font-bold uppercase text-slate-500 block">Ketua Panitia Pelaksana</span>
-                  <div className="h-16 flex items-center justify-center font-serif italic text-sm text-slate-700 font-bold">
-                    ( Tanda Tangan )
+                  <div className="h-16 flex items-center justify-center relative w-full my-1">
+                    {settings?.signatureKetuaUrl ? (
+                      <img 
+                        src={settings.signatureKetuaUrl} 
+                        alt="Tanda Tangan Ketua" 
+                        className="max-h-full max-w-[110px] object-contain mix-blend-multiply" 
+                        referrerPolicy="no-referrer"
+                      />
+                    ) : (
+                      <div className="h-14" />
+                    )}
                   </div>
                   <div className="font-bold underline text-slate-900">{ketuaPanitia}</div>
                 </div>
 
-                <div className="space-y-1">
+                <div className="space-y-1 relative">
                   <span className="text-[10px] font-bold uppercase text-slate-500 block">Bendahara Panitia</span>
-                  <div className="h-16 flex items-center justify-center font-serif italic text-sm text-emerald-800 font-bold">
-                    ( Tanda Tangan )
+                  <div className="h-16 flex items-center justify-center relative w-full my-1">
+                    {settings?.signatureBendaharaUrl ? (
+                      <img 
+                        src={settings.signatureBendaharaUrl} 
+                        alt="Tanda Tangan Bendahara" 
+                        className="max-h-full max-w-[110px] object-contain mix-blend-multiply" 
+                        referrerPolicy="no-referrer"
+                      />
+                    ) : (
+                      <div className="h-14" />
+                    )}
                   </div>
                   <div className="font-bold underline text-slate-900">{bendahara}</div>
                 </div>
 
-                <div className="space-y-1">
+                <div className="space-y-1 relative">
                   <span className="text-[10px] font-bold uppercase text-slate-500 block">Mengetahui, Ketua RW 04</span>
-                  <div className="h-16 flex items-center justify-center font-serif italic text-sm text-indigo-800 font-bold">
-                    ( Tanda Tangan & Stempel )
+                  <div className="h-16 flex items-center justify-center relative w-full my-1">
+                    {settings?.stempelUrl && (
+                      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-20 h-20 pointer-events-none select-none z-0 opacity-80 mix-blend-multiply">
+                        <img 
+                          src={settings.stempelUrl} 
+                          alt="Stempel RW" 
+                          className="w-full h-full object-contain" 
+                          referrerPolicy="no-referrer"
+                        />
+                      </div>
+                    )}
+                    <div className="h-14 relative z-10" />
                   </div>
                   <div className="font-bold underline text-slate-900">{ketuaRW}</div>
                 </div>

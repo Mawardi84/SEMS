@@ -38,38 +38,35 @@ export async function exportToPDF(elementId: string, filename: string) {
       return;
     }
 
-    // Identify all individual pages inside the container
+    // Identify all individual pages inside the container (only explicit page breaks)
     let pageNodes: HTMLElement[] = [];
     
-    // Check for elements with break-after-page or page wrapper keys
+    // Check for elements with explicit break-after-page or pdf-page classes
     const potentialPages = Array.from(
-      container.querySelectorAll<HTMLElement>('.break-after-page, .print\\:break-after-page')
+      container.querySelectorAll<HTMLElement>('.break-after-page, .print\\:break-after-page, [data-pdf-page]')
     );
 
     if (potentialPages.length > 0) {
       pageNodes = potentialPages.filter(el => el.offsetHeight > 50);
     }
 
-    if (pageNodes.length === 0 && container.children.length > 0) {
-      pageNodes = Array.from(container.children).filter(
-        (child): child is HTMLElement => child instanceof HTMLElement && child.offsetHeight > 50
-      );
-    }
-
+    // If no explicit page breaks exist, the container itself is the target single document
     if (pageNodes.length === 0) {
       pageNodes = [container];
     }
 
-    // Standard Indonesian F4 / Folio (215mm x 330mm) or A4 (210mm x 297mm)
-    const pdfPageWidthMm = 215;
-    const pdfPageHeightMm = 330;
+    // Standard Indonesian A4 (210mm x 297mm) / F4 (215mm x 330mm)
+    const pdfPageWidthMm = 210;
+    const standardPageHeightMm = 297;
 
     const pdf = new jsPDF({
       orientation: 'portrait',
       unit: 'mm',
-      format: [pdfPageWidthMm, pdfPageHeightMm],
+      format: 'a4',
       compress: true
     });
+
+    let isFirstPage = true;
 
     for (let i = 0; i < pageNodes.length; i++) {
       const pageEl = pageNodes[i];
@@ -87,16 +84,56 @@ export async function exportToPDF(elementId: string, filename: string) {
       pageEl.style.width = originalWidth;
       pageEl.style.maxWidth = originalMaxWidth;
 
-      const imgData = canvas.toDataURL('image/jpeg', 0.95);
-      
       const contentHeightMm = (canvas.height * pdfPageWidthMm) / canvas.width;
-      const targetHeightMm = Math.max(pdfPageHeightMm, contentHeightMm);
 
-      if (i > 0) {
-        pdf.addPage([pdfPageWidthMm, targetHeightMm], 'portrait');
+      // If this page fits within standard page height or single page (e.g. up to 330mm)
+      if (contentHeightMm <= 335) {
+        const pageHeightMm = Math.max(standardPageHeightMm, contentHeightMm);
+        const imgData = canvas.toDataURL('image/jpeg', 0.95);
+
+        if (!isFirstPage) {
+          pdf.addPage([pdfPageWidthMm, pageHeightMm], 'portrait');
+        } else {
+          isFirstPage = false;
+        }
+
+        // Add image keeping 100% exact proportional aspect ratio (no stretching!)
+        pdf.addImage(imgData, 'JPEG', 0, 0, pdfPageWidthMm, contentHeightMm, undefined, 'FAST');
+      } else {
+        // Multi-page slicing for long continuous documents
+        const sliceHeightPx = (standardPageHeightMm * canvas.width) / pdfPageWidthMm;
+        let currentYPx = 0;
+
+        while (currentYPx < canvas.height) {
+          const chunkCanvas = document.createElement('canvas');
+          chunkCanvas.width = canvas.width;
+          const currentChunkHeightPx = Math.min(sliceHeightPx, canvas.height - currentYPx);
+          chunkCanvas.height = currentChunkHeightPx;
+
+          const ctx = chunkCanvas.getContext('2d');
+          if (ctx) {
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, chunkCanvas.width, chunkCanvas.height);
+            ctx.drawImage(
+              canvas,
+              0, currentYPx, canvas.width, currentChunkHeightPx,
+              0, 0, canvas.width, currentChunkHeightPx
+            );
+          }
+
+          const chunkImgData = chunkCanvas.toDataURL('image/jpeg', 0.95);
+          const chunkHeightMm = (currentChunkHeightPx * pdfPageWidthMm) / canvas.width;
+
+          if (!isFirstPage) {
+            pdf.addPage([pdfPageWidthMm, standardPageHeightMm], 'portrait');
+          } else {
+            isFirstPage = false;
+          }
+
+          pdf.addImage(chunkImgData, 'JPEG', 0, 0, pdfPageWidthMm, chunkHeightMm, undefined, 'FAST');
+          currentYPx += sliceHeightPx;
+        }
       }
-
-      pdf.addImage(imgData, 'JPEG', 0, 0, pdfPageWidthMm, targetHeightMm, undefined, 'FAST');
     }
 
     const cleanFilename = filename.replace(/\.(png|jpg|jpeg|doc|docx|pdf)$/i, "") + ".pdf";
