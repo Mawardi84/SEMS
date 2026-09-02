@@ -25,7 +25,7 @@ interface LPJSpeechModalProps {
 
 const DEFAULT_SPEECH_SCRIPTS = {
   ketua: `### NASKAH PIDATO PENYAMPAIAN LPJ — KETUA PANITIA PELAKSANA
-**"Pengantar Pertanggungjawaban Kolektif & Semangat Gotong Royong Warga"**  
+**"Pengantar Pertanggungjawaban Kolektif & Ungkapan Syukur Kebersamaan Warga"**  
 *Penyampai: Muh Zaenun (Ketua Panitia Peringatan HUT RI Ke-81 RW 04 Ngabean)*
 
 ---
@@ -33,26 +33,26 @@ const DEFAULT_SPEECH_SCRIPTS = {
 *Assalamu’alaikum Warahmatullahi Wabarakatuh,*  
 *Selamat malam, salam sejahtera, dan salam kemerdekaan bagi kita semua.*
 
-**Yang kami hormati dan muliakan:**
-1. Bapak **Karto** selaku Ketua RW 04 Ngabean beserta seluruh jajaran Pengurus RW;
-2. Bapak dan Ibu Pengurus **RT 01, RT 02, RT 03, dan RT 04 Ngabean**;
-3. Segenap Pengelola **Pamsimas RW 04 Ngabean**;
-4. Para Sponsor Resmi (**Prettywear, Selo Agung, Apotek Gunungpati, BnD Shop, Ngrembel Asri, UMKM Kuliner Warga**) serta segenap Donatur Dermawan;
-5. Para Sesepuh, Pinisepuh, Tokoh Agama, Tokoh Masyarakat, Rekan-rekan Karang Taruna, Ibu-ibu PKK, serta seluruh warga RW 04 Ngabean yang kami banggakan.
+Bapak-ibu hadirin sekalian yang kami hormati dan muliakan:
+1. Bapak **Karto** selaku Ketua RW 04 Ngabean beserta seluruh jajaran Pengurus RW yang senantiasa membimbing kami;
+2. Bapak dan Ibu Pengurus **RT 01, RT 02, RT 03, dan RT 04 Ngabean** yang luar biasa solid;
+3. Segenap Pengelola **Pamsimas RW 04 Ngabean** atas dukungan dan kerjasamanya;
+4. Para Sponsor Resmi (**Prettywear, Selo Agung, Apotek Gunungpati, BnD Shop, Ngrembel Asri, UMKM Kuliner Warga**) serta seluruh donatur dermawan;
+5. Para sesepuh, pinisepuh, tokoh agama, tokoh masyarakat, rekan-rekan Karang Taruna, ibu-ibu PKK, serta seluruh warga RW 04 Ngabean yang kami banggakan dan cintai.
 
-Puji dan syukur marilah kita panjatkan ke hadirat Tuhan Yang Maha Esa, karena atas limpahan berkah, kesehatan, dan persatuan, seluruh rangkaian kegiatan Peringatan HUT Kemerdekaan Republik Indonesia Ke-81 di lingkungan RW 04 Ngabean telah sukses terlaksana dengan aman, lancar, dan penuh semarak keguyuban.
+Puji dan syukur marilah senantiasa kita panjatkan ke hadirat Allah SWT, Tuhan Yang Maha Esa. Atas izin dan limpahan berkah-Nya, kita semua dapat berkumpul dalam keadaan sehat walafiat pada malam pleno ini guna menutup rangkaian Peringatan HUT Kemerdekaan Republik Indonesia Ke-81 di lingkungan RW 04 Ngabean yang telah berjalan sukses, aman, dan penuh kekeluargaan.
 
-Malam hari ini, kepanitiaan hadir di hadapan panjenengan semua dalam **Rapat Pleno Pertanggungjawaban** untuk menunaikan amanah tertinggi organisasi warga, yaitu menyampaikan **Laporan Pertanggungjawaban (LPJ)** secara jujur, transparan, dan akuntabel.
+Malam hari ini, kami selaku panitia hadir di hadapan bapak-ibu sekalian untuk menunaikan amanah warga, yakni menyampaikan **Laporan Pertanggungjawaban (LPJ)** secara terbuka, jujur, dan apa adanya.
 
-Sebagai Ketua Panitia, saya menegaskan bahwa **LPJ ini adalah bentuk pertanggungjawaban kolektif seluruh jajaran panitia**. Kesuksesan acara kita bukanlah kerja perseorangan, melainkan buah dari keringat, kerja keras, dan keikhlasan seluruh seksi kepanitiaan bersama dukungan swadaya warga RW 04 yang luar biasa.
+Perlu kami sampaikan dari lubuk hati yang paling dalam, bahwa **LPJ ini adalah bentuk kerja bersama dan tanggung jawab kolektif** seluruh jajaran panitia. Kesuksesan dan semarak acara kemarin bukanlah milik perorangan, melainkan buah dari keringat, tenaga, pikiran, serta keikhlasan seluruh warga RW 04.
 
-Kami menyadari sepenuhnya bahwa dalam persiapan hingga pelaksanaan tentu masih terdapat kekurangan maupun kekhilafan. Dari lubuk hati yang paling dalam, kami memohon maaf yang sebesar-besarnya kepada seluruh warga dan sesepuh lingkungan atas segala keterbatasan fasilitas maupun kendala teknis.
+Kami menyadari sepenuhnya, dalam proses persiapan hingga malam puncak kemarin, tentu ada kekurangan, salah kata, atau keterbatasan teknis. Untuk itu, dengan kerendahan hati, kami memohon maaf yang sebesar-besarnya kepada seluruh warga dan sesepuh sekalian.
 
-Penyampaian LPJ malam ini kami bagi secara profesional ke dalam bidang teknis:
-1. **Laporan Pelaksanaan Kegiatan & Tata Kelola Administrasi** akan dipaparkan oleh **Sekretaris Panitia (Bpk. Mawardi)**.
-2. **Laporan Realisasi Keuangan, Rekonsiliasi Kas, dan Sisa Saldo** akan dipaparkan secara terperinci oleh **Bendahara Panitia (Ibu Dias Ayu)**.
+Agar pemaparan malam ini tertib dan mudah dipahami bersama, laporan akan kami bagi ke dalam dua sesi:
+1. **Laporan Pelaksanaan Kegiatan & Administrasi** yang akan disampaikan oleh Sekretaris Panitia, Bpk. Mawardi.
+2. **Laporan Pengelolaan Keuangan & Saldo Kas** yang akan disampaikan oleh Bendahara Panitia, Ibu Dias Ayu.
 
-Kepada rekan Sekretaris, kami persilakan untuk memulai pemaparan.
+Waktu selanjutnya, mari kita dengarkan bersama pemaparan dari rekan Sekretaris. Terima kasih.
 
 *Wassalamu’alaikum Warahmatullahi Wabarakatuh.*`,
 
@@ -63,28 +63,28 @@ Kepada rekan Sekretaris, kami persilakan untuk memulai pemaparan.
 ---
 
 *Assalamu’alaikum Warahmatullahi Wabarakatuh,*  
-*Selamat malam Bapak, Ibu, dan hadirin yang kami hormati.*
+*Selamat malam bapak, ibu, dan seluruh warga RW 04 yang berbahagia.*
 
-Terima kasih atas waktu yang diberikan oleh Ketua Panitia. Mewakili Divisi Kesekretariatan dan seluruh seksi kerja lapangan, izinkan kami melaporkan pelaksanaan program kerja HUT RI Ke-81 RW 04 Ngabean:
+Terima kasih atas waktu yang diberikan oleh Ketua Panitia. Mewakili Divisi Kesekretariatan dan teman-teman panitia lapangan, izinkan kami melaporkan jalannya kegiatan perayaan HUT RI Ke-81 yang telah kita lalui bersama:
 
-#### 1. Rangkaian Pelaksanaan Kegiatan Utama
-- **Rangkaian Lomba Anak (01 s.d. 16 Agustus 2026):**  
-  Telah terselenggara di Lapangan RW 04 dengan antusiasme luar biasa dari anak-anak RT 01 hingga RT 04 melalui berbagai perlombaan tradisional edukatif yang memupuk sportivitas dan rasa percaya diri.
-- **Malam Tirakatan & Lomba Warga (16 Agustus 2026):**  
-  Berlangsung khidmat di Balai RW 04 dengan doa bersama kemerdekaan dan pemotongan tumpeng. Dilanjutkan lomba keakraban antar-RT: **Lomba Ibu-ibu Tebak Gaya**, **Lomba Bapak-bapak Pukul Paku**, serta **Lomba Remaja Estafet Sarung**.
-- **Jalan Sehat Warga & Panggung Doorprize (23 Agustus 2026 - Pagi/Siang):**  
-  Diikuti ratusan warga lintas usia, dimeriahkan penampilan **Band Sendang Bunder**, penyerahan hadiah pemenang lomba anak-anak, serta pengundian ratusan hadiah doorprize dengan hadiah utama **Mesin Cuci 2 Tabung dari Prettywear** dan voucher belanja UMKM kuliner warga.
-- **Malam Puncak / Resepsi & Hiburan Rakyat (23 Agustus 2026 - Malam):**  
-  Panggung purna perayaan menampilkan **Pentas Seni Tari Anak-anak RW 04** serta pertunjukan musik **Dangdut Solo Organ** yang menjadi panggung silaturahmi akbar seluruh warga.
+#### 1. Kilas Balik Kegiatan Warga
+- **Lomba Anak-anak (01 s.d. 16 Agustus 2026):**  
+  Berlangsung meriah di Lapangan RW 04. Anak-anak dari RT 01 sampai RT 04 tampak sangat antusias mengikuti berbagai lomba tradisional yang tidak hanya seru, tetapi juga melatih sportivitas sejak dini.
+- **Malam Tirakatan & Lomba Keakraban (16 Agustus 2026):**  
+  Dilaksanakan khidmat di Balai RW 04 diawali doa bersama dan pemotongan tumpeng wujud syukur kemerdekaan. Acara kemudian cair dan penuh gelak tawa berkat **Lomba Ibu-ibu Tebak Gaya**, **Lomba Bapak-bapak Pukul Paku**, serta **Lomba Remaja Estafet Sarung**.
+- **Jalan Sehat Warga & Panggung Doorprize (23 Agustus 2026 Pagi):**  
+  Diikuti ratusan warga dari anak-anak hingga sesepuh. Suasana semakin meriah dengan alunan musik dari **Band Sendang Bunder**, pembagian hadiah lomba anak, serta pengundian doorprize utama berupa **Mesin Cuci 2 Tabung dari Prettywear** serta berbagai voucher belanja UMKM kuliner warga.
+- **Malam Puncak & Resepsi Rakyat (23 Agustus 2026 Malam):**  
+  Sebagai penutup rangkaian, kita disuguhkan penampilan tarian indah dari anak-anak kita, dilanjutkan panggung hiburan **Dangdut Solo Organ** yang menjadi ajang silaturahmi akbar yang sangat menghibur.
 
-#### 2. Laporan Administrasi & Kearsipan
-- Pengelolaan izin keramaian, surat permohonan sponsorship, notulensi rapat pleno, dan edaran iuran warga terlaksana tertib.
-- Seluruh berkas pertanggungjawaban fisik tersusun dalam **3 Lampiran Resmi LPJ**:
+#### 2. Catatan Administrasi
+- Seluruh perizinan keramaian, surat-menyurat sponsor, notulensi rapat, hingga rekapitulasi data warga telah tertata rapi.
+- Dokumen fisik pertanggungjawaban telah kami susun secara transparan dalam **3 Lampiran Resmi LPJ**:
   1. **Lampiran 1:** Buku Kas Umum (BKU) Penerimaan & Pengeluaran Kas
   2. **Lampiran 2:** Laporan Rekonsiliasi Pengembalian Dana Talangan Pamsimas & Realisasi Swadaya RT
   3. **Lampiran 3:** Kuitansi Penerimaan Sumbangan RT & Para Donatur serta Dokumentasi Foto Kegiatan
 
-Demikian laporan pelaksanaan dan administrasi kami sampaikan. Waktu selanjutnya kami persilakan kepada Bendahara Panitia untuk memaparkan pertanggungjawaban keuangan.
+Demikian ringkasan kegiatan dan administrasi yang dapat kami laporkan. Waktu selanjutnya kami serahkan kepada Bendahara Panitia untuk memaparkan rincian keuangan. Terima kasih.
 
 *Wassalamu’alaikum Warahmatullahi Wabarakatuh.*`,
 
@@ -95,31 +95,31 @@ Demikian laporan pelaksanaan dan administrasi kami sampaikan. Waktu selanjutnya 
 ---
 
 *Assalamu’alaikum Warahmatullahi Wabarakatuh,*  
-*Selamat malam Bapak/Ibu, sesepuh, dan rekan-rekan panitia yang kami hormati.*
+*Selamat malam Bapak/Ibu, sesepuh, dan rekan-rekan seperjuangan panitia.*
 
-Terima kasih kepada Ketua dan Sekretaris. Selaku Bendahara Panitia, saya menyampaikan laporan keuangan perbendaharaan yang terbuka, transparan, dan telah direkonsiliasi hingga rupiah terakhir:
+Terima kasih kepada Ketua dan Sekretaris. Bapak-ibu sekalian yang kami hormati, malam ini saya melaporkan kondisi keuangan panitia secara terbuka, transparan, dan apa adanya tanpa ada yang ditutup-tutupi:
 
 #### I. Total Pemasukan Kas Tunai: Rp 14.000.000,00
-Penerimaan kas bersih terhimpun dari 3 pilar:
-1. **Rp 8.000.000,00:** Iuran 4 RT (RT 01 s.d. RT 04 @ Rp 2.000.000) melalui skema likuiditas dana talangan Pamsimas. Panitia telah menyerahkan fisik nota belanja Rp 2.000.000 ke masing-masing RT, dan pelunasan ke Pamsimas dinyatakan tuntas 100%.
+Dana kas bersih yang berhasil kita himpun bersumber dari 3 pos utama:
+1. **Rp 8.000.000,00:** Iuran 4 RT (RT 01 s.d. RT 04 masing-masing Rp 2.000.000) melalui skema dana talangan Pamsimas. Panitia telah menyerahkan nota belanja fisik senilai Rp 2.000.000 ke masing-masing RT, dan alhamdulillah pelunasan ke Pamsimas kini sudah tuntas 100%.
 2. **Rp 2.000.000,00:** Sumbangan sukarela murni (hibah) dari Pengelola Pamsimas RW 04 Ngabean.
-3. **Rp 4.000.000,00:** Penerimaan murni dari Sponsor Resmi (*Prettywear, Selo Agung, Apotek Gunungpati, BnD Shop, Ngrembel Asri, UMKM Kuliner Warga*) dan para donatur dermawan.
+3. **Rp 4.000.000,00:** Dukungan murni dari para Sponsor Resmi (*Prettywear, Selo Agung, Apotek Gunungpati, BnD Shop, Ngrembel Asri, UMKM Kuliner Warga*) serta donatur dermawan (termasuk kembalian efisiensi honor Tarling).
 
-#### II. Realisasi Belanja & Efisiensi Anggaran: Rp 12.618.000,00
-Dari pagu rencana awal sebesar **Rp 17.550.000,00**, berkat swadaya konsumsi dan sound system warga, panitia berhasil menghemat anggaran sebesar **Rp 4.932.000,00** dengan rincian serapan belanja:
-- **BPH & Kesekretariatan:** Pagu Rp 1.050.000 | Realisasi **Rp 523.000** (Serapan 50%)
-- **Divisi Acara Terpadu:** Pagu Rp 5.300.000 | Realisasi **Rp 4.909.000** (Serapan 93%)
-- **Divisi Operasional Lapangan:** Pagu Rp 11.200.000 | Realisasi **Rp 7.186.000** (Serapan 64%)
-- **Total Belanja Riil:** **Rp 12.618.000,00** *(Dari Kas Utama Rp 10.000.000 + Dari Kas Donasi Rp 2.618.000)*.
+#### II. Realisasi Belanja Riil: Rp 12.618.000,00
+Dari rencana anggaran awal sebesar Rp 17.550.000, berkat semangat swadaya konsumsi dan peralatan dari warga, kita berhasil melakukan efisiensi yang sangat baik sehingga total belanja riil hanya sebesar **Rp 12.618.000,00** dengan rincian:
+- **BPH & Kesekretariatan:** Realisasi **Rp 523.000**
+- **Divisi Acara Terpadu:** Realisasi **Rp 4.909.000**
+- **Divisi Operasional Lapangan:** Realisasi **Rp 7.186.000**
+*(Sumber dana belanja: Rp 10.000.000 dari Kas Utama + Rp 2.618.000 dari Kas Donasi).*
 
-Seluruh nota fisik kuitansi belanja asli senilai Rp 12.618.000 telah diverifikasi lengkap tanpa meninggalkan hutang satu rupiah pun.
+Seluruh nota kuitansi belanja asli sudah kami pegang lengkap dan diverifikasi bersama, tanpa ada sisa hutang sepeser pun.
 
 #### III. Sisa Saldo Kas Bersih: Rp 1.382.000,00
-Dari total penerimaan Rp 14.000.000 dikurangi belanja riil Rp 12.618.000, terdapat sisa kas bersih riil sebesar **Rp 1.382.000,00**.
+Dari total pemasukan Rp 14.000.000 dikurangi total belanja Rp 12.618.000, kita memiliki sisa kas bersih sebesar **Rp 1.382.000,00**.
 
-Sisa efisiensi kas sponsor sebesar **Rp 1.382.000,00** ini, sesuai kesepakatan musyawarah panitia dan pengurus RW, dialokasikan untuk kegiatan **Konsolidasi Internal dan Pembubaran Panitia** (ekskursi keakraban di luar lingkungan) sebagai tanda terima kasih atas dedikasi tanpa lelah para pemuda dan relawan panitia.
+Sesuai hasil musyawarah bersama pengurus dan panitia, sisa efisiensi kas sponsor ini sebesar **Rp 1.382.000,00** dialokasikan untuk kegiatan **Konsolidasi Internal dan Pembubaran Panitia** (acara keakraban/ekskursi luar lingkungan) sebagai wujud apresiasi atas kerja keras rekan-rekan panitia yang telah berjuang berbulan-bulan demi suksesnya acara warga kita.
 
-Demikian pertanggungjawaban keuangan ini kami sampaikan dengan penuh kejujuran dan keterbukaan.
+Demikian laporan pertanggungjawaban keuangan ini kami sampaikan. Atas kepercayaan dan dukungan bapak-ibu sekalian, kami ucapkan terima kasih yang sedalam-dalamnya.
 
 *Wassalamu’alaikum Warahmatullahi Wabarakatuh.*`
 };
